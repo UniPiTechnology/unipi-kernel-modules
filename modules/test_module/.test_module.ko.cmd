@@ -1,0 +1,1 @@
+cmd_/root/kernel/test_module/test_module.ko := /root/rpitools/tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /root/kernel/test_module/test_module.ko /root/kernel/test_module/test_module.o /root/kernel/test_module/test_module.mod.o ;  true

@@ -1,0 +1,345 @@
+What:		/sys/devices/platform/unipi_plc/model_name
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file stores the name of the UniPi PLC model detected on 
+		SPI, as formed by the individual PLC boards.
+		
+		Returns an error if no valid combination corresponding to a 
+		UniPi device can be found.
+
+What:		/sys/devices/platform/unipi_plc/sys_eeprom_name
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file stores the name of the UniPi PLC model, as detected 
+		on the SPI, in a four byte format which is used in the I2C 
+		EEPROM. It is read only.
+		
+		Returns an error if no valid combination corresponding to a 
+		UniPi device can be found.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_board_name
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the name of the UniPi PLC coprocessor board,
+		the [1-9] corresponding to the SPI address which it is connected 
+		to. It is read only.
+
+		Returns an error if it a board which is a valid UniPi PLC board 
+		with an unknown device id, and therefore no corresponding board
+		name.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_board_serial
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the serial number of a UniPi PLC coprocessor
+		board, with the [1-9] corresponding to the SPI address which it
+		is connected to. It is read only.
+
+		Returns a zero if the serial number is not valid.
+
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/firmware_version
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the firmware version number of a UniPi PLC
+		coprocessor	board, with the [1-9] corresponding to the SPI address
+		which it is connected to. The firmware version number uses the
+		following format: [0-9,A-F].[0-9,A-F][0-9,A-F]. The file is read
+		only.
+
+		Returns an error if the version number is not valid.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_primary_minor_id
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the factory flashed bootloader hardware version
+		of a UniPi PLC coprocessor board, with the [1-9] corresponding to
+		the SPI address which it is connected to. The file is read only.
+
+		Returns an error if the version number is not valid.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_secondary_minor_id
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the hardware revision of the underlying UniPi PLC
+		coprocessor board, with the [1-9] corresponding to the SPI address
+		which it is connected to. The file is read only.
+
+		Returns an error if the version number is not valid.	
+		
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_primary_major_id
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the numerical hardware id reported by the underlying
+		UniPi PLC coprocessor board, with the [1-9] corresponding to the SPI
+		address which it is connected to. The file is read only.
+
+		Returns the value "255" if the id request does not give a valid response.	
+
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/sys_secondary_major_id
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the numerical hardware id of an expension board 
+		reported by the underlying UniPi PLC coprocessor board it is connected to,
+		with the [1-9] corresponding to its SPI	address. The file is read only.
+
+		Returns the value "255" if the id request does not give a valid response,
+		and 0 if no coprocessor satellite expansion board is present on the SPI
+		address.	
+
+
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/uart_config
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains tunneled serial port termios settings for 
+		the underlying Neuron board, with the [1-9] corresponding
+		to its SPI address. This file can be both read and written to.
+
+		Returns the value "0" if the underlying board does not support serial
+		port tunneling.
+
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/register_read
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file allows directly reading register of the underlying
+		Neuron board, with the [1-9] corresponding to its SPI address.
+		This file can be both read and written to; writing sets the register
+		address to be read, and reading returns the value of the register in
+		hexadecimal format.
+
+		Returns the value "0" if the underlying board does not support serial
+		port tunneling.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/uart_queue_length
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the number of characters in the tunneled serial port
+		recieve buffer on the underlying Neuron board, with the [1-9] corresponding
+		to its SPI address. The file is read only.
+
+		Returns the value "0" if the underlying board does not support serial
+		port tunneling.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/watchdog_status
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains a '1' if the watchdog on the underlying Neuron PLC
+		board has been triggered, '0' otherwise. The [1-9] corresponds to the
+		SPI address of the underlying board. The file is read only.
+
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/watchdog_timeout
+Date:		January 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the SPI watchdog timeout (in ms.) on the 
+		underlying Neuron PLC board. The [1-9] corresponds to the
+		SPI address of the board. This file can be both read and written to.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/direct_switch_enable
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file allows enabling the DirectSwitch feature for one of the inputs
+		on the Neuron PLC group specified by the [1-9] address. Reading the file
+		returns a 0 if the DirectSwitch feature is disabled and 1 if it is enabled.
+		
+		Writing a value of '1' to the file turns the DirectSwitch feature on
+		for the given input in the group, while writing a value of '0' turns
+		DirectSwitch for the corresponding input off.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/direct_switch_polarity
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file allows enabling the DirectSwitch feature for one of the inputs
+		on the Neuron PLC group specified by the [1-9] address. Reading the file
+		returns a 1 if the DirectSwitch feature polarity is reversed and 1 if it
+		is not.
+
+		Writing a value of '1' to the file inverts the DirectSwitch feature
+		polarity for the given input in the group, while writing a value of '0'
+		switches the DirectSwitch feature back to normal polarity mode.
+
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/direct_switch_toggle
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file allows enabling the toggle function for the DirectSwitch 
+		feature on one of the inputs on the Neuron PLC group specified by
+		the [1-9] address. Reading the file	returns a value of '0' if the 
+		toggle feature for the given input is enabled, and a value of '1'
+		if it is not.
+		
+		Writing a value of '1' to the file turns the DirectSwitch toggle 
+		function on	for the given input in the group, while writing a value
+		of '0' turns the DirectSwitch toggle function for the corresponding 
+		input off.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/di_value
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the current status for one of the inputs on the
+		Neuron PLC group specified by the [1-9] address. Reading the file
+		returns a value of '0' if the corresponding digital input detects
+		a logical value of 0 and a value of '1'	if it detects a logical
+		value of 1.
+		
+		This file cannot be written to.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/counter
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the current number of debounced impulses read in
+		by the digital input on the Neuron PLC group specified by the [1-9]
+		address. This file can be both read and written to.
+		
+		Writing to the file sets the corresponding counter to the value which
+		is written into it.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/debounce
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the number of milliseconds for which an input is 
+		debounced, to prevent harmonics from accidentally triggering the
+		digital input on the Neuron PLC group specified by the [1-9] 
+		address. This file can be both read and written to; value of
+		'0' is special and indicates that no debouncing of the input
+		should be done.
+		
+		Writing a value of '1' to the file turns the DirectSwitch toggle 
+		function on	for the given input in the group, while writing a value
+		of '0' turns the DirectSwitch toggle function for the corresponding 
+		input off.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/sys_gpio_di_base
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip number which should be used
+		when the digital input is intended to be utilised as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/sys_gpio_di_prefix
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip prefix which should be used
+		when the digital input is intended to be utilised as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/di_[1-9]_[0-9][0-9]/sys_gpio_di_count
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip line count which should be
+		used when the digital input is intended to be used as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/pwm_duty_cycle
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file is used to set the PWM duty cycle of a digital input [0-9][1-9]
+		on the undelying UniPi Neuron PLC group [1-9]. It is relative to the
+		pwm_frequency_cycle	setting, i.e. for duty cycle of 50% one would use a
+		value which is exactly half of the pwm_frequency_cycle setting. This file
+		can be both read and written to; and -unlike the frequency options- is
+		unique for each output within the group.
+
+		The maximum allowable value is 65535, i.e. the limit of the underlying 16-bit
+		unsigned register.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/pwm_frequency_cycle
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file is used to set the PWM cycle frequency for the _entire_ group
+		[1-9] on the undelying UniPi Neuron PLC. It is used in conjunction with the
+		pwm_prescale setting, with the product of these two values used as a 
+		divider for the PWM clock. The PWM clock runs on 48Mhz by default; therefore
+		the allowable PWM frequencies range from 24Mhz to ~0.0111Hz. One should note
+		that at the high end of this range the PWM square wave will be quite irregular,
+		due to the time the underlying transistors need to change state. This file
+		can be both read and written to.
+
+		The maximum allowable value is 65535, i.e. the limit of the underlying 16-bit
+		unsigned register.
+
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/pwm_prescale
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file is used to set the PWM frequency prescaler for the _entire_ group
+		[1-9] on the undelying UniPi Neuron PLC. It is used in conjunction with the
+		pwm_frequency_cycle setting, with the product of these two values used as a 
+		divider for the PWM clock. It differs from pwm_frequency_cycle in that it has
+		no effect on the maximum precision of the pwm_duty_cycle setting; for this 
+		reason the pwm_frequency_cycle setting should be maximised where possible, 
+		while this setting should be minimised.
+		
+		The PWM clock runs on 48Mhz by default; therefore the allowable PWM frequencies
+		range from 24Mhz to ~0.0111Hz. One should note that at the high end of this
+		range the PWM square wave will be quite irregular, due to the time the PWM
+		transistors need to change state.  This file can be both read and written to. 
+
+		The maximum allowable value is 65535, i.e. the limit of the underlying 16-bit
+		unsigned register.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/do_value
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file contains the current status of one of the transistor outputs on
+		the	Neuron PLC group specified by the [1-9] address. Reading the file
+		returns a value of '0' if the corresponding digital output is set to
+		a logical value of 0 and a value of '1'	if the corresponding digital
+		output is set to a logical value of 1. 	This file can be both read and
+		written into.
+		
+		Writing to this file will change the digital output state according to the
+		rules above.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/sys_gpio_do_base
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip number which should be used
+		when the digital output is intended to be utilised as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/sys_gpio_do_prefix
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip prefix which should be used
+		when the digital output is intended to be utilised as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
+What:		/sys/devices/platform/unipi_plc/io_group[1-9]/do_[1-9]_[0-9][0-9]/sys_gpio_do_count
+Date:		February 2018
+Contact:	Tomas Knot <tomasknot@gmail.com>
+Description:
+		This file specifies the internal GPIO chip line count which should be
+		used when the digital output is intended to be used as an ordinary sysfs
+		GPIO device. This file can only be read.
+		
