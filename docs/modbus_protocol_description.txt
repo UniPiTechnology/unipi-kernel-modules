@@ -1,0 +1,56 @@
+
+The packets are a two-phase Modbus RTU, and the header is as follows, always unsigned:
+
+1st byte: Device index. Index of the board to use, either 1, 2 or 3. Modules available depend on module size (S – 1;M-1 and 2; L- 1,2 and 3), see the Modbus maps: https://files.unipi.technology/s/public?path=%2FProducts%2FNeuron%2FModbus%20Registers%20Maps#pdfviewer for details (note that you have to use the board-specific addressing mentioned in the document, the broadcast addressing is implemented in the TCP server software; I.e. to read the global register “1101” one would read register “1001” from board index 2)
+2nd and 3rd byte: currently unused
+4th byte: this value determines whether the operation is done in a single phase or split into two; use 1 unless flashing
+5th  and 6th bytes: frequency setting in a 16-bit value; use either 0 or 8000 for best results
+7th byte: response delay; 25 will work packets shorter than 60 bytes (sans the header), otherwise use 25 + ((header_length - 60)/2) 
+8th byte: device locking; this is used in flashing and will cause the device to switch to exclusive mode fort the current client. Use 0 for normal operation
+9th and 10th byte: currently unused
+
+
+As for the packet, it consists of two parts/phases; first part is always 6 bytes long and has the following format:
+1st byte: Modbus Operation Code, I.e. 0x04 for a read (look up simplymodbus for a detailed description of Modbus commands)
+2nd  and 3rd bytes: First target register/coil in a 16-bit format
+4th byte:  Number of coils/register the operation targets
+5th and 6th byte: Modbus CRC for the previous 4 bytes (see simplymodbus for details on how to compute this)
+
+The second part of the packet is standard Modbus RTU, again see the simplymodbus website for details.
+
+A packet + header to read registers 1000-1002 (the board identification packet) will look like this:
+Header - [0x01,0x00,0x00,0x01,0x00,0x00,0x19,0x00,0x00,0x00] +
+Packet p.1 – [0x04,0x0e,0xe8,0x03,0xa0,0xdd] +
+Packet p.2 – [0x04,0x00,0xe8,0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x12,0x16]
+
+Further to this, you can intercept the SPI packets (sans the header) by setting the DETAILED_DEBUG hash-define at the top of the neuronspi.c file to 1.
+
+--------------------------------------------------------------------------------------------------------------------------------
+================================================================================================================================
+--------------------------------------------------------------------------------------------------------------------------------
+
+1st byte: Modbus code
+	- 0x01 - read single coil; 0x02 - read single bit (parsed together)
+	- 0x03 - read holding register(s); 0x04 - read input register(s) (parsed together)
+	- 0x05 - write single coil
+	- 0x06 - write single register; 0x10 - write multiple registers (parsed together)
+	- 0x0F - write multiple coils
+	- 0x41 - write UART character
+	- 0x64 - write UART data
+	- 0x65 - read UART data
+2nd byte: Either data length of the payload/second phase (sans CRC) or the data to write for single phase ops
+3rd byte: Lower bytes of the address (mask 0x00FF)
+4th byte: Upper bytes of the address (mask 0xFF00)
+5th byte: CRC[1] of bytes 1 to 4, with initial value of 0; lower bytes (mask 0x00FF)
+6th byte: CRC[1] of bytes 1 to 4, with initial value of 0; upper bytes (mask 0xFF00)
+
+7th byte: Same as the 1st byte
+8th byte: Number of elements to read/write
+9th byte: Same as the 3rd byte
+10th byte: Same as the 4th byte
+11th - (N+10)th: Data to read for write, 0x00 for read [N is the content length in bytes]
+(N+11)th: CRC[2] of bytes 7 to (N+10), with initial value of CRC[1]; lower bytes (mask 0x00FF)
+(N+12)th: CRC[2] of bytes 7 to (N+10), with initial value of CRC[1]; upper bytes (mask 0xFF00)
+
+
+

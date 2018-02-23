@@ -1,0 +1,1 @@
+cmd_/root/kernel/test_module/neuronspi.ko := /root/rpitools/tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /root/kernel/test_module/neuronspi.ko /root/kernel/test_module/neuronspi.o /root/kernel/test_module/neuronspi.mod.o ;  true
