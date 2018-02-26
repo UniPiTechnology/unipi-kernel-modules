@@ -3,8 +3,8 @@
 # if necessary.
  
 MODULES_DIR_PATH = ${PWD}/modules/
-MODULES_LIST = neuron_spi/
-TRANSFER_MODULE = neuron_spi/
+MODULES_LIST = unipi/
+TRANSFER_MODULE = unipi/
 
 .PHONY: default
 default: symlink ;
