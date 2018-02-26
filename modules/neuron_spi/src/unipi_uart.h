@@ -15,8 +15,88 @@
 #ifndef MODULES_NEURON_SPI_SRC_UNIPI_UART_H_
 #define MODULES_NEURON_SPI_SRC_UNIPI_UART_H_
 
+#include <linux/bitops.h>
+#include <linux/clk.h>
+#include <linux/delay.h>
+#include <linux/device.h>
+#include <linux/gpio.h>
+#include <linux/gpio/driver.h>
+#include <linux/i2c.h>
+#include <linux/iio/iio.h>
+#include <uapi/linux/iio/types.h>
+#include <linux/iio/sysfs.h>
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/regmap.h>
+#include <linux/serial_core.h>
+#include <linux/serial.h>
+#include <linux/tty.h>
+#include <linux/tty_flip.h>
+#include <linux/spi/spi.h>
+#include <linux/leds.h>
+#include <linux/uaccess.h>
+#include <asm/termbits.h>
+#include <asm/gpio.h>
 
+#include "unipi_common.h"
+#include "unipi_platform.h"
 
+void neuronspi_uart_start_tx(struct uart_port *port);
+void neuronspi_uart_stop_tx(struct uart_port *port);
+void neuronspi_uart_stop_rx(struct uart_port *port);
+void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old);
+u32 neuronspi_uart_tx_empty(struct uart_port *port);
+void neuronspi_uart_break_ctl(struct uart_port *port, int break_state);
+void neuronspi_uart_shutdown(struct uart_port *port);
+s32 neuronspi_uart_startup(struct uart_port *port);
+s32 neuronspi_uart_request_port(struct uart_port *port);
+s32 neuronspi_uart_alloc_line(void);
+void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl);
+int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg);
+void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm);
+u32 neuronspi_uart_get_mctrl(struct uart_port *port);
+const char *neuronspi_uart_type(struct uart_port *port);
+void neuronspi_uart_null_void(struct uart_port *port);
+void neuronspi_uart_config_port(struct uart_port *port, int flags);
+s32 neuronspi_uart_verify_port(struct uart_port *port, struct serial_struct *s);
+void neuronspi_uart_pm(struct uart_port *port, u32 state,  u32 oldstate);
+s32 neuronspi_uart_poll(void *data);
+s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index);
+s32 neuronspi_uart_remove(struct neuronspi_uart_data *u_data);
+void neuronspi_uart_power(struct uart_port *port, s32 on);
+s32 neuronspi_uart_config_rs485(struct uart_port *port, struct serial_rs485 *rs485);
+void neuronspi_spi_uart_set_cflag(struct spi_device* spi_dev, u8 port, u32 to);
+u32 neuronspi_spi_uart_get_cflag(struct spi_device* spi_dev, u8 port);
+void neuronspi_uart_fifo_write(struct neuronspi_port *port, u8 to_send);
+void neuronspi_uart_fifo_read(struct uart_port *port, u32 rxlen);
+void neuronspi_uart_rx_proc(struct kthread_work *ws);
+void neuronspi_uart_tx_proc(struct kthread_work *ws);
+void neuronspi_uart_ist(struct kthread_work *ws);
+void neuronspi_uart_handle_tx(struct neuronspi_port *port);
+void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir);
+void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno);
 
+static const struct uart_ops neuronspi_uart_ops =
+{
+	.tx_empty			= neuronspi_uart_tx_empty,
+	.set_mctrl			= neuronspi_uart_set_mctrl,
+	.get_mctrl			= neuronspi_uart_get_mctrl,
+	.stop_tx			= neuronspi_uart_stop_tx,
+	.start_tx			= neuronspi_uart_start_tx,
+	.stop_rx			= neuronspi_uart_stop_rx,
+	.break_ctl			= neuronspi_uart_break_ctl,
+	.startup			= neuronspi_uart_startup,
+	.shutdown			= neuronspi_uart_shutdown,
+	.set_termios		= neuronspi_uart_set_termios,
+	.set_ldisc			= neuronspi_uart_set_ldisc,
+	.type				= neuronspi_uart_type,
+	.request_port		= neuronspi_uart_request_port,
+	.release_port		= neuronspi_uart_null_void,
+	.config_port		= neuronspi_uart_config_port,
+	.verify_port		= neuronspi_uart_verify_port,
+	.pm					= neuronspi_uart_pm,
+	.ioctl				= neuronspi_uart_ioctl,
+};
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_UART_H_ */
