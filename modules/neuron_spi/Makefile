@@ -14,18 +14,25 @@ C_SRC_FILES += unipi_iio.c
 C_SRC_FILES += unipi_gpio.c
 C_SRC_FILES += unipi_uart.c
 C_SRC_FILES += unipi_sysfs.c
+C_SRC_FILES += unipi_misc.c
+C_SRC_FILES += unipi_platform.c
 
 H_SRC_FILES = unipi_spi.h
 H_SRC_FILES += unipi_iio.h
 H_SRC_FILES += unipi_gpio.h
 H_SRC_FILES += unipi_uart.h
 H_SRC_FILES += unipi_sysfs.h
+H_SRC_FILES += unipi_misc.h
+H_SRC_FILES += unipi_platform.h
+H_SRC_FILES += unipi_common.h
 
 OBJ_FILES = src/unipi_spi.o
 OBJ_FILES += src/unipi_iio.o
 OBJ_FILES += src/unipi_gpio.o
 OBJ_FILES += src/unipi_uart.o
 OBJ_FILES += src/unipi_sysfs.o
+OBJ_FILES += src/unipi_misc.o
+OBJ_FILES += src/unipi_platform.o
 
 KERNEL_MODULE_NAME = unipi
 obj-m += ${KERNEL_MODULE_NAME}.o
