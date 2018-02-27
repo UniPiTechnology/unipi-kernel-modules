@@ -124,6 +124,7 @@ struct neuronspi_port
 	u8							dev_port;
 	u8							parmrk_enabled;
 	u64							parmrk_frame_delay;
+	s32							baud;
 };
 
 struct neuronspi_uart_data

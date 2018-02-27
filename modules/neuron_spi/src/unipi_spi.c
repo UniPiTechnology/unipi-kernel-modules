@@ -494,7 +494,6 @@ void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio
 	}
 }
 
-
 void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
 	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
@@ -517,7 +516,6 @@ void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct 
 	}
 }
 
-
 void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
 {
 	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
@@ -527,7 +525,6 @@ void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	if (val > 10000) val = 10000;
 	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg + ao_data->index, sec_true_val);
 }
-
 
 /*
  * NOTE: This function uses 64-bit fixed-point arithmetic,
@@ -559,7 +556,6 @@ void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_c
 	stm_true_val += stm_v_off;
 	do_div(stm_true_val, 10000);
 	*val = stm_true_val;
-
 }
 
 void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)

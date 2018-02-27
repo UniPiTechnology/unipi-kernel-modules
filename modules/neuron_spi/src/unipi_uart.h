@@ -46,7 +46,13 @@
 #include "unipi_common.h"
 #include "unipi_platform.h"
 
+/***************
+ * Definitions *
+ ***************/
 
+#define NEURONSPI_UART_IFLAGS_REGISTER 	502
+#define NEURONSPI_UART_LDISC_REGISTER 	503
+#define NEURONSPI_UART_TIMEOUT_REGISTER 504
 
 /*************************
  * Function Declarations *

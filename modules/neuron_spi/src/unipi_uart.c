@@ -61,17 +61,29 @@ u32 neuronspi_uart_get_mctrl(struct uart_port *port)
 
 int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg)
 {
+	u8 *inp_buf, *outp_buf;
+	int write_length;
+	struct neuronspi_port *n_port;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	n_port = to_neuronspi_port(port, port);
+	spi = neuronspi_s_dev[n_port->dev_index];
+	n_spi = spi_get_drvdata(spi);
 	switch (ioctl_code) {
 	case TIOCSETD: {
-		printk(KERN_INFO "NEURONSPI: IOCTL TIOCSETD\n");
+		printk(KERN_INFO "NEURONSPI: IOCTL TIOCSETD (processed via set_termios)\n");
 		return 1;
 	}
 	case 0x5480: {
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
+		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 		return 1;
 	}
 	case 0x5481: {
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
+		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 		return 1;
 	}
 	default: {
@@ -82,23 +94,36 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 
 void neuronspi_uart_set_parmrk(struct uart_port *port, int to)
 {
+	u8 *inp_buf, *outp_buf;
+	int write_length;
 	struct neuronspi_port *n_port;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
 	n_port = to_neuronspi_port(port, port);
+	spi = neuronspi_s_dev[n_port->dev_index];
+	n_spi = spi_get_drvdata(spi);
+	printk(KERN_INFO "NEURONSPI: SET PARMRK to %d\n", to);
+	write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_IFLAGS_REGISTER, &inp_buf, &outp_buf, to);
+	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 }
 
 void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
 {
+	u8 *inp_buf, *outp_buf;
+	int write_length;
 	struct neuronspi_port *n_port;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
 	n_port = to_neuronspi_port(port, port);
-	if (kterm->c_line == N_PROFIBUS_FDL) {
-		printk(KERN_INFO "NEURONSPI: PROFIBUS discipline set/n");
-	}
-	return;
+	spi = neuronspi_s_dev[n_port->dev_index];
+	n_spi = spi_get_drvdata(spi);
+	printk(KERN_INFO "NEURONSPI: PROFIBUS discipline set\n");
+	write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_LDISC_REGISTER, &inp_buf, &outp_buf, kterm->c_line);
+	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 }
 
 void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old)
 {
-	s32 baud;
 	struct neuronspi_port *n_port;
 	n_port = to_neuronspi_port(port, port);
 	if (old && old->c_iflag && old->c_iflag != termios->c_iflag) {
@@ -110,7 +135,7 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 	neuronspi_spi_uart_set_cflag(neuronspi_s_dev[n_port->dev_index], n_port->dev_port, termios->c_cflag);
 	if (old && termios && (old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)) {
 		if (termios->c_iflag & PARMRK) {
-			neuronspi_uart_set_parmrk(port, 1); 		// TODO: Re-enable line discipline once finished
+			neuronspi_uart_set_parmrk(port, 1);
 		} else {
 			neuronspi_uart_set_parmrk(port, 0);
 		}
@@ -121,8 +146,8 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 			neuronspi_uart_set_ldisc(port, termios);
 		}
 	}
-	baud = uart_get_baud_rate(port, termios, old, 2400, 115200);
-	uart_update_timeout(port, termios->c_cflag, baud);
+	n_port->baud = uart_get_baud_rate(port, termios, old, 2400, 115200);
+	uart_update_timeout(port, termios->c_cflag, n_port->baud);
 }
 
 s32 neuronspi_uart_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
@@ -130,8 +155,6 @@ s32 neuronspi_uart_config_rs485(struct uart_port *port, struct serial_rs485 *rs4
 	port->rs485 = *rs485;
 	return 0;
 }
-
-
 
 const char* neuronspi_uart_type(struct uart_port *port)
 {
@@ -182,7 +205,6 @@ s32 neuronspi_uart_alloc_line(void)
 	return i;
 }
 
-
 void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 {
 	u32 ch, flag, bytes_read, i;
@@ -232,7 +254,6 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		return;
 	}
 
-
 	/* Get length of data pending in circular buffer */
 	to_send = uart_circ_chars_pending(xmit);
 	if (likely(to_send)) {
@@ -252,9 +273,9 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		neuronspi_uart_fifo_write(port, to_send);
 	}
 
-
-	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
 		uart_write_wakeup(&port->port);
+	}
 }
 
 void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno)
@@ -277,8 +298,9 @@ void neuronspi_uart_ist(struct kthread_work *ws)
 
 void neuronspi_uart_config_port(struct uart_port *port, int flags)
 {
-	if (flags & UART_CONFIG_TYPE)
+	if (flags & UART_CONFIG_TYPE) {
 		port->type = PORT_NEURONSPI;
+	}
 }
 
 s32 neuronspi_uart_verify_port(struct uart_port *port,
