@@ -67,7 +67,7 @@
 #define NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(X)	((((X) + 15) >> 4) << 1)
 
 #define NEURONSPI_NO_INTERRUPT_MODELS_LEN 				3
-static const uint16_t NEURONSPI_NO_INTERRUPT_MODELS[NEURONSPI_NO_INTERRUPT_MODELS_LEN] = {
+static const u16 NEURONSPI_NO_INTERRUPT_MODELS[NEURONSPI_NO_INTERRUPT_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
 
@@ -87,8 +87,8 @@ enum neuron_num_attribute_type {
 struct neuronspi_devtype
 {
 	u8	name[10];
-	int32_t	nr_gpio;
-	int32_t	nr_uart;
+	s32	nr_gpio;
+	s32	nr_uart;
 };
 
 struct neuronspi_port
@@ -121,7 +121,7 @@ struct neuronspi_uart_data
 // Instantiated once
 struct neuronspi_char_driver
 {
-	int32_t major_number;
+	s32 major_number;
 	u8 *message;
 	u16 message_size;
 	u32 open_counter;
@@ -168,10 +168,10 @@ struct neuronspi_driver_data
 	u8 lower_board_id;
 	u8 upper_board_id;
 	u8 combination_id;
-	int32_t neuron_index;
-	uint16_t sysfs_regmap_target;
-	uint16_t sysfs_counter_target;
-	uint32_t ideal_frequency;
+	s32 neuron_index;
+	u16 sysfs_regmap_target;
+	u16 sysfs_counter_target;
+	u32 ideal_frequency;
 };
 
 struct neuronspi_di_driver {
@@ -250,7 +250,7 @@ struct neuronspi_led_driver
 	spinlock_t			lock;
 };
 
-static struct mutex neuronspi_master_mutex;
+extern struct mutex neuronspi_master_mutex;
 
 struct neuronspi_file_data
 {
@@ -258,7 +258,7 @@ struct neuronspi_file_data
 	struct mutex 		lock;
 	u8 					*send_buf;
 	u8 					*recv_buf;
-	uint32_t			message_len;
+	u32			message_len;
 };
 
 struct neuronspi_direct_acc
@@ -267,17 +267,13 @@ struct neuronspi_direct_acc
 	u32					size;
 };
 
-static struct neuronspi_char_driver neuronspi_cdrv =
-{
-	.dev = NULL
-};
-
-static struct spinlock* neuronspi_spi_w_spinlock;
-static u8 neuronspi_spi_w_flag = 1;
-static u8 neuronspi_probe_count = 0;
-static int neuronspi_model_id = -1;
-static spinlock_t neuronspi_probe_spinlock;
-static struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
-static struct task_struct *neuronspi_invalidate_thread;
+extern struct neuronspi_char_driver neuronspi_cdrv;
+extern struct spinlock* neuronspi_spi_w_spinlock;
+extern u8 neuronspi_spi_w_flag;
+extern u8 neuronspi_probe_count;
+extern int neuronspi_model_id;
+extern spinlock_t neuronspi_probe_spinlock;
+extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
+extern struct task_struct *neuronspi_invalidate_thread;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */

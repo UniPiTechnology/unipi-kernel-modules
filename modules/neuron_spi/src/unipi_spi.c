@@ -13,6 +13,8 @@ nologies
  *
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include "unipi_common.h"
 #include "unipi_sysfs.h"
 #include "unipi_uart.h"
@@ -22,8 +24,41 @@ nologies
 #include "unipi_misc.h"
 #include "unipi_spi.h"
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 MODULE_DEVICE_TABLE(of, neuronspi_id_match);
+
+struct spi_driver neuronspi_spi_driver =
+{
+	.driver =
+	{
+		.name			= NEURON_DRIVER_NAME,
+		.of_match_table	= of_match_ptr(neuronspi_id_match)
+	},
+	.probe				= neuronspi_spi_probe,
+	.remove				= neuronspi_spi_remove,
+};
+
+struct file_operations file_ops =
+{
+	.open 				= neuronspi_open,
+	.read 				= neuronspi_read,
+	.write 				= neuronspi_write,
+	.release 			= neuronspi_release,
+	.owner				= THIS_MODULE
+};
+
+struct neuronspi_char_driver neuronspi_cdrv =
+{
+	.dev = NULL
+};
+
+struct mutex neuronspi_master_mutex;
+struct spinlock* neuronspi_spi_w_spinlock;
+u8 neuronspi_spi_w_flag = 1;
+u8 neuronspi_probe_count = 0;
+int neuronspi_model_id = -1;
+spinlock_t neuronspi_probe_spinlock;
+struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
+struct task_struct *neuronspi_invalidate_thread;
 
 /***********************
  * End of Data section *
