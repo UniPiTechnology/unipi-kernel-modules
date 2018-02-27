@@ -42,6 +42,11 @@
 #include "unipi_common.h"
 #include "unipi_platform.h"
 
+
+extern struct neuronspi_uart_data* neuronspi_uart_glob_data;
+extern unsigned long neuronspi_lines;
+extern struct uart_driver* neuronspi_uart;
+
 void neuronspi_uart_start_tx(struct uart_port *port);
 void neuronspi_uart_stop_tx(struct uart_port *port);
 void neuronspi_uart_stop_rx(struct uart_port *port);

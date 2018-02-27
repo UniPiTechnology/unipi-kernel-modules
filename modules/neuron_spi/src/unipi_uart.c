@@ -16,6 +16,10 @@
 #include "unipi_uart.h"
 #include "unipi_spi.h"
 
+struct neuronspi_uart_data* neuronspi_uart_glob_data;
+unsigned long neuronspi_lines;
+struct uart_driver* neuronspi_uart;
+
 void neuronspi_uart_tx_proc(struct kthread_work *ws)
 {
 	struct neuronspi_port *port = to_neuronspi_port(ws, tx_work);

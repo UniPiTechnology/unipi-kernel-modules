@@ -50,7 +50,7 @@
 #include "unipi_iio.h"
 
 #define NEURONSPI_SLOWER_MODELS_LEN 					3
-static const uint16_t NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
+static const u16 NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
 
@@ -119,7 +119,7 @@ static const u8 NEURONSPI_SPI_LED_SET_MESSAGE[NEURONSPI_SPI_LED_SET_MESSAGE_LEN]
 };
 
 #define NEURONSPI_CRC16TABLE_LEN						256
-static const uint16_t NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
+static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
     0,  1408,  3968,  2560,  7040,  7680,  5120,  4480, 13184, 13824, 15360,
 14720, 10240, 11648, 10112,  8704, 25472, 26112, 27648, 27008, 30720, 32128,
 30592, 29184, 20480, 21888, 24448, 23040, 19328, 19968, 17408, 16768, 50048,
@@ -184,11 +184,6 @@ static const struct of_device_id neuronspi_id_match[] = {
  *******************/
 
 
-static struct neuronspi_uart_data* neuronspi_uart_glob_data;
-
-static unsigned long neuronspi_lines;
-
-static struct uart_driver* neuronspi_uart;
 
 /*************
  * Functions *
@@ -198,17 +193,15 @@ int neuronspi_open (struct inode *, struct file *);
 int neuronspi_release (struct inode *, struct file *);
 ssize_t neuronspi_read (struct file *, char *, size_t, loff_t *);
 ssize_t neuronspi_write (struct file *, const char *, size_t, loff_t *);
-int32_t char_register_driver(void);
-int32_t char_unregister_driver(void);
-
-irqreturn_t neuronspi_spi_irq(int32_t irq, void *dev_id);
-static int32_t neuronspi_spi_probe(struct spi_device *spi);
-static int32_t neuronspi_spi_remove(struct spi_device *spi);
-void neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, int32_t len, int32_t freq, int32_t delay, int32_t send_header);
-//uint16_t neuronspi_spi_crc(u8* inputstring, int32_t length, uint16_t initval);
-int32_t neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8 uart_index);
-void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, int32_t len, u8 uart_index);
-void neuronspi_spi_set_irqs(struct spi_device* spi_dev, uint16_t to);
+s32 char_register_driver(void);
+s32 char_unregister_driver(void);
+irqreturn_t neuronspi_spi_irq(s32 irq, void *dev_id);
+s32 neuronspi_spi_probe(struct spi_device *spi);
+s32 neuronspi_spi_remove(struct spi_device *spi);
+void neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header);
+s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8 uart_index);
+void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, u8 uart_index);
+void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
 void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brightness brightness, int id);
 void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
@@ -219,37 +212,19 @@ void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *iio_dev, struct iio_c
 void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
-int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, uint32_t id, int value);
-int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, uint32_t id, int value);
-int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, uint32_t id);
+int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
+int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
+int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
 
-int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, uint32_t id);
+int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
 
 /***********************
  * Function structures *
  ***********************/
 
 // Host driver struct
-static struct spi_driver neuronspi_spi_driver =
-{
-	.driver =
-	{
-		.name			= NEURON_DRIVER_NAME,
-		.of_match_table	= of_match_ptr(neuronspi_id_match)
-	},
-	.probe				= neuronspi_spi_probe,
-	.remove				= neuronspi_spi_remove,
-};
-
-static struct file_operations file_ops =
-{
-	.open 				= neuronspi_open,
-	.read 				= neuronspi_read,
-	.write 				= neuronspi_write,
-	.release 			= neuronspi_release,
-	.owner				= THIS_MODULE
-};
-
+extern struct spi_driver neuronspi_spi_driver;
+extern struct file_operations file_ops;
 
 static const struct regmap_bus neuronspi_regmap_bus =
 {
@@ -353,8 +328,6 @@ static const struct iio_chan_spec neuronspi_sec_ao_chan_spec[] = {
 	}
 };
 
-static struct platform_device *neuron_plc_dev;
-
 static const struct iio_info neuronspi_stm_ai_info = {
 	.read_raw = neuronspi_iio_stm_ai_read_raw,
 	.driver_module = THIS_MODULE,
@@ -391,19 +364,19 @@ static const struct iio_info neuronspi_sec_ao_info = {
  * Inline Functions    *
  ***********************/
 
-static __always_inline uint16_t neuronspi_spi_crc(u8* inputstring, int32_t length, uint16_t initval)
+static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 initval)
 {
-    int32_t i;
-    uint16_t result = initval;
+    s32 i;
+    u16 result = initval;
     for (i=0; i<length; i++) {
         result = (result >> 8) ^ NEURONSPI_CRC16TABLE[(result ^ inputstring[i]) & 0xff];
     }
     return result;
 }
 
-static __always_inline size_t neuronspi_spi_compose_single_coil_write(uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp, uint8_t data)
+static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start, u8 **buf_inp, u8 **buf_outp, u8 data)
 {
-	uint16_t crc1;
+	u16 crc1;
 	*buf_outp = kzalloc(6, GFP_KERNEL);
 	*buf_inp = kzalloc(6, GFP_KERNEL);
 	(*buf_inp)[0] = 0x05;
@@ -415,9 +388,9 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_write(uint16_t s
 	return 6;
 }
 
-static __always_inline size_t neuronspi_spi_compose_single_coil_read(uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp)
+static __always_inline size_t neuronspi_spi_compose_single_coil_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(14, GFP_KERNEL);
 	*buf_inp = kzalloc(14, GFP_KERNEL);
 	(*buf_inp)[0] = 0x01;
@@ -432,9 +405,9 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_read(uint16_t st
 	return 14;
 }
 
-static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(uint8_t number, uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp, uint8_t *data)
+static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
 	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
 	(*buf_inp)[0] = 0x0F;
@@ -451,9 +424,9 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(uint8_t 
 	return 12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 }
 
-static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(uint8_t number, uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp)
+static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
 	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
 	(*buf_inp)[0] = 0x01;
@@ -468,9 +441,9 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(uint8_t n
 	return 12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 }
 
-static __always_inline size_t neuronspi_spi_compose_single_register_write(uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp, uint16_t data)
+static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 start, u8 **buf_inp, u8 **buf_outp, u16 data)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(14, GFP_KERNEL);
 	*buf_inp = kzalloc(14, GFP_KERNEL);
 	(*buf_inp)[0] = 0x06;
@@ -488,9 +461,9 @@ static __always_inline size_t neuronspi_spi_compose_single_register_write(uint16
 	return 14;
 }
 
-static __always_inline size_t neuronspi_spi_compose_single_register_read(uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp)
+static __always_inline size_t neuronspi_spi_compose_single_register_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(14, GFP_KERNEL);
 	*buf_inp = kzalloc(14, GFP_KERNEL);
 	(*buf_inp)[0] = 0x03;
@@ -506,9 +479,9 @@ static __always_inline size_t neuronspi_spi_compose_single_register_read(uint16_
 	return 14;
 }
 
-static __always_inline size_t neuronspi_spi_compose_multiple_register_write(uint8_t number, uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp, uint8_t *data)
+static __always_inline size_t neuronspi_spi_compose_multiple_register_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
 	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
 	(*buf_inp)[0] = 0x10;
@@ -525,9 +498,9 @@ static __always_inline size_t neuronspi_spi_compose_multiple_register_write(uint
 	return 12 + (number * 2);
 }
 
-static __always_inline size_t neuronspi_spi_compose_multiple_register_read(uint8_t number, uint16_t start, uint8_t **buf_inp, uint8_t **buf_outp)
+static __always_inline size_t neuronspi_spi_compose_multiple_register_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
-	uint16_t crc1, crc2;
+	u16 crc1, crc2;
 	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
 	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
 	(*buf_inp)[0] = 0x03;
