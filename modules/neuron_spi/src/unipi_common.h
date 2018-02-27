@@ -1,12 +1,23 @@
 /*
- * unipi_common.h
+ * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * Author: Tomas Knot <tomasknot@gmail.com>
  *
- *  Created on: 26 Feb 2018
- *      Author: Tom Knot <knot@faster.cz>
+ *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
+ *  which was in turn based on max310x.c, by Alexander Shiyan <shc_work@mail.ru>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  */
 
 #ifndef MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_
 #define MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_
+
+/************
+ * Includes *
+ ************/
 
 #include <linux/bitops.h>
 #include <linux/clk.h>
@@ -35,8 +46,8 @@
 /***************
  * Definitions *
  ***************/
-#define NEURONSPI_SCHED_REQUIRED 0 // Older kernels do not require sched/types to be specifically imported
 
+#define NEURONSPI_SCHED_REQUIRED 0 // Older kernels do not require sched/types to be specifically imported
 #define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.02:12:02:2018"
 
 #define NEURONSPI_MAX_DEVS				3
@@ -55,7 +66,6 @@
 #define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 
-
 #define NEURON_DEVICE_NAME 				"neuronspi"
 #define NEURON_DEVICE_CLASS 			"modbus_spi"
 #define NEURON_DRIVER_NAME				"NEURONSPI"
@@ -66,10 +76,18 @@
 
 #define NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(X)	((((X) + 15) >> 4) << 1)
 
+/********************
+ * Module Constants *
+ ********************/
+
 #define NEURONSPI_NO_INTERRUPT_MODELS_LEN 				3
 static const u16 NEURONSPI_NO_INTERRUPT_MODELS[NEURONSPI_NO_INTERRUPT_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
+
+/*******************
+ * Data Structures *
+ *******************/
 
 enum neuron_str_attribute_type {
 		NEURON_SATTR_MODEL,
@@ -117,7 +135,6 @@ struct neuronspi_uart_data
 	u8								p_count;
 };
 
-
 // Instantiated once
 struct neuronspi_char_driver
 {
@@ -128,7 +145,6 @@ struct neuronspi_char_driver
 	struct class* driver_class;
 	struct device* dev;
 };
-
 
 // Instantiated once per SPI device
 struct neuronspi_driver_data
@@ -250,8 +266,6 @@ struct neuronspi_led_driver
 	spinlock_t			lock;
 };
 
-extern struct mutex neuronspi_master_mutex;
-
 struct neuronspi_file_data
 {
 	struct spi_device** spi_device;
@@ -267,13 +281,19 @@ struct neuronspi_direct_acc
 	u32					size;
 };
 
+/*********************
+ * Data Declarations *
+ *********************/
+
+extern struct mutex neuronspi_master_mutex;
 extern struct neuronspi_char_driver neuronspi_cdrv;
 extern struct spinlock* neuronspi_spi_w_spinlock;
+extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
+extern struct task_struct *neuronspi_invalidate_thread;
+
 extern u8 neuronspi_spi_w_flag;
 extern u8 neuronspi_probe_count;
 extern int neuronspi_model_id;
 extern spinlock_t neuronspi_probe_spinlock;
-extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
-extern struct task_struct *neuronspi_invalidate_thread;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */

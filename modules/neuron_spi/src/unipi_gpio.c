@@ -12,15 +12,25 @@
  *
  */
 
+/************
+ * Includes *
+ ************/
+
 #include "unipi_gpio.h"
 #include "unipi_spi.h"
+
+/************************
+ * Non-static Functions *
+ ************************/
 
 int neuronspi_gpio_di_direction_input(struct gpio_chip *chip, unsigned offset) {
 	return 0;
 }
+
 int neuronspi_gpio_di_direction_output(struct gpio_chip *chip, unsigned offset, int value) {
 	return -EINVAL;
 }
+
 int	neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset) {
 	struct neuronspi_di_driver *n_di = gpiochip_get_data(chip);
 	struct spi_device *spi = n_di->spi;
@@ -30,6 +40,7 @@ int	neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset) {
 int neuronspi_gpio_do_direction_output(struct gpio_chip *chip, unsigned offset, int value) {
 	return 0;
 }
+
 void neuronspi_gpio_do_set(struct gpio_chip *chip, unsigned offset, int value) {
 	struct neuronspi_do_driver *n_do = gpiochip_get_data(chip);
 	struct spi_device *spi = n_do->spi;
@@ -39,6 +50,7 @@ void neuronspi_gpio_do_set(struct gpio_chip *chip, unsigned offset, int value) {
 int neuronspi_gpio_ro_direction_output(struct gpio_chip *chip, unsigned offset, int value) {
 	return 0;
 }
+
 void neuronspi_gpio_ro_set(struct gpio_chip *chip, unsigned offset, int value) {
 	struct neuronspi_ro_driver *n_ro = gpiochip_get_data(chip);
 	struct spi_device *spi = n_ro->spi;

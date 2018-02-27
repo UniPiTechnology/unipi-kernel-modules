@@ -15,6 +15,10 @@
 #ifndef MODULES_NEURON_SPI_SRC_UNIPI_IIO_H_
 #define MODULES_NEURON_SPI_SRC_UNIPI_IIO_H_
 
+/************
+ * Includes *
+ ************/
+
 #include <linux/bitops.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -40,6 +44,10 @@
 #include <asm/gpio.h>
 
 #include "unipi_common.h"
+
+/*************************
+ * Function Declarations *
+ *************************/
 
 int neuronspi_iio_stm_ai_read_raw(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 int neuronspi_iio_stm_ao_read_raw(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);

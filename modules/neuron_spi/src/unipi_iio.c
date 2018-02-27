@@ -12,9 +12,16 @@
  *
  */
 
+/************
+ * Includes *
+ ************/
+
 #include "unipi_iio.h"
 #include "unipi_spi.h"
 
+/************************
+ * Non-static Functions *
+ ************************/
 
 int neuronspi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask) {
 	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);

@@ -15,10 +15,9 @@
 #ifndef MODULES_NEURON_SPI_SRC_UNIPI_SPI_H_
 #define MODULES_NEURON_SPI_SRC_UNIPI_SPI_H_
 
-
-#define NEURONSPI_SCHED_REQUIRED 0 // Older kernels do not require sched/types to be specifically imported
-
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.02:12:02:2018"
+/************
+ * Includes *
+ ************/
 
 #include <linux/bitops.h>
 #include <linux/clk.h>
@@ -48,6 +47,10 @@
 #include "unipi_platform.h"
 #include "unipi_sysfs.h"
 #include "unipi_iio.h"
+
+/********************
+ * Module Constants *
+ ********************/
 
 #define NEURONSPI_SLOWER_MODELS_LEN 					3
 static const u16 NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
@@ -146,18 +149,15 @@ static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
  3458,  1922,   514
 };
 
-
-
-/********************
- * Module Constants *
- ********************/
-
 static const struct of_device_id neuronspi_id_match[] = {
 		{.compatible = "unipi,neuron"},
 		{.compatible = NEURON_DEVICE_NAME},
 		{}
 };
 
+/***************
+ * Definitions *
+ ***************/
 
 #define NEURON_INT_RX_NOT_EMPTY 			0x1
 #define NEURON_INT_TX_FINISHED  			0x2
@@ -179,15 +179,9 @@ static const struct of_device_id neuronspi_id_match[] = {
 #define MODBUS_MAX_WR_WRITE_REGISTERS       121
 #define MODBUS_MAX_WR_READ_REGISTERS        125
 
-/*******************
- * Data structures *
- *******************/
-
-
-
-/*************
- * Functions *
- *************/
+/*************************
+ * Function Declarations *
+ *************************/
 
 int neuronspi_open (struct inode *, struct file *);
 int neuronspi_release (struct inode *, struct file *);
@@ -215,7 +209,6 @@ void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
-
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
 
 /***********************
@@ -360,9 +353,9 @@ static const struct iio_info neuronspi_sec_ao_info = {
 #define to_uart_port(p,e)	((container_of((p), struct uart_port, e)))
 
 
-/***********************
- * Inline Functions    *
- ***********************/
+/*********************
+ * In-line Functions *
+ *********************/
 
 static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 initval)
 {
