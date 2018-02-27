@@ -12,8 +12,15 @@
  *
  */
 
+/************
+ * Includes *
+ ************/
+
 #include "unipi_sysfs.h"
 
+/************************
+ * Static Functions *
+ ************************/
 
 static ssize_t neuronspi_show_model(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -912,6 +919,9 @@ err_end:
 	return count;
 }
 
+/**********************************
+ * Function Structure Definitions *
+ **********************************/
 
 static DEVICE_ATTR(model_name, 0440, neuronspi_show_model, NULL);
 static DEVICE_ATTR(sys_eeprom_name, 0440, neuronspi_show_eeprom, NULL);

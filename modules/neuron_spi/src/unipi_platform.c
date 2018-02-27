@@ -1,19 +1,27 @@
 /*
- * unipi_platform.c
+ * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * Author: Tomas Knot <tomasknot@gmail.com>
  *
- *  Created on: 23 Feb 2018
- *      Author: Tom Knot <knot@faster.cz>
+ *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
+ *  which was in turn based on max310x.c, by Alexander Shiyan <shc_work@mail.ru>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  */
+/************
+ * Includes *
+ ************/
 
 #include "unipi_platform.h"
 #include "unipi_spi.h"
 #include "unipi_common.h"
 
-struct platform_device *neuron_plc_dev;
-
-/*********************
- * Board Definitions *
- *********************/
+/***************************
+ * Static Data Definitions *
+ ***************************/
 
 // B_1000 (S103)
 #define NEURONSPI_BOARD_B1000_HW_DEFINITION_BLOCK_SIZE 57
@@ -1333,9 +1341,11 @@ static u32 NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 }
 struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_COMBINATION[] = {NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION};
 
-/*********************
- * Model Definitions *
- *********************/
+/********************
+ * Data Definitions *
+ ********************/
+
+struct platform_device *neuron_plc_dev;
 
 struct neuronspi_board_combination NEURONSPI_MODEL_S103_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S103_HW_DEFINITION_BOARD_SIZE] = {
 		NEURONSPI_BOARD_B1000_HW_DEFINITION
@@ -1468,6 +1478,10 @@ struct neuronspi_model_definition NEURONSPI_MODELTABLE[NEURONSPI_MODELTABLE_LEN]
 				.combination_count = 3, .combinations = NEURONSPI_MODEL_L513_HW_DEFINITION_BOARD}
 };
 
+/************************
+ * Non-static Functions *
+ ************************/
+
 s32 neuronspi_regmap_invalidate(void *data)
 {
 	int i;
@@ -1559,7 +1573,8 @@ void neuronspi_regmap_invalidate_device(struct regmap *reg_map, struct neuronspi
 	}
 }
 
-int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *val) {
+int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *val)
+{
 	struct spi_device *spi = context;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
@@ -1574,12 +1589,14 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
 	return 0;
 }
 
-int neuronspi_regmap_hw_write(void *context, const void *data, size_t count) {
+int neuronspi_regmap_hw_write(void *context, const void *data, size_t count)
+{
 	BUG_ON(count < 1);
 	return neuronspi_regmap_hw_gather_write(context, data, 1, data + 1, count - 1);
 }
 
-int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val) {
+int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val)
+{
 	struct spi_device *spi = context;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
@@ -1594,7 +1611,8 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	return 0;
 }
 
-int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size, const void *val, size_t val_size) {
+int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size, const void *val, size_t val_size)
+{
 	u16 *mb_reg_buf = (u16*)reg;
 	u32 *mb_val_buf = (u32*)val;
 	struct spi_device *spi = context;

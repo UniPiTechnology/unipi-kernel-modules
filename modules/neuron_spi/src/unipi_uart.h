@@ -15,6 +15,10 @@
 #ifndef MODULES_NEURON_SPI_SRC_UNIPI_UART_H_
 #define MODULES_NEURON_SPI_SRC_UNIPI_UART_H_
 
+/************
+ * Includes *
+ ************/
+
 #include <linux/bitops.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -43,9 +47,10 @@
 #include "unipi_platform.h"
 
 
-extern struct neuronspi_uart_data* neuronspi_uart_glob_data;
-extern unsigned long neuronspi_lines;
-extern struct uart_driver* neuronspi_uart;
+
+/*************************
+ * Function Declarations *
+ *************************/
 
 void neuronspi_uart_start_tx(struct uart_port *port);
 void neuronspi_uart_stop_tx(struct uart_port *port);
@@ -81,6 +86,14 @@ void neuronspi_uart_ist(struct kthread_work *ws);
 void neuronspi_uart_handle_tx(struct neuronspi_port *port);
 void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir);
 void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno);
+
+/*********************
+ * Data Declarations *
+ *********************/
+
+extern struct neuronspi_uart_data* neuronspi_uart_glob_data;
+extern unsigned long neuronspi_lines;
+extern struct uart_driver* neuronspi_uart;
 
 static const struct uart_ops neuronspi_uart_ops =
 {

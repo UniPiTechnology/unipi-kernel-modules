@@ -12,13 +12,24 @@
  *
  */
 
+/************
+ * Includes *
+ ************/
 
 #include "unipi_uart.h"
 #include "unipi_spi.h"
 
+/********************
+ * Data Definitions *
+ ********************/
+
 struct neuronspi_uart_data* neuronspi_uart_glob_data;
 unsigned long neuronspi_lines;
 struct uart_driver* neuronspi_uart;
+
+/************************
+ * Non-static Functions *
+ ************************/
 
 void neuronspi_uart_tx_proc(struct kthread_work *ws)
 {
@@ -42,18 +53,10 @@ u32 neuronspi_uart_tx_empty(struct uart_port *port)
 
 u32 neuronspi_uart_get_mctrl(struct uart_port *port)
 {
-	/* DCD and DSR are not wired and CTS/RTS is handled automatically
-	 * so just indicate DSR and CAR asserted
-	 */
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_DEBUG "NEURONSPI: UART MCTRL Get\n");
 #endif
 	return TIOCM_DSR | TIOCM_CAR;
-}
-
-void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl)
-{
-	/* Do Nothing */
 }
 
 int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg)
@@ -93,11 +96,6 @@ void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
 	return;
 }
 
-void neuronspi_uart_break_ctl(struct uart_port *port, int break_state)
-{
-
-}
-
 void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old)
 {
 	s32 baud;
@@ -123,7 +121,6 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 			neuronspi_uart_set_ldisc(port, termios);
 		}
 	}
-
 	baud = uart_get_baud_rate(port, termios, old, 2400, 115200);
 	uart_update_timeout(port, termios->c_cflag, baud);
 }
@@ -134,30 +131,7 @@ s32 neuronspi_uart_config_rs485(struct uart_port *port, struct serial_rs485 *rs4
 	return 0;
 }
 
-// Initialise the module
-s32 neuronspi_uart_startup(struct uart_port *port)
-{
-	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
-	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
-	neuronspi_spi_set_irqs(spi, 0x5);
-	if (d_data->poll_thread != NULL) {
-		wake_up_process(d_data->poll_thread);
-	} else if (d_data->no_irq) {
-		d_data->poll_thread = kthread_create(neuronspi_uart_poll, (void *)d_data, "UART_poll_thread");
-	}
-	neuronspi_uart_power(port, 1);
-	// TODO: /* Reset FIFOs*/
-#if NEURONSPI_DETAILED_DEBUG > 0
-	printk(KERN_DEBUG "NEURONSPI: UART Startup\n");
-#endif
-	return 0;
-}
 
-void neuronspi_uart_shutdown(struct uart_port *port)
-{
-    neuronspi_uart_power(port, 0);
-}
 
 const char* neuronspi_uart_type(struct uart_port *port)
 {
@@ -208,10 +182,6 @@ s32 neuronspi_uart_alloc_line(void)
 	return i;
 }
 
-void neuronspi_uart_power(struct uart_port *port, s32 on)
-{
-    /* Do nothing */
-}
 
 void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 {
@@ -325,11 +295,6 @@ s32 neuronspi_uart_verify_port(struct uart_port *port,
 void neuronspi_uart_pm(struct uart_port *port, u32 state, u32 oldstate)
 {
 	neuronspi_uart_power(port, (state == UART_PM_STATE_ON) ? 1 : 0);
-}
-
-void neuronspi_uart_null_void(struct uart_port *port)
-{
-	/* Do nothing */
 }
 
 s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
@@ -494,17 +459,6 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 	kfree(send_buf);
 }
 
-
-void neuronspi_uart_stop_tx(struct uart_port *port)
-{
-    // ToDo : create new opcode / coil?
-}
-
-void neuronspi_uart_stop_rx(struct uart_port *port)
-{
-    // ToDo : create new opcode / coil?
-}
-
 void neuronspi_uart_start_tx(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port,port);
@@ -531,4 +485,59 @@ s32 neuronspi_uart_poll(void *data)
 		}
 	}
 	return 0;
+}
+
+// Initialise the driver
+s32 neuronspi_uart_startup(struct uart_port *port)
+{
+	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
+	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
+	neuronspi_spi_set_irqs(spi, 0x5);
+	if (d_data->poll_thread != NULL) {
+		wake_up_process(d_data->poll_thread);
+	} else if (d_data->no_irq) {
+		d_data->poll_thread = kthread_create(neuronspi_uart_poll, (void *)d_data, "UART_poll_thread");
+	}
+	neuronspi_uart_power(port, 1);
+	// TODO: /* Reset FIFOs*/
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_DEBUG "NEURONSPI: UART Startup\n");
+#endif
+	return 0;
+}
+
+void neuronspi_uart_shutdown(struct uart_port *port)
+{
+    neuronspi_uart_power(port, 0);
+}
+
+/*******************
+ * Empty functions *
+ *******************/
+
+void neuronspi_uart_stop_tx(struct uart_port *port)
+{
+	/* Do Nothing */
+}
+
+void neuronspi_uart_stop_rx(struct uart_port *port)
+{
+	/* Do Nothing */
+}
+void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl)
+{
+	/* Do Nothing */
+}
+void neuronspi_uart_break_ctl(struct uart_port *port, int break_state)
+{
+	/* Do Nothing */
+}
+void neuronspi_uart_power(struct uart_port *port, s32 on)
+{
+    /* Do nothing */
+}
+void neuronspi_uart_null_void(struct uart_port *port)
+{
+	/* Do nothing */
 }

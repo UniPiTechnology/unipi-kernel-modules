@@ -15,6 +15,10 @@ nologies
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
+/************
+ * Includes *
+ ************/
+
 #include "unipi_common.h"
 #include "unipi_sysfs.h"
 #include "unipi_uart.h"
@@ -23,6 +27,10 @@ nologies
 #include "unipi_iio.h"
 #include "unipi_misc.h"
 #include "unipi_spi.h"
+
+/********************
+ * Data Definitions *
+ ********************/
 
 MODULE_DEVICE_TABLE(of, neuronspi_id_match);
 
@@ -60,9 +68,9 @@ spinlock_t neuronspi_probe_spinlock;
 struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 struct task_struct *neuronspi_invalidate_thread;
 
-/***********************
- * End of Data section *
- ***********************/
+/************************
+ * Non-static Functions *
+ ************************/
 
 int neuronspi_open (struct inode *inode_p, struct file *file_p)
 {
@@ -421,7 +429,6 @@ u8 neuronspi_spi_uart_get_ldisc(struct spi_device* spi_dev, u8 port)
 	if (d_data->slower_model) {
 		frequency = NEURONSPI_SLOWER_FREQ;
 	}
-
 	neuronspi_spi_compose_single_register_read(503, &message_buf, &recv_buf);
 	if (!d_data->reserved_device) {
 		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 35, 1);
@@ -449,7 +456,6 @@ void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio
 	u32 sec_ai_val_h = 0;
 	u32 sec_ai_val_m = 0;
 	u8 sec_ai_exp = 0;
-
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_h);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_l);
 	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
@@ -604,15 +610,12 @@ void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	u32 stm_v_inp_ref = 0;
 	u32 stm_v_err = 0;
 	u32 stm_v_off = 0;
-
 	u64 stm_true_val = val;
 	u64 stm_true_ref = 0;
-
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_vol_err, &stm_v_err);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_vol_off, &stm_v_off);
-
 	stm_true_ref = ((u64)stm_v_int_ref) * (99000 + stm_v_err) * 1000;
 	stm_v_inp_ref = stm_v_inp_ref * 10000;
 	stm_true_val = ((stm_true_val * 10000) - stm_v_off) * 4095;
@@ -620,9 +623,7 @@ void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	stm_v_inp_ref = stm_true_ref;
 	do_div(stm_true_val, stm_v_inp_ref);
 	do_div(stm_true_val, 10000);
-
 	if (stm_true_val > 4095) stm_true_val = 4095;
-
 	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg, (unsigned int) stm_true_val);
 }
 
@@ -1559,7 +1560,7 @@ static s32 __init neuronspi_init(void)
 	}
 	return ret;
 }
-module_init(neuronspi_init);
+__attribute__((unused)) module_init(neuronspi_init);
 
 static void __exit neuronspi_exit(void)
 {
@@ -1583,7 +1584,7 @@ static void __exit neuronspi_exit(void)
 	kfree(neuronspi_spi_w_spinlock);
 	printk(KERN_INFO "NEURONSPI: SPI Driver Unregistered\n");
 }
-module_exit(neuronspi_exit);
+__attribute__((unused)) module_exit(neuronspi_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tomas Knot <knot@faster.cz>");
