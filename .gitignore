@@ -1,4 +1,5 @@
 *.o
 *.ko
 *.rc
-*/bin/*
+*/*/bin/*
+!*/*/bin/.dummy
