@@ -31,7 +31,7 @@ int neuronspi_gpio_di_direction_output(struct gpio_chip *chip, unsigned offset, 
 	return -EINVAL;
 }
 
-int	neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset) {
+int neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset) {
 	struct neuronspi_di_driver *n_di = gpiochip_get_data(chip);
 	struct spi_device *spi = n_di->spi;
 	return neuronspi_spi_gpio_di_get(spi, n_di->di_index);
