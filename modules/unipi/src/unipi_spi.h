@@ -19,30 +19,6 @@
  * Includes *
  ************/
 
-#include <linux/bitops.h>
-#include <linux/clk.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/gpio.h>
-#include <linux/gpio/driver.h>
-#include <linux/i2c.h>
-#include <linux/iio/iio.h>
-#include <uapi/linux/iio/types.h>
-#include <linux/iio/sysfs.h>
-#include <linux/module.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/regmap.h>
-#include <linux/serial_core.h>
-#include <linux/serial.h>
-#include <linux/tty.h>
-#include <linux/tty_flip.h>
-#include <linux/spi/spi.h>
-#include <linux/leds.h>
-#include <linux/uaccess.h>
-#include <asm/termbits.h>
-#include <asm/gpio.h>
-
 #include "unipi_common.h"
 #include "unipi_platform.h"
 #include "unipi_sysfs.h"
