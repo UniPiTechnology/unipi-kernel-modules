@@ -956,7 +956,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 			return -ENODEV;
 		}
 		of_property_read_u32_array(spi->dev.of_node, "neuron-board-index", &(n_spi->neuron_index), 1);
-		//print_device_tree_node(spi->dev.of_node->parent, 0);
+		of_property_read_u32_array(spi->dev.of_node, "neuron-probe-always-succeeds", &(n_spi->probe_always_succeeds), 1);
 		devtype = (struct neuronspi_devtype *)of_id->data;
 #if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "DEVICE TREE NODE FOUND %d\n", n_spi->neuron_index);
@@ -1021,7 +1021,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 				}
 			}
 		}
-	} else {
+	} else if (!n_spi->probe_always_succeeds) {
 		ret = -5;
 		kfree(n_spi);
 		printk(KERN_INFO "NEURONSPI: Probe did not detect a valid Neuron device on CS %d\n", spi->chip_select);
@@ -1066,10 +1066,11 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->first_probe_reply[15] << 8 | n_spi->first_probe_reply[14], n_spi->first_probe_reply[17] << 8 | n_spi->first_probe_reply[16],
 				n_spi->first_probe_reply[19] << 8 | n_spi->first_probe_reply[18]);
 	}
-	printk(KERN_INFO "NEURONSPI: Neuron device %s on CS %d uses SPI communication freq. %d Hz\n",
-			NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
-			spi->chip_select, n_spi->ideal_frequency);
-
+	if (n_spi->combination_id != 0xFF) {
+		printk(KERN_INFO "NEURONSPI: Neuron device %s on CS %d uses SPI communication freq. %d Hz\n",
+				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
+				spi->chip_select, n_spi->ideal_frequency);
+	}
 	n_spi->reg_map = regmap_init(&(spi->dev), &neuronspi_regmap_bus, spi, &neuronspi_regmap_config_default);
 	spin_lock_init(&n_spi->sysfs_regmap_lock);
 	if (n_spi->features) {
@@ -1134,7 +1135,6 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
 	spi_set_drvdata(neuronspi_s_dev[n_spi->neuron_index], n_spi);
 	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {
-		printk(KERN_INFO "NEURONSPI: MAXPROBECOUNT\n");
 		neuronspi_model_id = neuronspi_find_model_id(neuronspi_probe_count);
 	}
 	spin_unlock(&neuronspi_probe_spinlock);
@@ -1148,7 +1148,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 	n_spi->platform_name[8] = n_spi->neuron_index + '1';
 	n_spi->board_device = platform_device_alloc(n_spi->platform_name, -1);
 	n_spi->board_device->dev.parent = &(neuron_plc_dev->dev);
-	n_spi->board_device->dev.groups = neuron_board_attr_groups;
+	if (n_spi->combination_id != 0xFF) {
+		n_spi->board_device->dev.groups = neuron_board_attr_groups;
+	}
 	n_spi->board_device->dev.driver = &neuronspi_spi_driver.driver;
 	platform_device_add(n_spi->board_device);
 	platform_set_drvdata(n_spi->board_device, n_spi);
@@ -1556,7 +1558,8 @@ static s32 __init neuronspi_init(void)
 	}
 	return ret;
 }
-__attribute__((unused)) module_init(neuronspi_init);
+
+module_init(neuronspi_init);
 
 static void __exit neuronspi_exit(void)
 {
@@ -1580,7 +1583,7 @@ static void __exit neuronspi_exit(void)
 	kfree(neuronspi_spi_w_spinlock);
 	printk(KERN_INFO "NEURONSPI: SPI Driver Unregistered\n");
 }
-__attribute__((unused)) module_exit(neuronspi_exit);
+module_exit(neuronspi_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tomas Knot <knot@faster.cz>");
