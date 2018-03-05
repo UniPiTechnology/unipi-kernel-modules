@@ -172,6 +172,7 @@ struct neuronspi_driver_data
 	struct neuronspi_board_regstart_table *regstart_table;
 	struct spinlock sysfs_regmap_lock;
 	char platform_name[sizeof("io_group0")];
+	u32 probe_always_succeeds;
 	u8 *send_buf;
 	u8 *recv_buf;
 	u8 *first_probe_reply;
