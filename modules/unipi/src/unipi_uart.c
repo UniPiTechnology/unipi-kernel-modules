@@ -78,12 +78,16 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
+		kfree(inp_buf);
+		kfree(outp_buf);
 		return 1;
 	}
 	case 0x5481: {
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
+		kfree(inp_buf);
+		kfree(outp_buf);
 		return 1;
 	}
 	default: {
@@ -105,6 +109,8 @@ void neuronspi_uart_set_parmrk(struct uart_port *port, int to)
 	printk(KERN_INFO "NEURONSPI: SET PARMRK to %d\n", to);
 	write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_IFLAGS_REGISTER, &inp_buf, &outp_buf, to);
 	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
+	kfree(inp_buf);
+	kfree(outp_buf);
 }
 
 void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
@@ -120,6 +126,8 @@ void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
 	printk(KERN_INFO "NEURONSPI: PROFIBUS discipline set\n");
 	write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_LDISC_REGISTER, &inp_buf, &outp_buf, kterm->c_line);
 	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
+	kfree(inp_buf);
+	kfree(outp_buf);
 }
 
 void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old)
