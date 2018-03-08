@@ -91,7 +91,7 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		return 1;
 	}
 	default: {
-		return 0;
+		return -ENOIOCTLCMD;
 	}
 	}
 }

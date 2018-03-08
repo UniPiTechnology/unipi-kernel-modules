@@ -48,7 +48,7 @@
  ***************/
 
 #define NEURONSPI_SCHED_REQUIRED 0 // Older kernels do not require sched/types to be specifically imported
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.02:12:02:2018"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.03:08:03:2018"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				128
