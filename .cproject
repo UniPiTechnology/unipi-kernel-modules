@@ -142,7 +142,11 @@
 		<project id="neuron_kernel.null.947967163" name="neuron_kernel"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/NeuronKernelSource"/>
+		</configuration>
+	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192;cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192.2047933360;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.472282998;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.451005594">
