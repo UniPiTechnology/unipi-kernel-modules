@@ -3,7 +3,7 @@
 # if necessary.
  
 SYMLINK_DIR_PATH = /run/kernel/neuron_spi
-LINUX_DIR_PATH = /root/bokula/linux
+LINUX_DIR_PATH = /root/linux/4_9_41
 SRC_DIR_PATH = $(PWD)/src
 BIN_DIR_PATH = $(PWD)/bin
 

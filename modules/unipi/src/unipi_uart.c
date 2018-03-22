@@ -154,7 +154,7 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 			neuronspi_uart_set_ldisc(port, termios);
 		}
 	}
-	n_port->baud = uart_get_baud_rate(port, termios, old, 2400, 115200);
+	n_port->baud = uart_get_baud_rate(port, termios, old, 134, 115200);
 	uart_update_timeout(port, termios->c_cflag, n_port->baud);
 }
 
