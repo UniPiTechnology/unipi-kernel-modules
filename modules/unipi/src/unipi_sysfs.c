@@ -92,7 +92,7 @@ static ssize_t neuronspi_spi_show_fw_version(struct device *dev, struct device_a
 	n_spi = platform_get_drvdata(plat);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->sys_sw_ver, &val);
-		ret = scnprintf(buf, 255, "%x.%x%x\n", (val & 0xF00) >> 8, (val & 0xF0) >> 4, val & 0xF);
+		ret = scnprintf(buf, 255, "%x.%d\n", (val & 0xF00) >> 8, (int)(val & 0xFF));
 	}
 	return ret;
 }
