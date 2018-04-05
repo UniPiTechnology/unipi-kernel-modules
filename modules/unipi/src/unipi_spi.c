@@ -139,9 +139,6 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
     if (driver_data == NULL) return -2;
     if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
     if (driver_data->first_probe_reply[0] == 0) return -3; // No device present
-    if (driver_data->slower_model) {
-    	frequency = NEURONSPI_SLOWER_FREQ;
-    }
     mutex_lock(&(private_data->lock));
     if (private_data->recv_buf == NULL) {
     	mutex_unlock(&(private_data->lock));
@@ -231,7 +228,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     } else if (driver_data->reserved_device) {
     	return -5;			// Device reserved
     }
-    if (driver_data->slower_model) {
+    if (driver_data->slower_model && frequency > NEURONSPI_SLOWER_FREQ) {
     	frequency = NEURONSPI_SLOWER_FREQ;
     }
 #else
