@@ -26,7 +26,6 @@
 void neuronspi_led_proc(struct kthread_work *ws)
 {
 	struct neuronspi_led_driver *led = to_led_driver(ws, led_work);
-	printk("NEURONSPI: BRIGHT id:%d\n", led->id);
 	neuronspi_spi_led_set_brightness(led->spi, led->brightness, led->id);
 }
 
