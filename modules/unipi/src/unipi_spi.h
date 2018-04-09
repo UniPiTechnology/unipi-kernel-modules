@@ -419,7 +419,6 @@ static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 st
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
 	(*buf_inp)[3] = start >> 8;
-	printk(KERN_INFO "NEURONSPI: COMPOSE SINGLE WRITE DATA: %x\n", data);
 	crc1 = neuronspi_spi_crc(*buf_inp, 4, 0);
 	memcpy(&(*buf_inp)[4], &crc1, 2);
 	memcpy(&(*buf_inp)[6], *buf_inp, 4);

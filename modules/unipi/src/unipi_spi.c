@@ -849,7 +849,6 @@ void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brigh
 	if (!d_data->reserved_device) {
 		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_LED_SET_MESSAGE_LEN, frequency, 25, 0);
 	}
-	printk(KERN_INFO "NEURONSPI: Brightness set to %d on led %d\n", brightness, id);
 	kfree(message_buf);
 	kfree(recv_buf);
 }
@@ -861,12 +860,11 @@ int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id)
 	u32 offset = id / 16;
 	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
 	recv_buf = kzalloc(4, GFP_KERNEL);
-	printk(KERN_INFO "NEURONSPI: REGMAP TEST: %d\n", regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, (void*)recv_buf));
+	regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, (void*)recv_buf);
 	if (*recv_buf & (0x1 << offset)) {
 		ret = 1;
 	}
 	kfree(recv_buf);
-	printk(KERN_INFO "NEURONSPI: GPIO DI %d get %d\n", id, ret);
 	return ret;
 }
 
@@ -882,7 +880,6 @@ int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value)
 	current_value&= mask;
 	current_value|= off_val;
 	regmap_write(d_data->reg_map, d_data->regstart_table->do_val_reg + offset, current_value);
-	printk(KERN_INFO "NEURONSPI: GPIO DO %d set %d\n", id, value);
 	return ret;
 }
 
@@ -898,7 +895,6 @@ int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value)
 	current_value&= mask;
 	current_value|= off_val;
 	regmap_write(d_data->reg_map, d_data->regstart_table->ro_val_reg + offset, current_value);
-	printk(KERN_INFO "NEURONSPI: GPIO RO %d set %d\n", id, value);
 	return ret;
 }
 
