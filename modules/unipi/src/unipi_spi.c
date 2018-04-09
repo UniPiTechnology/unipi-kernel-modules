@@ -1176,7 +1176,6 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			}
 		}
 #ifdef CONFIG_GPIOLIB
-
 		if (n_spi->features->di_count) {
 			n_spi->di_driver = kzalloc(sizeof(struct neuronspi_di_driver*) * n_spi->features->di_count, GFP_KERNEL);
 			for (i = 0; i < n_spi->features->di_count; i++) {
@@ -1225,7 +1224,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->do_driver[i]->gpio_c.parent = &(n_spi->do_driver[i]->plat_dev->dev);
 				n_spi->do_driver[i]->gpio_c.label = "neuron_do";
 				n_spi->do_driver[i]->gpio_c.can_sleep = 1;
-				n_spi->do_driver[i]->gpio_c.ngpio = n_spi->features->do_count;
+				n_spi->do_driver[i]->gpio_c.ngpio = 1;
 				n_spi->do_driver[i]->gpio_c.base = -1;
 				n_spi->do_driver[i]->gpio_c.direction_output = neuronspi_gpio_do_direction_output;
 				n_spi->do_driver[i]->gpio_c.set = neuronspi_gpio_do_set;
@@ -1253,14 +1252,13 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->ro_driver[i]->gpio_c.parent = &(n_spi->ro_driver[i]->plat_dev->dev);
 				n_spi->ro_driver[i]->gpio_c.label = "neuron_ro";
 				n_spi->ro_driver[i]->gpio_c.can_sleep = 1;
-				n_spi->ro_driver[i]->gpio_c.ngpio = n_spi->features->ro_count;
+				n_spi->ro_driver[i]->gpio_c.ngpio = 1;
 				n_spi->ro_driver[i]->gpio_c.base = -1;
 				n_spi->ro_driver[i]->gpio_c.direction_output = neuronspi_gpio_ro_direction_output;
 				n_spi->ro_driver[i]->gpio_c.set = neuronspi_gpio_ro_set;
 				gpiochip_add_data(&n_spi->ro_driver[i]->gpio_c, n_spi->ro_driver[i]);
 			}
 		}
-
 #endif
 		if (n_spi->features->stm_ai_count) {
 			n_spi->stm_ai_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_stm_ai_data));
