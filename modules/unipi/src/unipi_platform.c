@@ -1580,7 +1580,6 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
 	u8 *inp_buf;
 	u8 *outp_buf;
 	int write_length;
-	//printk(KERN_INFO "NEURONSPI: RM_REG_READ\n");
 	write_length = neuronspi_spi_compose_single_register_read(reg, &inp_buf, &outp_buf);
 	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 	memcpy(val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
@@ -1603,7 +1602,6 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	u8 *outp_buf;
 	int write_length;
 	write_length = neuronspi_spi_compose_single_register_write(reg, &inp_buf, &outp_buf, (val >> 8));
-	//printk(KERN_INFO "HW_REG_WRITE l:%d, r:%d, v:%d\n", write_length, reg, (val >> 8));
 	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1);
 	memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 	kfree(inp_buf);
@@ -1621,7 +1619,6 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 	u8 *outp_buf;
 	int i, write_length;
 	int block_counter = 0;
-	//printk(KERN_INFO "HW_REG_GATHER_WRITE:%d, %d, %x, %x\n", val_size, reg_size, mb_reg_buf[0], mb_val_buf[0]);
 	if (reg_size == 1) {
 		neuronspi_regmap_hw_reg_write(context,mb_reg_buf[0],mb_val_buf[0]);
 	} else {
@@ -1699,6 +1696,7 @@ int neuronspi_create_reg_starts(struct neuronspi_board_regstart_table *out_table
 	out_table->uart_conf_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_RS485_CONFIG);
 	out_table->vref_int = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_V_REF_INT);
 	out_table->wd_timeout_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_MWD_TO);
+	out_table->wd_val_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_MWD_STATUS);
 	out_table->sys_serial_num = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_SERIAL_NR_LOWER);
 	out_table->sys_sw_ver = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_SW_VER);
 	out_table->sys_hw_ver = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_HW_VER);
@@ -1717,7 +1715,6 @@ s32 neuronspi_find_reg_start(struct neuronspi_board_combination *board, u16 regf
 		} else if (block_len == -1) {
 			block_len = board->blocks[i];
 		} else if ((board->blocks[i] & 0xFFFF) == regfun) {
-			//printk(KERN_INFO "NEURONSPI: Reg Start Fun: %x RegS: %d", regfun, block_start + block_counter);
 			return block_start + block_counter;
 		} else {
 			block_counter++;
@@ -1728,7 +1725,7 @@ s32 neuronspi_find_reg_start(struct neuronspi_board_combination *board, u16 regf
 			block_len = -1;
 		}
 	}
-	return -1;
+	return 0;
 }
 
 int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size, void *val_buf, size_t val_size) {
