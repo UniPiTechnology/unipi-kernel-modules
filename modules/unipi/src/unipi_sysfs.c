@@ -31,6 +31,17 @@ static ssize_t neuronspi_show_model(struct device *dev, struct device_attribute 
 	return ret;
 }
 
+static ssize_t neuronspi_show_driver_version(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+#ifdef NEURONSPI_MAJOR_VERSIONSTRING
+	ret = scnprintf(buf, 255, "%s\n", NEURONSPI_MAJOR_VERSIONSTRING);
+#else
+	ret = scnprintf(buf, 255, "%s\n", "Unspecified Driver Version");
+#endif
+	return ret;
+}
+
 static ssize_t neuronspi_show_eeprom(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -925,6 +936,7 @@ err_end:
 
 static DEVICE_ATTR(model_name, 0440, neuronspi_show_model, NULL);
 static DEVICE_ATTR(sys_eeprom_name, 0440, neuronspi_show_eeprom, NULL);
+static DEVICE_ATTR(driver_version, 0440, neuronspi_show_driver_version, NULL);
 static DEVICE_ATTR(register_read, 0660, neuronspi_show_regmap, neuronspi_store_regmap);
 static DEVICE_ATTR(sys_board_serial, 0440, neuronspi_spi_show_serial, NULL);
 static DEVICE_ATTR(sys_board_name, 0440, neuronspi_spi_show_board, NULL);
@@ -965,6 +977,7 @@ static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_secondary_ao_mode, n
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
 		&dev_attr_sys_eeprom_name.attr,
+		&dev_attr_driver_version.attr,
 		NULL,
 };
 
