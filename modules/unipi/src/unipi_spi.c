@@ -667,7 +667,7 @@ static s32 neuronspi_spi_watchdog(void *data)
 
 
 
-void neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header)
+int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header)
 {
 	s32 i = 0;
 	u16 recv_crc1 = 0;
