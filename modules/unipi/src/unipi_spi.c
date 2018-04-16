@@ -670,6 +670,7 @@ static s32 neuronspi_spi_watchdog(void *data)
 int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header)
 {
 	s32 i = 0;
+	int ret_code = 0;
 	u16 recv_crc1 = 0;
 	u16 recv_crc2 = 0;
 	u16 packet_crc = 0;
@@ -790,11 +791,13 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 			printk(KERN_INFO "NEURONSPI: SPI CRC2 Not Correct");
 #endif
 			recv_buf[0] = 0;
+			ret_code = 1;
 		}
     }
 
     mutex_unlock(&neuronspi_master_mutex);
     kfree(s_trans);
+    return ret_code;
 }
 
 
