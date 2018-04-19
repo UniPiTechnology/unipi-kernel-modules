@@ -27,4 +27,4 @@ KERNEL=="ttyNS2", SYMLINK+="extcomm/2/0", KERNELS=="spi0.2"
 KERNEL=="ttyNS2", SYMLINK+="extcomm/3/0", KERNELS=="spi0.3"
 
 # SYSFS Platform Device Symlink
-KERNEL=="unipi_plc", RUN+="/opt/link_sysfs.sh"
+KERNEL=="unipi_plc", RUN+="/bin/sh -c 'mkdir -p /run; ln -s /sys/devices/platform/unipi_plc /run/unipi 2>/dev/null|| exit 0'"
