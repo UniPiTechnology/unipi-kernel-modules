@@ -1581,7 +1581,7 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
 	u8 *outp_buf;
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_read(reg, &inp_buf, &outp_buf);
-	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1)) {
+	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
 		}
@@ -1606,7 +1606,7 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	u8 *outp_buf;
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_write(reg, &inp_buf, &outp_buf, (val >> 8));
-	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1)) {
+	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
 		}
@@ -1637,7 +1637,7 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 			if (block_counter == (reg_size - 1) || ((mb_reg_buf[i] + 1) != mb_reg_buf[i + 1]))  {
 				write_length = neuronspi_spi_compose_multiple_register_write(block_counter, mb_reg_buf[i - block_counter], &inp_buf, &outp_buf,
 						                                                     (u8*)(&mb_val_buf[i - block_counter]));
-				neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1);
+				neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0);
 				block_counter = 0;
 				kfree(inp_buf);
 				kfree(outp_buf);
@@ -1757,7 +1757,7 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
 		// Check for continuity and read the largest possible continuous block
 		if (block_counter == ((reg_size / 2) - 1) || ((mb_reg_buf[i] + 1) != mb_reg_buf[i + 1])) {
 			write_length = neuronspi_spi_compose_multiple_register_read(block_counter + 1, mb_reg_buf[i - block_counter], &inp_buf, &outp_buf);
-			if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1)) {
+			if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0)) {
 				for (j = 0; j < write_length; j++) {
 					outp_buf[j] = 0;
 				}
