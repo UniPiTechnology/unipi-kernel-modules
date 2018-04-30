@@ -27,6 +27,7 @@ nologies
 #include "unipi_iio.h"
 #include "unipi_misc.h"
 #include "unipi_spi.h"
+#include "unipi_tty.h"
 
 /********************
  * Data Definitions *
@@ -60,6 +61,7 @@ struct neuronspi_char_driver neuronspi_cdrv =
 };
 
 struct mutex neuronspi_master_mutex;
+struct spinlock* neuronspi_ldisc_spinlock;
 struct spinlock* neuronspi_spi_w_spinlock;
 u8 neuronspi_spi_w_flag = 1;
 u8 neuronspi_probe_count = 0;
@@ -111,7 +113,6 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
 
 	s32 result = 0;
 	u8 device_index = 0;
-	u32 frequency = NEURONSPI_COMMON_FREQ;
 	struct neuronspi_file_data* private_data;
 	struct spi_device* spi_driver_data;
 	struct neuronspi_driver_data* driver_data;
@@ -248,7 +249,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     neuronspi_spi_w_flag = 1;
     spin_unlock(neuronspi_spi_w_spinlock);
     neuronspi_spi_send_message(spi_driver_data, &private_data->send_buf[NEURONSPI_HEADER_LENGTH], private_data->recv_buf,
-    		transmit_len, frequency, delay, send_header);
+    		transmit_len, frequency, delay, send_header, buffer[7]);
     mutex_unlock(&private_data->lock);
     return len;
 }
@@ -294,7 +295,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8
 		frequency = NEURONSPI_SLOWER_FREQ;
 	}
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi, message_buf, recv_buf, transmit_len, frequency, 65, 1);
+		neuronspi_spi_send_message(spi, message_buf, recv_buf, transmit_len, frequency, 65, 1, 0);
 	}
 	kfree(message_buf);
 	kfree(recv_buf);
@@ -337,7 +338,7 @@ void neuronspi_spi_uart_read(struct spi_device* spi, u8 *send_buf, u8 *recv_buf,
 #endif
 	}
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi, send_buf, recv_buf, transmit_len, frequency, 65, 1);
+		neuronspi_spi_send_message(spi, send_buf, recv_buf, transmit_len, frequency, 65, 1, 0);
 	}
 }
 
@@ -362,7 +363,7 @@ void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to)
 	crc2 = neuronspi_spi_crc(&message_buf[6], NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN - 8, crc1);
 	memcpy(&message_buf[NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN - 2], &crc2, 2);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, frequency, 65, 1);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, frequency, 65, 1, 0);
 	}
 	kfree(message_buf);
 	kfree(recv_buf);
@@ -390,7 +391,7 @@ void neuronspi_spi_uart_set_cflag(struct spi_device* spi_dev, u8 port, u32 to)
 	crc2 = neuronspi_spi_crc(&message_buf[6], NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN - 8, crc1);
 	memcpy(&message_buf[NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN - 2], &crc2, 2);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 65, 1);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 65, 1, 0);
 	}
 	kfree(message_buf);
 	kfree(recv_buf);
@@ -410,7 +411,7 @@ void neuronspi_spi_uart_set_ldisc(struct spi_device* spi_dev, u8 port, u8 to)
 #endif
 	neuronspi_spi_compose_single_register_write(503, &message_buf, &recv_buf, to);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 35, 1);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 35, 1, 0);
 	}
 	kfree(message_buf);
 	kfree(recv_buf);
@@ -428,7 +429,7 @@ u8 neuronspi_spi_uart_get_ldisc(struct spi_device* spi_dev, u8 port)
 	}
 	neuronspi_spi_compose_single_register_read(503, &message_buf, &recv_buf);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 35, 1);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, frequency, 35, 1, 0);
 	}
 	outp = recv_buf[MODBUS_FIRST_DATA_BYTE + 1];
 #if NEURONSPI_DETAILED_DEBUG > 1
@@ -667,7 +668,7 @@ static s32 neuronspi_spi_watchdog(void *data)
 
 
 
-int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header)
+int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val)
 {
 	s32 i = 0;
 	int ret_code = 0;
@@ -679,68 +680,73 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 	struct neuronspi_driver_data *d_data;
     struct spi_transfer* s_trans;
 	mutex_lock(&neuronspi_master_mutex);
-    s_trans = kzalloc(sizeof(struct spi_transfer) * trans_count, GFP_KERNEL);
-#if NEURONSPI_DETAILED_DEBUG > 1
-    printk(KERN_INFO "NEURONSPI: SPI Master Write, len:%d,\n %100ph\n", len, send_buf);
-#endif
-	if (!send_header) {
-		trans_count -= 1;	// one less transmission as the header is omitted
-	}
-    spi_message_init(&s_msg);
-    for (i = 0; i < trans_count; i++) {
-    	memset(&(s_trans[i]), 0, sizeof(s_trans[i]));
-    	s_trans[i].delay_usecs = 0;
-    	s_trans[i].bits_per_word = 8;
-    	s_trans[i].speed_hz = freq;
-    	if (i == 0) {
-    		s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
-    	} else if (i == 1) {
-		    s_trans[i].tx_buf = send_buf;
-		    s_trans[i].rx_buf = recv_buf;
-    		if (send_header) {
-    		    s_trans[i].delay_usecs = delay;
-    		    s_trans[i].len = NEURONSPI_FIRST_MESSAGE_LENGTH;
-    		} else {
-    			// If len is more than NEURONSPI_MAX_TX * i, then chunk len is NEURONSPI_MAX_TX, otherwise it's the remainder
-    			s_trans[i].len = (len - (NEURONSPI_MAX_TX * i)) > 0 ? NEURONSPI_MAX_TX : len;
-    		}
-    	} else if (i == trans_count - 1) {
-    		if (send_header) {
-    			s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-    			s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-    			s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
-    		} else {
-    			s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
-    			s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
-    			s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
-    		}
-    		s_trans[i].delay_usecs = NEURONSPI_LAST_TRANSFER_DELAY;
-    		// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
-    		// otherwise it's the remainder
-    	} else {
-    		if (send_header) {
-    			s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-    			s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-    			s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
-    		} else {
-    			s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
-    			s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
-    			s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
-    		}
-    		// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
-    		// otherwise it's the remainder
-    	}
-    	spi_message_add_tail(&(s_trans[i]), &s_msg);
-    }
-    spi_sync(spi_dev, &s_msg);
-    for (i = 0; i < trans_count; i++) {
-    	spi_transfer_del(&(s_trans[i]));
-    }
-#if NEURONSPI_DETAILED_DEBUG > 1
-    printk(KERN_INFO "NEURONSPI: SPI Master Read - %d:\n\t%100ph\n\t%100ph\n\t%100ph\n\t%100ph\n", len,recv_buf, &recv_buf[64],
-    		&recv_buf[128], &recv_buf[192]);
-#endif
     d_data = spi_get_drvdata(spi_dev);
+	if (d_data != NULL && d_data->reserved_device && lock_val != d_data->reserved_device) {
+		memset(&recv_buf, 0, len);
+	} else {
+		s_trans = kzalloc(sizeof(struct spi_transfer) * trans_count, GFP_KERNEL);
+#if NEURONSPI_DETAILED_DEBUG > 1
+		printk(KERN_INFO "NEURONSPI: SPI Master Write, len:%d,\n %100ph\n", len, send_buf);
+#endif
+		if (!send_header) {
+			trans_count -= 1;	// one less transmission as the header is omitted
+		}
+		spi_message_init(&s_msg);
+		for (i = 0; i < trans_count; i++) {
+			memset(&(s_trans[i]), 0, sizeof(s_trans[i]));
+			s_trans[i].delay_usecs = 0;
+			s_trans[i].bits_per_word = 8;
+			s_trans[i].speed_hz = freq;
+			if (i == 0) {
+				s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
+			} else if (i == 1) {
+				s_trans[i].tx_buf = send_buf;
+				s_trans[i].rx_buf = recv_buf;
+				if (send_header) {
+					s_trans[i].delay_usecs = delay;
+					s_trans[i].len = NEURONSPI_FIRST_MESSAGE_LENGTH;
+				} else {
+					// If len is more than NEURONSPI_MAX_TX * i, then chunk len is NEURONSPI_MAX_TX, otherwise it's the remainder
+					s_trans[i].len = (len - (NEURONSPI_MAX_TX * i)) > 0 ? NEURONSPI_MAX_TX : len;
+				}
+			} else if (i == trans_count - 1) {
+				if (send_header) {
+					s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
+					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
+					s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
+				} else {
+					s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
+					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
+					s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
+				}
+				s_trans[i].delay_usecs = NEURONSPI_LAST_TRANSFER_DELAY;
+				// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
+				// otherwise it's the remainder
+			} else {
+				if (send_header) {
+					s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
+					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
+					s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
+				} else {
+					s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
+					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
+					s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
+				}
+				// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
+				// otherwise it's the remainder
+			}
+			spi_message_add_tail(&(s_trans[i]), &s_msg);
+		}
+		spi_sync(spi_dev, &s_msg);
+		for (i = 0; i < trans_count; i++) {
+			spi_transfer_del(&(s_trans[i]));
+		}
+	    kfree(s_trans);
+#if NEURONSPI_DETAILED_DEBUG > 1
+		printk(KERN_INFO "NEURONSPI: SPI Master Read - %d:\n\t%100ph\n\t%100ph\n\t%100ph\n\t%100ph\n", len,recv_buf, &recv_buf[64],
+				&recv_buf[128], &recv_buf[192]);
+#endif
+	}
     if (d_data == NULL || (d_data != NULL && !d_data->reserved_device)) {
 		recv_crc1 = neuronspi_spi_crc(recv_buf, 4, 0);
 		memcpy(&packet_crc, &recv_buf[4], 2);
@@ -794,9 +800,7 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 			ret_code = 1;
 		}
     }
-
     mutex_unlock(&neuronspi_master_mutex);
-    kfree(s_trans);
     return ret_code;
 }
 
@@ -850,7 +854,7 @@ void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brigh
 	crc1 = neuronspi_spi_crc(message_buf, 4, 0);
 	memcpy(&message_buf[4], &crc1, 2);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_LED_SET_MESSAGE_LEN, frequency, 25, 0);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_LED_SET_MESSAGE_LEN, frequency, 25, 0, 0);
 	}
 	kfree(message_buf);
 	kfree(recv_buf);
@@ -907,9 +911,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 {
 	const struct neuronspi_devtype *devtype;
 	struct sched_param sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
-
 	struct neuronspi_driver_data *n_spi;
-
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
 	n_spi = kzalloc(sizeof *n_spi, GFP_KERNEL);
@@ -984,17 +986,17 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	n_spi->spi_driver = &neuronspi_spi_driver;
 
 	memcpy(n_spi->send_buf, &NEURONSPI_PROBE_MESSAGE, NEURONSPI_PROBE_MESSAGE_LEN);
-	neuronspi_spi_send_message(spi, n_spi->send_buf, n_spi->first_probe_reply, NEURONSPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1);
+	neuronspi_spi_send_message(spi, n_spi->send_buf, n_spi->first_probe_reply, NEURONSPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1, 0);
 
 	// Throw away the first message - the associated SPI Master is sometimes not properly initialised at this point
 	i = 0;
 	do {
 		memcpy(n_spi->send_buf, &NEURONSPI_PROBE_MESSAGE, NEURONSPI_PROBE_MESSAGE_LEN);
 		memset(n_spi->first_probe_reply, 0, NEURONSPI_PROBE_MESSAGE_LEN);
-		neuronspi_spi_send_message(spi, n_spi->send_buf, n_spi->first_probe_reply, NEURONSPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1);
+		neuronspi_spi_send_message(spi, n_spi->send_buf, n_spi->first_probe_reply, NEURONSPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1, 0);
 		i++;
 		if (i > 1000) {	// Sanity check to prevent looping if we get constant UART/0x41 messages
-			ret = -4;
+			ret = -ENODEV;
 			kfree(n_spi);
 			printk(KERN_INFO "NEURONSPI: Probe did not detect a valid Neuron device on CS %d\n", spi->chip_select);
 			return ret;
@@ -1018,7 +1020,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 			}
 		}
 	} else if (!n_spi->probe_always_succeeds) {
-		ret = -5;
+		ret = -ENODEV;
 		kfree(n_spi);
 		printk(KERN_INFO "NEURONSPI: Probe did not detect a valid Neuron device on CS %d\n", spi->chip_select);
 		return ret;
@@ -1374,7 +1376,7 @@ u32 neuronspi_spi_uart_get_cflag(struct spi_device* spi_dev, u8 port)
 	crc2 = neuronspi_spi_crc(&message_buf[6], NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN - 8, crc1);
 	memcpy(&message_buf[NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN - 2], &crc2, 2);
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, frequency, 65, 1);
+		neuronspi_spi_send_message(spi_dev, message_buf, recv_buf, NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, frequency, 65, 1, 0);
 	}
 	ret = ((u32*)recv_buf)[5];
 #if NEURONSPI_DETAILED_DEBUG > 0
@@ -1550,6 +1552,7 @@ static s32 __init neuronspi_init(void)
 	if (neuronspi_invalidate_thread != NULL) {
 		wake_up_process(neuronspi_invalidate_thread);
 	}
+	//neuronspi_tty_init();
 	return ret;
 }
 

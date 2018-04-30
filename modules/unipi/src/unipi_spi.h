@@ -168,7 +168,7 @@ s32 char_unregister_driver(void);
 irqreturn_t neuronspi_spi_irq(s32 irq, void *dev_id);
 s32 neuronspi_spi_probe(struct spi_device *spi);
 s32 neuronspi_spi_remove(struct spi_device *spi);
-int neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header);
+int neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val);
 s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8 uart_index);
 void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, u8 uart_index);
 void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
