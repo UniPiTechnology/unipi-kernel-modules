@@ -318,6 +318,7 @@ static ssize_t neuronspi_spi_gpio_di_show_counter(struct device *dev, struct dev
 {
 	ssize_t ret = 0;
 	u32 val = 0;
+	u32 val_upper = 0;
 	struct neuronspi_di_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
@@ -325,6 +326,8 @@ static ssize_t neuronspi_spi_gpio_di_show_counter(struct device *dev, struct dev
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->di_index), &val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->di_index), &val_upper);
+		val |= val_upper << 16;
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -342,7 +345,8 @@ static ssize_t neuronspi_spi_gpio_di_store_counter(struct device *dev, struct de
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->di_index), val);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->di_index), val & 0xFFFF);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->di_index), val >> 16);
 	}
 err_end:
 	return count;

@@ -1652,7 +1652,7 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 int neuronspi_create_reg_starts(struct neuronspi_board_regstart_table *out_table, struct neuronspi_board_combination *board) {
 	if (board->features.di_count > 0) {
 		out_table->di_val_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DI_READ);
-		out_table->di_counter_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DI_COUNTER_UPPER);
+		out_table->di_counter_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DI_COUNTER_LOWER);
 		out_table->di_deboun_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DI_DEBOUNCE);
 		out_table->di_direct_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DS_ENABLE);
 		out_table->di_polar_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_DS_POLARITY);
