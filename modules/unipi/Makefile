@@ -3,7 +3,7 @@
 # if necessary.
  
 SYMLINK_DIR_PATH = /run/kernel/neuron_spi
-LINUX_DIR_PATH = /root/linux/4_9_41
+LINUX_DIR_PATH = /root/bokula/linux/
 SRC_DIR_PATH = $(PWD)/src
 BIN_DIR_PATH = $(PWD)/bin
 
@@ -41,7 +41,7 @@ KERNEL_MODULE_NAME = unipi
 obj-m += ${KERNEL_MODULE_NAME}.o
 unipi-objs := ${OBJ_FILES}
 
-TARGET_PLC_PATH = tomunipi:/root/
+TARGET_PLC_PATH = tomunipi:
 
 .PHONY: default
 default: symlink ;

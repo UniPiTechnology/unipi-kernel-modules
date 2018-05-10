@@ -115,24 +115,24 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		return 1;
 	}
 	case 0x5480: {
-#if NEURONSPI_DETAILED_DEBUG > 0
+//#if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
-#endif
+//#endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
-		return 1;
+		return 0;
 	}
 	case 0x5481: {
-#if NEURONSPI_DETAILED_DEBUG > 0
+//#if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
-#endif
+//#endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
-		return 1;
+		return 0;
 	}
 	default: {
 		return -ENOIOCTLCMD;
