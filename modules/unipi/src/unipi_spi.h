@@ -197,7 +197,7 @@ extern struct file_operations file_ops;
 
 static const struct regmap_bus neuronspi_regmap_bus =
 {
-	.fast_io 					= 1,
+	.fast_io 					= 0,
 	.write 						= neuronspi_regmap_hw_write,
 	.gather_write 				= neuronspi_regmap_hw_gather_write,
 	.reg_write					= neuronspi_regmap_hw_reg_write,
