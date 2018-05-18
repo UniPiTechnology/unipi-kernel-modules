@@ -22,6 +22,11 @@
 #include "unipi_common.h"
 #include "unipi_platform.h"
 
+#define NEURONSPI_DEFAULT_SYSFS_SPEED 50
+
+extern int unipi_use_custom_speed;
+extern u32 unipi_custom_speed_value;
+
 extern const struct attribute_group neuron_stm_ai_group;
 extern const struct attribute_group neuron_stm_ao_group;
 extern const struct attribute_group neuron_sec_ai_group;

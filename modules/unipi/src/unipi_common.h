@@ -51,7 +51,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.07:30:04:2018"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.08:18:05:2018"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				128

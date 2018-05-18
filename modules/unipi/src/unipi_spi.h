@@ -195,6 +195,8 @@ int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
 extern struct spi_driver neuronspi_spi_driver;
 extern struct file_operations file_ops;
 
+extern struct mutex unipi_inv_speed_mutex;
+
 static const struct regmap_bus neuronspi_regmap_bus =
 {
 	.fast_io 					= 0,
