@@ -1021,7 +1021,7 @@ static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_secondary_ao_mode, n
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
-		&dev_attr_sysfs_reading_freq.attr,
+		&dev_attr_sys_reading_freq.attr,
 		&dev_attr_sys_eeprom_name.attr,
 		&dev_attr_driver_version.attr,
 		NULL,
