@@ -17,6 +17,14 @@
  ************/
 
 #include "unipi_sysfs.h"
+#include "unipi_spi.h"
+
+/*********************
+ * Data Declarations *
+ *********************/
+
+int unipi_use_custom_speed = 0;
+u32 unipi_custom_speed_value = NEURONSPI_DEFAULT_SYSFS_SPEED;
 
 /************************
  * Static Functions *
@@ -29,6 +37,36 @@ static ssize_t neuronspi_show_model(struct device *dev, struct device_attribute 
 		ret = scnprintf(buf, 255, "%s\n", NEURONSPI_MODELTABLE[neuronspi_model_id].model_name);
 	}
 	return ret;
+}
+
+static ssize_t neuronspi_show_sysfs_speed(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	mutex_lock(&unipi_inv_speed_mutex);
+	ret = scnprintf(buf, 255, "%d Hz\n", unipi_custom_speed_value);
+	mutex_unlock(&unipi_inv_speed_mutex);
+	return ret;
+}
+
+static ssize_t neuronspi_store_sysfs_speed(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (val == NEURONSPI_DEFAULT_SYSFS_SPEED) {
+		unipi_use_custom_speed = 0;
+		mutex_lock(&unipi_inv_speed_mutex);
+		unipi_custom_speed_value = 50;
+		mutex_unlock(&unipi_inv_speed_mutex);
+	} else if (val > 0) {
+		unipi_use_custom_speed = 1;
+		mutex_lock(&unipi_inv_speed_mutex);
+		unipi_custom_speed_value = val > 1000 ? 1000 : val;
+		mutex_unlock(&unipi_inv_speed_mutex);
+	}
+err_end:
+	return count;
 }
 
 static ssize_t neuronspi_show_driver_version(struct device *dev, struct device_attribute *attr, char *buf)
@@ -797,7 +835,9 @@ static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct devic
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
+		spin_lock(&n_spi->sysfs_regmap_lock);
 		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.ngpio);
+		spin_unlock(&n_spi->sysfs_regmap_lock);
 	}
 	return ret;
 }
@@ -939,6 +979,7 @@ err_end:
  **********************************/
 
 static DEVICE_ATTR(model_name, 0440, neuronspi_show_model, NULL);
+static DEVICE_ATTR(sys_reading_freq, 0660, neuronspi_show_sysfs_speed, neuronspi_store_sysfs_speed);
 static DEVICE_ATTR(sys_eeprom_name, 0440, neuronspi_show_eeprom, NULL);
 static DEVICE_ATTR(driver_version, 0440, neuronspi_show_driver_version, NULL);
 static DEVICE_ATTR(register_read, 0660, neuronspi_show_regmap, neuronspi_store_regmap);
@@ -980,6 +1021,7 @@ static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_secondary_ao_mode, n
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
+		&dev_attr_sysfs_reading_freq.attr,
 		&dev_attr_sys_eeprom_name.attr,
 		&dev_attr_driver_version.attr,
 		NULL,

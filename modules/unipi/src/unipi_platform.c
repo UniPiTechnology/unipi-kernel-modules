@@ -18,6 +18,7 @@
 #include "unipi_platform.h"
 #include "unipi_spi.h"
 #include "unipi_common.h"
+#include "unipi_sysfs.h"
 
 /***************************
  * Static Data Definitions *
@@ -1485,9 +1486,18 @@ struct neuronspi_model_definition NEURONSPI_MODELTABLE[NEURONSPI_MODELTABLE_LEN]
 s32 neuronspi_regmap_invalidate(void *data)
 {
 	int i;
+	u32 reading_freq;
 	int freq_cnt = 0;
 	while (!kthread_should_stop()) {
-		usleep_range(15000,25000);
+		if (unipi_use_custom_speed) {
+			mutex_lock(&unipi_inv_speed_mutex);
+			reading_freq = unipi_custom_speed_value;
+			mutex_unlock(&unipi_inv_speed_mutex);
+			// TODO: This could be moved to sysfs.c so it does not have to be evaluated so often
+			usleep_range((1000000 / (reading_freq * 4)) * 3, (1000000 / (reading_freq * 4)) * 5);
+		} else {
+			usleep_range(15000,25000);
+		}
 		if (freq_cnt == 450001) freq_cnt = 0;
 		for (i = 0; i < NEURONSPI_MAX_DEVS; i++) {
 			if (neuronspi_s_dev[i] != NULL) {

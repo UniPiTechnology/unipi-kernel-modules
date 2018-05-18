@@ -61,6 +61,7 @@ struct neuronspi_char_driver neuronspi_cdrv =
 };
 
 struct mutex neuronspi_master_mutex;
+struct mutex unipi_inv_speed_mutex;
 struct spinlock* neuronspi_ldisc_spinlock;
 struct spinlock* neuronspi_spi_w_spinlock;
 u8 neuronspi_spi_w_flag = 1;
@@ -1536,6 +1537,7 @@ static s32 __init neuronspi_init(void)
 	neuronspi_spi_w_spinlock = kzalloc(sizeof(struct spinlock), GFP_KERNEL);
 	spin_lock_init(neuronspi_spi_w_spinlock);
 	mutex_init(&neuronspi_master_mutex);
+	mutex_init(&unipi_inv_speed_mutex);
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
 	ret = spi_register_driver(&neuronspi_spi_driver);
 	if (ret < 0) {
