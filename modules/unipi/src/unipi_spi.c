@@ -846,7 +846,11 @@ void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brigh
 	message_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_KERNEL);
 	recv_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_KERNEL);
 	memcpy(message_buf, NEURONSPI_SPI_LED_SET_MESSAGE, NEURONSPI_SPI_LED_SET_MESSAGE_LEN);
-	message_buf[2] += id;
+	if (d_data->features != NULL) {
+		message_buf[2] = d_data->features->di_count + d_data->features->do_count + d_data->features->ro_count + id;
+	} else {
+		message_buf[2] += id;
+	}
 	if (brightness > 0) {
 		message_buf[1] = 0x01;
 	} else {
@@ -1165,7 +1169,11 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (n_spi->features->led_count) {
 			for (i = 0; i < n_spi->features->led_count; i++) {
 				strcpy(n_spi->led_driver[i].name, "neuron:green:uled-x1");
-				n_spi->led_driver[i].name[19] = i + '1';
+				if (i < 9) {
+					n_spi->led_driver[i].name[19] = i + '1';
+				} else {
+					n_spi->led_driver[i].name[19] = i - 9 + 'a';
+				}
 				// Initialise the rest of the structure
 				n_spi->led_driver[i].id = i;
 				n_spi->led_driver[i].brightness = LED_OFF;
