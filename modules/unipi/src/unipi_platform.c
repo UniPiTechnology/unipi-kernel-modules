@@ -1431,6 +1431,38 @@ struct neuronspi_board_combination NEURONSPI_MODEL_S103EO_HW_DEFINITION_BOARD[NE
 		NEURONSPI_BOARD_B1000_HW_DEFINITION
 };
 
+struct neuronspi_board_combination NEURONSPI_MODEL_S105_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S105_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S115_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S115_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S155_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S155_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S205_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S205_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S215_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S215_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S505_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S505_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_E4AI4AO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S515_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S515_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_E4AI4AO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_S605_HW_DEFINITION_BOARD[NEURONSPI_MODEL_S605_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_E4LIGHT_HW_DEFINITION
+};
+
 struct neuronspi_board_combination NEURONSPI_MODEL_M103_HW_DEFINITION_BOARD[NEURONSPI_MODEL_M103_HW_DEFINITION_BOARD_SIZE] = {
 		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION
 };
@@ -1455,6 +1487,18 @@ struct neuronspi_board_combination NEURONSPI_MODEL_M603_HW_DEFINITION_BOARD[NEUR
 		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E4LIGHT_HW_DEFINITION
 };
 
+struct neuronspi_board_combination NEURONSPI_MODEL_M205_HW_DEFINITION_BOARD[NEURONSPI_MODEL_M205_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_M505_HW_DEFINITION_BOARD[NEURONSPI_MODEL_M505_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_M515_HW_DEFINITION_BOARD[NEURONSPI_MODEL_M515_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION
+};
+
 struct neuronspi_board_combination NEURONSPI_MODEL_L203_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L203_HW_DEFINITION_BOARD_SIZE] = {
 		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION, NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION
 };
@@ -1473,6 +1517,14 @@ struct neuronspi_board_combination NEURONSPI_MODEL_L503_HW_DEFINITION_BOARD[NEUR
 
 struct neuronspi_board_combination NEURONSPI_MODEL_L513_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L513_HW_DEFINITION_BOARD_SIZE] = {
 		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION, NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_L205_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L205_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION, NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION
+};
+
+struct neuronspi_board_combination NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD_SIZE] = {
+		NEURONSPI_BOARD_B1000_HW_DEFINITION, NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION, NEURONSPI_BOARD_E14ROU14DI_HW_DEFINITION
 };
 
 // Board table
@@ -1514,36 +1566,62 @@ struct neuronspi_board_entry NEURONSPI_BOARDTABLE[NEURONSPI_BOARDTABLE_LEN] = {
 
 // Module table
 struct neuronspi_model_definition NEURONSPI_MODELTABLE[NEURONSPI_MODELTABLE_LEN] = {
-		{.eeprom_length = 4, .eeprom_name = "S103", .name_length = 4, .model_name = "Neuron S103",
+		{.eeprom_length = 4, .eeprom_name = "S103", .name_length = 11, .model_name = "Neuron S103",
 				.combination_count = 1, .combinations = NEURONSPI_MODEL_S103_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "S103", .name_length = 6, .model_name = "Neuron S103-G",
+		{.eeprom_length = 4, .eeprom_name = "S103", .name_length = 13, .model_name = "Neuron S103-G",
 				.combination_count = 1, .combinations = NEURONSPI_MODEL_S103G_HW_DEFINITION_BOARD},
-		{.eeprom_length = 6, .eeprom_name = "S103IQ", .name_length = 7, .model_name = "Neuron S103-IQRF",
+		{.eeprom_length = 6, .eeprom_name = "S103IQ", .name_length = 16, .model_name = "Neuron S103-IQRF",
 				.combination_count = 1, .combinations = NEURONSPI_MODEL_S103IQ_HW_DEFINITION_BOARD},
 		{.eeprom_length = 6, .eeprom_name = "S103EO", .name_length = 7, .model_name = "Neuron HOUM Enocean S103",
 				.combination_count = 1, .combinations = NEURONSPI_MODEL_S103EO_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M103", .name_length = 4, .model_name = "Neuron M103",
+		{.eeprom_length = 4, .eeprom_name = "S105", .name_length = 9, .model_name = "Axon S105",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S105_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S115", .name_length = 9, .model_name = "Axon S115",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S115_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S155", .name_length = 9, .model_name = "Axon S155",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S155_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S205", .name_length = 9, .model_name = "Axon S205",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S205_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S215", .name_length = 9, .model_name = "Axon S215",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S215_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S505", .name_length = 9, .model_name = "Axon S505",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S505_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S515", .name_length = 9, .model_name = "Axon S515",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S515_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "S605", .name_length = 9, .model_name = "Axon S605",
+				.combination_count = 1, .combinations = NEURONSPI_MODEL_S605_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "M103", .name_length = 11, .model_name = "Neuron M103",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M103_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M203", .name_length = 4, .model_name = "Neuron M203",
+		{.eeprom_length = 4, .eeprom_name = "M203", .name_length = 11, .model_name = "Neuron M203",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M203_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M303", .name_length = 4, .model_name = "Neuron M303",
+		{.eeprom_length = 4, .eeprom_name = "M303", .name_length = 11, .model_name = "Neuron M303",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M303_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M403", .name_length = 4, .model_name = "Neuron M403",
+		{.eeprom_length = 4, .eeprom_name = "M403", .name_length = 11, .model_name = "Neuron M403",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M403_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M503", .name_length = 4, .model_name = "Neuron M503",
+		{.eeprom_length = 4, .eeprom_name = "M503", .name_length = 11, .model_name = "Neuron M503",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M503_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "M603", .name_length = 4, .model_name = "Neuron M603",
+		{.eeprom_length = 4, .eeprom_name = "M603", .name_length = 11, .model_name = "Neuron M603",
 				.combination_count = 2, .combinations = NEURONSPI_MODEL_M603_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "L203", .name_length = 4, .model_name = "Neuron L203",
+		{.eeprom_length = 4, .eeprom_name = "M205", .name_length = 9, .model_name = "Axon M205",
+				.combination_count = 2, .combinations = NEURONSPI_MODEL_M205_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "M505", .name_length = 9, .model_name = "Axon M505",
+				.combination_count = 2, .combinations = NEURONSPI_MODEL_M505_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "M515", .name_length = 11, .model_name = "Neuron M515",
+				.combination_count = 2, .combinations = NEURONSPI_MODEL_M515_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "L203", .name_length = 11, .model_name = "Neuron L203",
 				.combination_count = 3, .combinations = NEURONSPI_MODEL_L203_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "L303", .name_length = 4, .model_name = "Neuron L303",
+		{.eeprom_length = 4, .eeprom_name = "L303", .name_length = 11, .model_name = "Neuron L303",
 				.combination_count = 3, .combinations = NEURONSPI_MODEL_L303_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "L403", .name_length = 4, .model_name = "Neuron L403",
+		{.eeprom_length = 4, .eeprom_name = "L403", .name_length = 11, .model_name = "Neuron L403",
 				.combination_count = 3, .combinations = NEURONSPI_MODEL_L403_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "L503", .name_length = 4, .model_name = "Neuron L503",
+		{.eeprom_length = 4, .eeprom_name = "L503", .name_length = 11, .model_name = "Neuron L503",
 				.combination_count = 3, .combinations = NEURONSPI_MODEL_L503_HW_DEFINITION_BOARD},
-		{.eeprom_length = 4, .eeprom_name = "L513", .name_length = 4, .model_name = "Neuron L513",
-				.combination_count = 3, .combinations = NEURONSPI_MODEL_L513_HW_DEFINITION_BOARD}
+		{.eeprom_length = 4, .eeprom_name = "L513", .name_length = 11, .model_name = "Neuron L513",
+				.combination_count = 3, .combinations = NEURONSPI_MODEL_L513_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "L205", .name_length = 9, .model_name = "Axon L205",
+				.combination_count = 3, .combinations = NEURONSPI_MODEL_L205_HW_DEFINITION_BOARD},
+		{.eeprom_length = 4, .eeprom_name = "L505", .name_length = 9, .model_name = "Axon L503",
+				.combination_count = 3, .combinations = NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD}
 };
 
 /************************
