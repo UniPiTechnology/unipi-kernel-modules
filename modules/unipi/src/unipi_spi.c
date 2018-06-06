@@ -1273,6 +1273,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (n_spi->features->stm_ai_count) {
 			n_spi->stm_ai_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_stm_ai_data));
 			((struct neuronspi_stm_ai_data*)iio_priv(n_spi->stm_ai_driver))->parent = spi;
+			((struct neuronspi_stm_ai_data*)iio_priv(n_spi->stm_ai_driver))->index = i;
 			n_spi->stm_ai_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->name = "ai_type_a";
@@ -1286,6 +1287,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (n_spi->features->stm_ao_count) {
 			n_spi->stm_ao_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_stm_ai_data));
 			((struct neuronspi_stm_ao_data*)iio_priv(n_spi->stm_ao_driver))->parent = spi;
+			((struct neuronspi_stm_ao_data*)iio_priv(n_spi->stm_ao_driver))->index = i;
 			n_spi->stm_ao_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->name = "ao_type_a";
@@ -1301,6 +1303,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			for (i = 0; i < n_spi->features->sec_ai_count; i++) {
 				n_spi->sec_ai_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ai_data));
 				((struct neuronspi_sec_ai_data*)iio_priv(n_spi->sec_ai_driver[i]))->parent = spi;
+				((struct neuronspi_sec_ai_data*)iio_priv(n_spi->sec_ai_driver[i]))->index = i;
 				n_spi->sec_ai_driver[i]->modes = INDIO_DIRECT_MODE;
 				n_spi->sec_ai_driver[i]->currentmode = INDIO_DIRECT_MODE;
 				n_spi->sec_ai_driver[i]->name = "ai_type_b";
@@ -1317,6 +1320,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			for (i = 0; i < n_spi->features->sec_ao_count; i++) {
 				n_spi->sec_ao_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ao_data));
 				((struct neuronspi_sec_ao_data*)iio_priv(n_spi->sec_ao_driver[i]))->parent = spi;
+				((struct neuronspi_sec_ao_data*)iio_priv(n_spi->sec_ao_driver[i]))->index = i;
 				n_spi->sec_ao_driver[i]->modes = INDIO_DIRECT_MODE;
 				n_spi->sec_ao_driver[i]->currentmode = INDIO_DIRECT_MODE;
 				n_spi->sec_ao_driver[i]->name = "ao_type_b";
