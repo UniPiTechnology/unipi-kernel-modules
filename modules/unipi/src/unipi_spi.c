@@ -1000,13 +1000,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		memset(n_spi->first_probe_reply, 0, NEURONSPI_PROBE_MESSAGE_LEN);
 		neuronspi_spi_send_message(spi, n_spi->send_buf, n_spi->first_probe_reply, NEURONSPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1, 0);
 		i++;
-		if (i > 1000) {	// Sanity check to prevent looping if we get constant UART/0x41 messages
-			ret = -ENODEV;
-			kfree(n_spi);
-			printk(KERN_INFO "NEURONSPI: Probe did not detect a valid Neuron device on CS %d\n", spi->chip_select);
-			return ret;
-		}
-	} while (n_spi->first_probe_reply[0] == 0x41);	// UART messages should be ignored
+	} while (n_spi->first_probe_reply[0] == 0x41 && i < 1000);	// UART messages should be ignored
 
 	if (n_spi->first_probe_reply[0] != 0) { 	// CRC error sets the first byte to 0
 		uart_count = n_spi->first_probe_reply[14] & 0x0f;
