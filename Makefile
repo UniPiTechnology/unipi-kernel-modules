@@ -7,7 +7,8 @@ MODULES_LIST = unipi/
 TRANSFER_MODULE = unipi/
 
 .PHONY: default
-default: symlink ;
+#default: symlink ;
+default: all ;
 
 all: 
 	for m in ${MODULES_LIST}; do\
