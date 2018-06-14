@@ -190,6 +190,54 @@ err_end:
 	return count;
 }
 
+static ssize_t neuronspi_spi_show_uart_timeout(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	u32 val = 0;
+	u8 *inp_buf, *outp_buf;
+	int read_length;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	printk(KERN_INFO "NEURONSPI: Index %d\n", n_spi->neuron_index);
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
+		read_length = neuronspi_spi_compose_single_register_read(504, &inp_buf, &outp_buf);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 25, 1, 0);
+		val = outp_buf[10 + 1];
+		memcpy(val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
+		kfree(inp_buf);
+		kfree(outp_buf);
+		ret = scnprintf(buf, 255, "%d\n", val);
+	}
+	return ret;
+}
+
+static ssize_t neuronspi_spi_store_uart_timeout(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	u8 *inp_buf, *outp_buf;
+	int write_length;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	printk(KERN_INFO "NEURONSPI: Index %d\n", n_spi->neuron_index);
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
+		write_length = neuronspi_spi_compose_single_register_write(504, &inp_buf, &outp_buf, val);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
+		kfree(inp_buf);
+		kfree(outp_buf);
+	}
+err_end:
+	return count;
+}
+
 static ssize_t neuronspi_spi_show_watchdog_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -1010,6 +1058,7 @@ static DEVICE_ATTR(pwm_prescale, 0660, neuronspi_spi_gpio_show_pwm_presc, neuron
 static DEVICE_ATTR(pwm_duty_cycle, 0660, neuronspi_spi_gpio_show_pwm_cycle, neuronspi_spi_gpio_store_pwm_cycle);
 static DEVICE_ATTR(uart_queue_length, 0440, neuronspi_spi_show_uart_queue_length, NULL);
 static DEVICE_ATTR(uart_config, 0660, neuronspi_spi_show_uart_config, neuronspi_spi_store_uart_config);
+static DEVICE_ATTR(uart_timeout, 0660, neuronspi_spi_show_uart_timeout, neuronspi_spi_store_uart_timeout);
 static DEVICE_ATTR(sys_gpio_di_base, 0440, neuronspi_spi_gpio_show_di_base, NULL);
 static DEVICE_ATTR(sys_gpio_ro_count, 0440, neuronspi_spi_gpio_show_ro_count, NULL);
 static DEVICE_ATTR(sys_gpio_ro_prefix, 0440, neuronspi_spi_gpio_show_ro_prefix, NULL);
@@ -1039,6 +1088,7 @@ static struct attribute *neuron_board_attrs[] = {
 		&dev_attr_sys_board_serial.attr,
 		&dev_attr_uart_queue_length.attr,
 		&dev_attr_uart_config.attr,
+		&dev_attr_uart_timeout.attr,
 		&dev_attr_register_read.attr,
 		NULL,
 };
