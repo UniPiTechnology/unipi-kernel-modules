@@ -47,7 +47,7 @@
  * Definitions *
  ***************/
 
-#define NEURONSPI_SCHED_REQUIRED 0 // Older kernels do not require sched/types to be specifically imported
+#define NEURONSPI_SCHED_REQUIRED 1 // Older kernels do not require sched/types to be specifically imported
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif

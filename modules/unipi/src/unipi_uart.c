@@ -119,15 +119,17 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
 //#endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
+		printk(KERN_INFO "NEURONSPI: val_upper: %x, val_lower: %x", outp_buf[10], outp_buf[11]);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
+
 		kfree(inp_buf);
 		kfree(outp_buf);
 		return 0;
 	}
 	case 0x5481: {
-//#if NEURONSPI_DETAILED_DEBUG > 0
+#if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
-//#endif
+#endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
@@ -163,10 +165,10 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 		}
 	}
 	if (old && termios && old->c_line != termios->c_line) {
-		printk(KERN_INFO "NEURONSPI: Line Discipline change/n");
+		printk(KERN_INFO "NEURONSPI: Line Discipline change\n");
 		if (termios->c_line == N_PROFIBUS_FDL) {
 #if NEURONSPI_DETAILED_DEBUG > 0
-			printk(KERN_INFO "NEURONSPI: Line Discipline change/n");
+			printk(KERN_INFO "NEURONSPI: Line Discipline change\n");
 #endif
 			neuronspi_uart_set_ldisc(port, termios);
 		}
