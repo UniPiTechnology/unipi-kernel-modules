@@ -114,23 +114,23 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 #endif
 		return 1;
 	}
-	case 0x5480: {
+	case 0x5481: {
 //#if NEURONSPI_DETAILED_DEBUG > 0
-		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
+		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
 //#endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
-		printk(KERN_INFO "NEURONSPI: val_upper: %x, val_lower: %x", outp_buf[10], outp_buf[11]);
+		printk(KERN_INFO "NEURONSPI: val_upper: %x, val_lower: %x", inp_buf[10], inp_buf[11]);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
-
 		kfree(inp_buf);
 		kfree(outp_buf);
 		return 0;
 	}
-	case 0x5481: {
-#if NEURONSPI_DETAILED_DEBUG > 0
-		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
-#endif
-		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg);
+	case 0x5480: {
+//#if NEURONSPI_DETAILED_DEBUG > 0
+		printk(KERN_INFO "NEURONSPI: IOCTL 0x5480\n");
+//#endif
+		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg * 10);
+		printk(KERN_INFO "NEURONSPI: val_upper: %x, val_lower: %x", inp_buf[10], inp_buf[11]);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
