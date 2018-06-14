@@ -1,1 +1,0 @@
-Repository:neuron-kernel ActiveBranch:[master] PrecedingRelease:v.0.10 PrecedingRevision:41(0329dbf) LatestCommit:Thu Jun 14 11:44:07 CEST 2018

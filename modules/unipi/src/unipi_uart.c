@@ -129,7 +129,7 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 //#if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "NEURONSPI: IOCTL 0x5481\n");
 //#endif
-		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg / 10);
+		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg * 10);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
