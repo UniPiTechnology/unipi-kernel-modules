@@ -1,1 +1,1 @@
-Repository:neuron-kernel ActiveBranch:[uart_timeout] PrecedingRelease:v.0.12 PrecedingRevision:46(8430b96) LatestCommit:Thu Jun 14 15:48:26 CEST 2018
+Repository:neuron-kernel ActiveBranch:[uart_timeout] PrecedingRelease:v.0.12 PrecedingRevision:47(a9c2f52) LatestCommit:Thu Jun 14 15:51:55 CEST 2018

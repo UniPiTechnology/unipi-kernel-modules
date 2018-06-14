@@ -206,7 +206,7 @@ static ssize_t neuronspi_spi_show_uart_timeout(struct device *dev, struct device
 		read_length = neuronspi_spi_compose_single_register_read(504, &inp_buf, &outp_buf);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 25, 1, 0);
 		val = outp_buf[10 + 1];
-		memcpy(val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
+		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 		kfree(inp_buf);
 		kfree(outp_buf);
 		ret = scnprintf(buf, 255, "%d\n", val);
