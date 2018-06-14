@@ -201,14 +201,14 @@ void neuronspi_uart_fifo_read(struct uart_port *port, u32 rxlen)
 	s32 i;
 	struct neuronspi_port *s = to_neuronspi_port(port,port);
 	struct neuronspi_driver_data *d_data = spi_get_drvdata(neuronspi_s_dev[s->dev_index]);
-#if NEURONSPI_DETAILED_DEBUG > 2
+//#if NEURONSPI_DETAILED_DEBUG > 2
 	printk(KERN_INFO "NEURONSPI: FIFO Read len:%d\n", rxlen);
-#endif
+//#endif
     memcpy(s->buf, d_data->uart_buf, rxlen);
 	for (i = 0; i < rxlen; i++) {
-#if NEURONSPI_DETAILED_DEBUG > 2
+//#if NEURONSPI_DETAILED_DEBUG > 2
 		printk(KERN_INFO "NEURONSPI: UART Char Read: %x\n", d_data->uart_buf[i]);
-#endif
+//#endif
 	}
 }
 
