@@ -348,8 +348,8 @@ static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 in
 static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start, u8 **buf_inp, u8 **buf_outp, u8 data)
 {
 	u16 crc1;
-	*buf_outp = kzalloc(6, GFP_KERNEL);
-	*buf_inp = kzalloc(6, GFP_KERNEL);
+	*buf_outp = kzalloc(6, GFP_ATOMIC);
+	*buf_inp = kzalloc(6, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x05;
 	(*buf_inp)[1] = data;
 	(*buf_inp)[2] = start & 0xFF;
@@ -362,8 +362,8 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start,
 static __always_inline size_t neuronspi_spi_compose_single_coil_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x01;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -379,8 +379,8 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_read(u16 start, 
 static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x0F;
 	(*buf_inp)[1] = 4 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 	(*buf_inp)[2] = start & 0xFF;
@@ -398,8 +398,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(u8 numbe
 static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x01;
 	(*buf_inp)[1] = 4 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 	(*buf_inp)[2] = start & 0xFF;
@@ -415,8 +415,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(u8 number
 static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 start, u8 **buf_inp, u8 **buf_outp, u16 data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x06;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -434,8 +434,8 @@ static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 st
 static __always_inline size_t neuronspi_spi_compose_single_register_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x03;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -452,8 +452,8 @@ static __always_inline size_t neuronspi_spi_compose_single_register_read(u16 sta
 static __always_inline size_t neuronspi_spi_compose_multiple_register_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + (number * 2), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + (number * 2), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x10;
 	(*buf_inp)[1] = 4 + (number * 2);
 	(*buf_inp)[2] = start & 0xFF;
@@ -471,8 +471,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_register_write(u8 n
 static __always_inline size_t neuronspi_spi_compose_multiple_register_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + (number * 2), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + (number * 2), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x03;
 	(*buf_inp)[1] = 4 + (number * 2);
 	(*buf_inp)[2] = start & 0xFF;

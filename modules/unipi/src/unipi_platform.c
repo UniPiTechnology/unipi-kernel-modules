@@ -1936,7 +1936,7 @@ s32 neuronspi_find_model_id(u32 probe_count)
 {
 	struct neuronspi_driver_data *n_spi;
 	int i,j, ret = -1;
-	u8 *inv = kzalloc(sizeof(*inv) * NEURONSPI_MODELTABLE_LEN, GFP_KERNEL);
+	u8 *inv = kzalloc(sizeof(*inv) * NEURONSPI_MODELTABLE_LEN, GFP_ATOMIC);
 	for (i = 0; i < probe_count; i++) {
 		if (neuronspi_s_dev[i]) {
 			n_spi = spi_get_drvdata(neuronspi_s_dev[i]);

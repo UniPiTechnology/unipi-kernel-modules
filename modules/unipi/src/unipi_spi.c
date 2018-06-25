@@ -82,9 +82,9 @@ int neuronspi_open (struct inode *inode_p, struct file *file_p)
 		return -1;
 	}
 	neuronspi_cdrv.open_counter += 1;
-	f_internal_data = kzalloc(sizeof(*f_internal_data), GFP_KERNEL);
-	f_internal_data->recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
-	f_internal_data->send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
+	f_internal_data = kzalloc(sizeof(*f_internal_data), GFP_ATOMIC);
+	f_internal_data->recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
+	f_internal_data->send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
 	f_internal_data->spi_device = neuronspi_s_dev;
 	mutex_init(&f_internal_data->lock);
 	file_p->private_data = f_internal_data;
@@ -271,7 +271,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8
 	}
 	if (length == 1) {
 		transmit_len = 6;
-		message_buf = kzalloc(transmit_len, GFP_KERNEL);
+		message_buf = kzalloc(transmit_len, GFP_ATOMIC);
 		memcpy(message_buf, NEURONSPI_SPI_UART_SHORT_MESSAGE, NEURONSPI_SPI_UART_SHORT_MESSAGE_LEN);
 		message_buf[1] = send_buf[0];
 		message_buf[3] = uart_index;
@@ -279,7 +279,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8
 		memcpy(&message_buf[4], &crc1, 2);
 	} else {
 		transmit_len = 6 + length + 2;
-		message_buf = kzalloc(transmit_len, GFP_KERNEL);
+		message_buf = kzalloc(transmit_len, GFP_ATOMIC);
 		memcpy(message_buf, NEURONSPI_SPI_UART_LONG_MESSAGE, NEURONSPI_SPI_UART_LONG_MESSAGE_LEN);
 		message_buf[1] = length;
 		message_buf[3] = uart_index;
@@ -291,7 +291,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8
 		crc2 = neuronspi_spi_crc(&message_buf[6], length, crc1);
 		memcpy(&message_buf[6+length], &crc2, 2);
 	}
-	recv_buf = kzalloc(transmit_len, GFP_KERNEL);
+	recv_buf = kzalloc(transmit_len, GFP_ATOMIC);
 	if (d_data->slower_model) {
 		frequency = NEURONSPI_SLOWER_FREQ;
 	}
@@ -356,8 +356,8 @@ void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to)
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: SPI IRQ Set, Dev-CS:%d, to:%d\n", spi_dev->chip_select, to);
 #endif
-	message_buf = kzalloc(NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, GFP_KERNEL);
-	recv_buf = kzalloc(NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, GFP_KERNEL);
+	message_buf = kzalloc(NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, GFP_ATOMIC);
+	recv_buf = kzalloc(NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN, GFP_ATOMIC);
 	memcpy(message_buf, NEURONSPI_SPI_IRQ_SET_MESSAGE, NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN);
 	crc1 = neuronspi_spi_crc(message_buf, 4, 0);
 	memcpy(&message_buf[4], &crc1, 2);
@@ -383,8 +383,8 @@ void neuronspi_spi_uart_set_cflag(struct spi_device* spi_dev, u8 port, u32 to)
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: SPI TERMIOS Set, Dev-CS:%d, to:%x\n", spi_dev->chip_select, to);
 #endif
-	message_buf = kzalloc(NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, GFP_KERNEL);
-	recv_buf = kzalloc(NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, GFP_KERNEL);
+	message_buf = kzalloc(NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, GFP_ATOMIC);
+	recv_buf = kzalloc(NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN, GFP_ATOMIC);
 	memcpy(message_buf, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE, NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE_LEN);
 	crc1 = neuronspi_spi_crc(message_buf, 4, 0);
 	memcpy(&message_buf[4], &crc1, 2);
@@ -685,7 +685,7 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 	if (d_data != NULL && d_data->reserved_device && lock_val != d_data->reserved_device) {
 		memset(&recv_buf, 0, len);
 	} else {
-		s_trans = kzalloc(sizeof(struct spi_transfer) * trans_count, GFP_KERNEL);
+		s_trans = kzalloc(sizeof(struct spi_transfer) * trans_count, GFP_ATOMIC);
 #if NEURONSPI_DETAILED_DEBUG > 1
 		printk(KERN_INFO "NEURONSPI: SPI Master Write, len:%d,\n %100ph\n", len, send_buf);
 #endif
@@ -843,8 +843,8 @@ void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brigh
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: SPI LED Set, Dev-CS:%d, led id:%d\n", spi_dev->chip_select, id);
 #endif
-	message_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_KERNEL);
-	recv_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_KERNEL);
+	message_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_ATOMIC);
+	recv_buf = kzalloc(NEURONSPI_SPI_LED_SET_MESSAGE_LEN, GFP_ATOMIC);
 	memcpy(message_buf, NEURONSPI_SPI_LED_SET_MESSAGE, NEURONSPI_SPI_LED_SET_MESSAGE_LEN);
 	if (d_data->features != NULL) {
 		message_buf[2] = d_data->features->di_count + d_data->features->do_count + d_data->features->ro_count + id;
@@ -871,7 +871,7 @@ int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id)
 	bool ret = 0;
 	u32 offset = id / 16;
 	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
-	recv_buf = kzalloc(4, GFP_KERNEL);
+	recv_buf = kzalloc(4, GFP_ATOMIC);
 	regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, (void*)recv_buf);
 	if (*recv_buf & (0x1 << offset)) {
 		ret = 1;
@@ -919,7 +919,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	struct neuronspi_driver_data *n_spi;
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
-	n_spi = kzalloc(sizeof *n_spi, GFP_KERNEL);
+	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
 	spin_lock(&neuronspi_probe_spinlock);
 	neuronspi_probe_count++;
 	spin_unlock(&neuronspi_probe_spinlock);
@@ -981,10 +981,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 
 
 	// We perform an initial probe of registers 1000-1004 to identify the device, using a premade message
-	n_spi->recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
-	n_spi->send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
-	n_spi->first_probe_reply = kzalloc(NEURONSPI_PROBE_MESSAGE_LEN, GFP_KERNEL);	// allocate space for initial probe
-	n_spi->second_probe_reply = kzalloc(NEURONSPI_PROBE_MESSAGE_LEN, GFP_KERNEL); // allocate space for uart probe
+	n_spi->recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
+	n_spi->send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
+	n_spi->first_probe_reply = kzalloc(NEURONSPI_PROBE_MESSAGE_LEN, GFP_ATOMIC);	// allocate space for initial probe
+	n_spi->second_probe_reply = kzalloc(NEURONSPI_PROBE_MESSAGE_LEN, GFP_ATOMIC); // allocate space for uart probe
 	n_spi->lower_board_id = 0xFF;
 	n_spi->upper_board_id = 0xFF;
 	n_spi->combination_id = 0xFF;
@@ -1026,7 +1026,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	}
 
 	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
-		n_spi->features = kzalloc(sizeof(struct neuronspi_board_features), GFP_KERNEL);
+		n_spi->features = kzalloc(sizeof(struct neuronspi_board_features), GFP_ATOMIC);
 		n_spi->features = &(NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->features);
 	} else {
 		n_spi->features = NULL;
@@ -1083,7 +1083,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		printk(KERN_INFO "NEURONSPI: LED model %s with %d LEDs detected at CS: %d\n",
 				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
 				n_spi->features->led_count, spi->chip_select);
-		n_spi->led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * n_spi->features->led_count, GFP_KERNEL);
+		n_spi->led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * n_spi->features->led_count, GFP_ATOMIC);
 		for (i = 0; i < n_spi->features->led_count; i++) {
 			kthread_init_work(&(n_spi->led_driver[i].led_work), neuronspi_led_proc);
 		}
@@ -1091,7 +1091,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 
 
 	if (uart_count && neuronspi_uart == NULL) {	// Register UART if not registered
-		neuronspi_uart = kzalloc(sizeof(struct uart_driver), GFP_KERNEL);
+		neuronspi_uart = kzalloc(sizeof(struct uart_driver), GFP_ATOMIC);
 		neuronspi_uart->owner		= THIS_MODULE;
 		neuronspi_uart->dev_name	= "ttyNS";
 		neuronspi_uart->driver_name = "ttyNS";
@@ -1107,7 +1107,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (neuronspi_uart_glob_data != NULL) {
 			printk(KERN_ERR "NEURONSPI:Uart data already allocated!\n");
 		} else {
-			neuronspi_uart_glob_data = kzalloc(sizeof(struct neuronspi_uart_data), GFP_KERNEL);
+			neuronspi_uart_glob_data = kzalloc(sizeof(struct neuronspi_uart_data), GFP_ATOMIC);
 #if NEURONSPI_DETAILED_DEBUG > 0
 			printk(KERN_DEBUG "NEURONSPI: UART driver data allocated successfully!\n");
 #endif
@@ -1181,9 +1181,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		}
 #ifdef CONFIG_GPIOLIB
 		if (n_spi->features->di_count) {
-			n_spi->di_driver = kzalloc(sizeof(struct neuronspi_di_driver*) * n_spi->features->di_count, GFP_KERNEL);
+			n_spi->di_driver = kzalloc(sizeof(struct neuronspi_di_driver*) * n_spi->features->di_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->di_count; i++) {
-				n_spi->di_driver[i] = kzalloc(sizeof(struct neuronspi_di_driver), GFP_KERNEL);
+				n_spi->di_driver[i] = kzalloc(sizeof(struct neuronspi_di_driver), GFP_ATOMIC);
 				strcpy(n_spi->di_driver[i]->name, "di_0_00");
 				n_spi->di_driver[i]->name[3] = n_spi->neuron_index + '1';
 				n_spi->di_driver[i]->name[5] = ((i + 1) / 10) + '0';
@@ -1209,9 +1209,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		}
 
 		if (n_spi->features->do_count) {
-			n_spi->do_driver = kzalloc(sizeof(struct neuronspi_do_driver*) * n_spi->features->do_count, GFP_KERNEL);
+			n_spi->do_driver = kzalloc(sizeof(struct neuronspi_do_driver*) * n_spi->features->do_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->do_count; i++) {
-				n_spi->do_driver[i] = kzalloc(sizeof(struct neuronspi_do_driver), GFP_KERNEL);
+				n_spi->do_driver[i] = kzalloc(sizeof(struct neuronspi_do_driver), GFP_ATOMIC);
 				strcpy(n_spi->do_driver[i]->name, "do_0_00");
 				n_spi->do_driver[i]->name[3] = n_spi->neuron_index + '1';
 				n_spi->do_driver[i]->name[5] = ((i + 1) / 10) + '0';
@@ -1237,9 +1237,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		}
 
 		if (n_spi->features->ro_count) {
-			n_spi->ro_driver = kzalloc(sizeof(struct neuronspi_ro_driver*) * n_spi->features->ro_count, GFP_KERNEL);
+			n_spi->ro_driver = kzalloc(sizeof(struct neuronspi_ro_driver*) * n_spi->features->ro_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->ro_count; i++) {
-				n_spi->ro_driver[i] = kzalloc(sizeof(struct neuronspi_ro_driver), GFP_KERNEL);
+				n_spi->ro_driver[i] = kzalloc(sizeof(struct neuronspi_ro_driver), GFP_ATOMIC);
 				strcpy(n_spi->ro_driver[i]->name, "ro_0_00");
 				n_spi->ro_driver[i]->name[3] = n_spi->neuron_index + '1';
 				n_spi->ro_driver[i]->name[5] = ((i + 1) / 10) + '0';
@@ -1293,7 +1293,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			iio_device_register(n_spi->stm_ao_driver);
 		}
 		if (n_spi->features->sec_ai_count) {
-			n_spi->sec_ai_driver = kzalloc(sizeof(struct neuronspi_sec_ai_data*) * n_spi->features->sec_ai_count, GFP_KERNEL);
+			n_spi->sec_ai_driver = kzalloc(sizeof(struct neuronspi_sec_ai_data*) * n_spi->features->sec_ai_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->sec_ai_count; i++) {
 				n_spi->sec_ai_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ai_data));
 				((struct neuronspi_sec_ai_data*)iio_priv(n_spi->sec_ai_driver[i]))->parent = spi;
@@ -1310,7 +1310,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			}
 		}
 		if (n_spi->features->sec_ao_count) {
-			n_spi->sec_ao_driver = kzalloc(sizeof(struct neuronspi_sec_ao_data*) * n_spi->features->sec_ao_count, GFP_KERNEL);
+			n_spi->sec_ao_driver = kzalloc(sizeof(struct neuronspi_sec_ao_data*) * n_spi->features->sec_ao_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->sec_ao_count; i++) {
 				n_spi->sec_ao_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ao_data));
 				((struct neuronspi_sec_ao_data*)iio_priv(n_spi->sec_ao_driver[i]))->parent = spi;
@@ -1375,8 +1375,8 @@ u32 neuronspi_spi_uart_get_cflag(struct spi_device* spi_dev, u8 port)
 	if (d_data->slower_model) {
 		frequency = NEURONSPI_SLOWER_FREQ;
 	}
-	message_buf = kzalloc(NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, GFP_KERNEL);
-	recv_buf = kzalloc(NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, GFP_KERNEL);
+	message_buf = kzalloc(NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, GFP_ATOMIC);
+	recv_buf = kzalloc(NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN, GFP_ATOMIC);
 	memcpy(message_buf, NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE, NEURONSPI_SPI_UART_GET_CFLAG_MESSAGE_LEN);
 	crc1 = neuronspi_spi_crc(message_buf, 4, 0);
 	memcpy(&message_buf[4], &crc1, 2);
@@ -1540,7 +1540,7 @@ MODULE_ALIAS("spi:neuronspi");
 static s32 __init neuronspi_init(void)
 {
 	s32 ret = 0;
-	neuronspi_spi_w_spinlock = kzalloc(sizeof(struct spinlock), GFP_KERNEL);
+	neuronspi_spi_w_spinlock = kzalloc(sizeof(struct spinlock), GFP_ATOMIC);
 	spin_lock_init(neuronspi_spi_w_spinlock);
 	mutex_init(&neuronspi_master_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
