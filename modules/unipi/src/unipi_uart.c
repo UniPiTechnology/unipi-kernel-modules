@@ -77,7 +77,6 @@ void neuronspi_uart_tx_proc(struct kthread_work *ws)
 	    (port->port.rs485.delay_rts_before_send > 0)) {
 		msleep(port->port.rs485.delay_rts_before_send);
 	}
-
 	neuronspi_uart_handle_tx(port);
 }
 
@@ -212,6 +211,24 @@ void neuronspi_uart_fifo_read(struct uart_port *port, u32 rxlen)
 	}
 }
 
+int static neuronspi_uart_get_charcount(struct neuronspi_port *port) {
+	u8 *inp_buf, *outp_buf;
+	int read_length;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	int ret = 0;
+	spi = neuronspi_s_dev[port->dev_index];
+	n_spi = spi_get_drvdata(spi);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_queue_reg) {
+		read_length = neuronspi_spi_compose_single_register_read(n_spi->regstart_table->uart_queue_reg, &inp_buf, &outp_buf);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 35, 1, 0);
+		ret = outp_buf[MODBUS_FIRST_DATA_BYTE + 1];
+		kfree(inp_buf);
+		kfree(outp_buf);
+	}
+	return ret;
+}
+
 void neuronspi_uart_fifo_write(struct neuronspi_port *port, u8 to_send)
 {
 	s32 i;
@@ -222,6 +239,9 @@ void neuronspi_uart_fifo_write(struct neuronspi_port *port, u8 to_send)
 #if NEURONSPI_DETAILED_DEBUG > 2
 		printk(KERN_INFO "NEURONSPI: UART Char Send: %x\n", port->buf[i]);
 #endif
+	}
+	while(neuronspi_uart_get_charcount(port) > 50) {
+		msleep(1);
 	}
     neuronspi_spi_uart_write(neuronspi_s_dev[port->dev_index], port->buf, to_send, port->dev_port);
 }
@@ -267,7 +287,7 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 
 void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 {
-	u32 txlen, to_send, i;
+	u32 max_txlen, to_send, i;
 	struct spi_device *spi;
 	struct neuronspi_driver_data *d_data;
 	struct circ_buf *xmit;
@@ -280,19 +300,39 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		neuronspi_spi_uart_write(spi, &port->port.x_char, 1, port->dev_port);
 		port->port.icount.tx++;
 		port->port.x_char = 0;
+		spin_lock(&port->tx_lock);
+		port->tx_work_count--;
+		spin_unlock(&port->tx_lock);
 		return;
 	}
 
 	if (uart_circ_empty(xmit) || uart_tx_stopped(&port->port)) {
+		spin_lock(&port->tx_lock);
+		port->tx_work_count--;
+		spin_unlock(&port->tx_lock);
 		return;
 	}
 
 	/* Get length of data pending in circular buffer */
 	to_send = uart_circ_chars_pending(xmit);
 	if (likely(to_send)) {
-		/* Limit to size of TX FIFO */
-		txlen = NEURONSPI_FIFO_SIZE;
-		to_send = (to_send > txlen) ? txlen : to_send;
+		/* Limit to size of (TX FIFO / 2) */
+		max_txlen = NEURONSPI_FIFO_SIZE >> 1;
+		while (to_send > max_txlen) {
+			to_send = (to_send > max_txlen) ? max_txlen : to_send;
+
+			/* Add data to send */
+			port->port.icount.tx += to_send;
+
+			/* Convert to linear buffer */
+			for (i = 0; i < to_send; ++i) {
+				port->buf[i] = xmit->buf[xmit->tail];
+				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+			}
+
+			neuronspi_uart_fifo_write(port, to_send);
+		}
+		to_send = (to_send > NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS) ? NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS : to_send;
 
 		/* Add data to send */
 		port->port.icount.tx += to_send;
@@ -304,7 +344,11 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		}
 
 		neuronspi_uart_fifo_write(port, to_send);
+
 	}
+	spin_lock(&port->tx_lock);
+	port->tx_work_count--;
+	spin_unlock(&port->tx_lock);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
 		uart_write_wakeup(&port->port);
@@ -386,6 +430,7 @@ s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 		uart_data->p[i].port.rs485_config = neuronspi_uart_config_rs485;
 		uart_data->p[i].port.ops	= &neuronspi_uart_ops;
 		uart_data->p[i].port.line	= neuronspi_uart_alloc_line();
+		spin_lock_init(&uart_data->p[i].tx_lock);
 		spin_lock_init(&uart_data->p[i].port.lock);
 		if (uart_data->p[i].port.line >= NEURONSPI_MAX_DEVS) {
 			ret = -ENOMEM;
@@ -520,6 +565,14 @@ void neuronspi_uart_start_tx(struct uart_port *port)
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: Start TX\n");
 #endif
+	spin_lock(&n_port->tx_lock);
+	if (n_port->tx_work_count > NEURONSPI_MAX_TX_WORK) {
+		spin_unlock(&n_port->tx_lock);
+		return;
+	} else {
+		n_port->tx_work_count++;
+	}
+	spin_unlock(&n_port->tx_lock);
 	kthread_queue_work(&n_port->parent->kworker, &n_port->tx_work);
 }
 

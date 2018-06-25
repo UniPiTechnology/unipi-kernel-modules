@@ -51,7 +51,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.12:14:06:2018"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.12:25:06:2018"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				128
@@ -66,6 +66,7 @@
 #define NEURONSPI_MAX_TX				62
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
+#define NEURONSPI_FIFO_MIN_CONTINUOUS	50
 #define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 
@@ -119,6 +120,8 @@ struct neuronspi_port
 	struct kthread_work			tx_work;
 	struct kthread_work			rx_work;
 	struct kthread_work			irq_work;
+	struct spinlock				tx_lock;
+	u8							tx_work_count;
 	u32							flags;
 	u8							ier_clear;
 	u8							buf[NEURONSPI_FIFO_SIZE];
@@ -191,6 +194,7 @@ struct neuronspi_driver_data
 	u8 combination_id;
 	s32 neuron_index;
 	u16 sysfs_regmap_target;
+	u16 sysfs_register_target;
 	u16 sysfs_counter_target;
 	u32 ideal_frequency;
 };
