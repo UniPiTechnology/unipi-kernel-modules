@@ -351,7 +351,9 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	spin_unlock(&port->tx_lock);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
+		lock(&port->port.lock);
 		uart_write_wakeup(&port->port);
+		unlock(&port->port.lock);
 	}
 }
 
