@@ -351,9 +351,9 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	spin_unlock(&port->tx_lock);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
-		lock(&port->port.lock);
+		spin_lock(&port->port.lock);
 		uart_write_wakeup(&port->port);
-		unlock(&port->port.lock);
+		spin_unlock(&port->port.lock);
 	}
 }
 
@@ -361,8 +361,8 @@ void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno
 {
 	struct neuronspi_port *n_port = &uart_data->p[portno];
 	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-	u8 *send_buf = kzalloc(NEURONSPI_UART_PROBE_MESSAGE_LEN, GFP_KERNEL);
-	u8 *recv_buf = kzalloc(NEURONSPI_UART_PROBE_MESSAGE_LEN, GFP_KERNEL);
+	u8 *send_buf = kzalloc(NEURONSPI_UART_PROBE_MESSAGE_LEN, GFP_ATOMIC);
+	u8 *recv_buf = kzalloc(NEURONSPI_UART_PROBE_MESSAGE_LEN, GFP_ATOMIC);
 	memcpy(send_buf, NEURONSPI_UART_PROBE_MESSAGE, NEURONSPI_UART_PROBE_MESSAGE_LEN);
 	neuronspi_spi_send_message(spi, send_buf, recv_buf, NEURONSPI_UART_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25, 1, 0);
 	kfree(send_buf);
@@ -406,7 +406,7 @@ s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 	struct neuronspi_uart_data *uart_data = driver_data->uart_data;
 
 	if (uart_data->p == NULL) {
-		uart_data->p = kzalloc(sizeof(struct neuronspi_port[NEURONSPI_MAX_UART]), GFP_KERNEL);
+		uart_data->p = kzalloc(sizeof(struct neuronspi_port[NEURONSPI_MAX_UART]), GFP_ATOMIC);
 		for (i = 0; i < NEURONSPI_MAX_UART; i++) {
 			uart_data->p[i].parent = uart_data;
 		}
@@ -534,8 +534,8 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
 	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
 
-	u8 *send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
-	u8 *recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_KERNEL);
+	u8 *send_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
+	u8 *recv_buf = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
 
 	mutex_lock(&neuronspi_master_mutex);
 	read_count = d_data->uart_read;
