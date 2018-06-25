@@ -77,6 +77,7 @@ void neuronspi_uart_tx_proc(struct kthread_work *ws)
 	    (port->port.rs485.delay_rts_before_send > 0)) {
 		msleep(port->port.rs485.delay_rts_before_send);
 	}
+	spin_lock(&port->port.lock);
 	neuronspi_uart_handle_tx(port);
 }
 
@@ -352,10 +353,10 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	spin_unlock(&port->tx_lock);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
-		spin_lock(&port->port.lock);
 		uart_write_wakeup(&port->port);
-		spin_unlock(&port->port.lock);
 	}
+
+	spin_unlock(&port->port.lock);
 }
 
 void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno)
