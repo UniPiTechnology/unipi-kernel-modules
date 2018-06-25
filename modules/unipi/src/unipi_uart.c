@@ -304,6 +304,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_lock(&port->tx_lock);
 		port->tx_work_count--;
 		spin_unlock(&port->tx_lock);
+		spin_unlock(&port->port.lock);
 		return;
 	}
 
@@ -311,6 +312,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_lock(&port->tx_lock);
 		port->tx_work_count--;
 		spin_unlock(&port->tx_lock);
+		spin_unlock(&port->port.lock);
 		return;
 	}
 
