@@ -677,7 +677,7 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 	u16 recv_crc2 = 0;
 	u16 packet_crc = 0;
 	s32 trans_count = (len / NEURONSPI_MAX_TX) + 3;	// number of transmissions
-	struct spi_message s_msg;
+	struct spi_message *s_msg;
 	struct neuronspi_driver_data *d_data;
     struct spi_transfer* s_trans;
 	mutex_lock(&neuronspi_master_mutex);
@@ -692,7 +692,8 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 		if (!send_header) {
 			trans_count -= 1;	// one less transmission as the header is omitted
 		}
-		spi_message_init(&s_msg);
+		s_msg = kmalloc(sizeof(struct spi_message), GFP_ATOMIC);
+		spi_message_init(s_msg);
 		for (i = 0; i < trans_count; i++) {
 			memset(&(s_trans[i]), 0, sizeof(s_trans[i]));
 			s_trans[i].delay_usecs = 0;
@@ -736,13 +737,14 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 				// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
 				// otherwise it's the remainder
 			}
-			spi_message_add_tail(&(s_trans[i]), &s_msg);
+			spi_message_add_tail(&(s_trans[i]), s_msg);
 		}
-		spi_sync(spi_dev, &s_msg);
+		spi_sync(spi_dev, s_msg);
 		for (i = 0; i < trans_count; i++) {
 			spi_transfer_del(&(s_trans[i]));
 		}
 	    kfree(s_trans);
+	    kfree(s_msg);
 #if NEURONSPI_DETAILED_DEBUG > 1
 		printk(KERN_INFO "NEURONSPI: SPI Master Read - %d:\n\t%100ph\n\t%100ph\n\t%100ph\n\t%100ph\n", len,recv_buf, &recv_buf[64],
 				&recv_buf[128], &recv_buf[192]);
