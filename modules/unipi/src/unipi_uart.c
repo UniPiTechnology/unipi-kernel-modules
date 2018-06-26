@@ -27,6 +27,8 @@ struct neuronspi_uart_data* neuronspi_uart_glob_data;
 unsigned long neuronspi_lines;
 struct uart_driver* neuronspi_uart;
 
+struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+
 /************************
  * Non-static Functions *
  ************************/
@@ -77,7 +79,6 @@ void neuronspi_uart_tx_proc(struct kthread_work *ws)
 	    (port->port.rs485.delay_rts_before_send > 0)) {
 		msleep(port->port.rs485.delay_rts_before_send);
 	}
-	spin_lock(&port->port.lock);
 	neuronspi_uart_handle_tx(port);
 }
 
@@ -288,7 +289,7 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 
 void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 {
-	u32 max_txlen, to_send, i;
+	u32 max_txlen, to_send, to_send_packet, i;
 	struct spi_device *spi;
 	struct neuronspi_driver_data *d_data;
 	struct circ_buf *xmit;
@@ -304,7 +305,6 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_lock(&port->tx_lock);
 		port->tx_work_count--;
 		spin_unlock(&port->tx_lock);
-		spin_unlock(&port->port.lock);
 		return;
 	}
 
@@ -312,7 +312,6 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_lock(&port->tx_lock);
 		port->tx_work_count--;
 		spin_unlock(&port->tx_lock);
-		spin_unlock(&port->port.lock);
 		return;
 	}
 
@@ -323,18 +322,19 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		/* Limit to size of (TX FIFO / 2) */
 		max_txlen = NEURONSPI_FIFO_SIZE >> 1;
 		while (to_send > max_txlen) {
-			to_send = (to_send > max_txlen) ? max_txlen : to_send;
+			to_send_packet = (to_send > max_txlen) ? max_txlen : to_send;
 
 			/* Add data to send */
-			port->port.icount.tx += to_send;
+			port->port.icount.tx += to_send_packet;
 
 			/* Convert to linear buffer */
-			for (i = 0; i < to_send; ++i) {
+			for (i = 0; i < to_send_packet; ++i) {
 				port->buf[i] = xmit->buf[xmit->tail];
 				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 			}
-			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
-			neuronspi_uart_fifo_write(port, to_send);
+			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX, to_send:%d, tx_work_count:%d\n", to_send_packet, port->tx_work_count);
+			neuronspi_uart_fifo_write(port, to_send_packet);
+			to_send -= to_send_packet;
 		}
 		to_send = (to_send > NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS) ? NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS : to_send;
 
@@ -357,8 +357,6 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
 		uart_write_wakeup(&port->port);
 	}
-
-	spin_unlock(&port->port.lock);
 }
 
 void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno)
@@ -405,7 +403,7 @@ void neuronspi_uart_pm(struct uart_port *port, u32 state, u32 oldstate)
 s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 {
 	struct neuronspi_driver_data* driver_data = spi_get_drvdata(dev);
-	struct sched_param sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+
 	s32 i, j, ret, new_uart_count;
 	struct neuronspi_uart_data *uart_data = driver_data->uart_data;
 
@@ -436,7 +434,7 @@ s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 		uart_data->p[i].port.rs485_config = neuronspi_uart_config_rs485;
 		uart_data->p[i].port.ops	= &neuronspi_uart_ops;
 		uart_data->p[i].port.line	= neuronspi_uart_alloc_line();
-		spin_lock_init(&uart_data->p[i].tx_lock);
+		spin_lock_init(&uart_data->p[i].tx_counter_lock);
 		spin_lock_init(&uart_data->p[i].port.lock);
 		if (uart_data->p[i].port.line >= NEURONSPI_MAX_DEVS) {
 			ret = -ENOMEM;
@@ -500,7 +498,7 @@ s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 		if (IS_ERR(uart_data->kworker_task)) {
 			ret = PTR_ERR(uart_data->kworker_task);
 		}
-		sched_setscheduler(uart_data->kworker_task, SCHED_FIFO, &sched_param);
+		sched_setscheduler(uart_data->kworker_task, SCHED_FIFO, &neuronspi_sched_param);
 	}
 	return ret;
 }

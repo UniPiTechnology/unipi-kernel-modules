@@ -120,7 +120,8 @@ struct neuronspi_port
 	struct kthread_work			tx_work;
 	struct kthread_work			rx_work;
 	struct kthread_work			irq_work;
-	struct spinlock				tx_lock;
+	struct spinlock				tx_counter_lock;
+	struct mutex				tx_lock;
 	u8							tx_work_count;
 	u32							flags;
 	u8							ier_clear;
@@ -237,33 +238,13 @@ struct neuronspi_sec_ao_driver
 	u16 dev_count;
 };
 
-struct neuronspi_stm_ai_data
+struct neuronspi_analog_data
 {
 	u32 index;
 	u32 mode;
 	struct spi_device *parent;
 };
 
-struct neuronspi_stm_ao_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
-
-struct neuronspi_sec_ai_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
-
-struct neuronspi_sec_ao_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
 
 // Instantiated once per LED
 struct neuronspi_led_driver

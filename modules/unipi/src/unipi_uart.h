@@ -30,7 +30,7 @@
 #define NEURONSPI_UART_LDISC_REGISTER 	503
 #define NEURONSPI_UART_TIMEOUT_REGISTER 504
 
-#define NEURONSPI_MAX_TX_WORK	16
+#define NEURONSPI_MAX_TX_WORK	4
 
 /*************************
  * Function Declarations *

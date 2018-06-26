@@ -996,7 +996,7 @@ static ssize_t neuronspi_iio_show_primary_ai_mode(struct device *dev, struct dev
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg + ai_data->index, &val);
@@ -1009,7 +1009,7 @@ static ssize_t neuronspi_iio_store_primary_ai_mode(struct device *dev, struct de
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -1026,7 +1026,7 @@ static ssize_t neuronspi_iio_show_primary_ao_mode(struct device *dev, struct dev
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &val);
@@ -1039,7 +1039,7 @@ static ssize_t neuronspi_iio_store_primary_ao_mode(struct device *dev, struct de
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -1056,7 +1056,7 @@ static ssize_t neuronspi_iio_show_secondary_ai_mode(struct device *dev, struct d
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_mode_reg + ai_data->index, &val);
@@ -1068,7 +1068,7 @@ static ssize_t neuronspi_iio_store_secondary_ai_mode(struct device *dev, struct 
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -1084,7 +1084,7 @@ static ssize_t neuronspi_iio_show_secondary_ao_mode(struct device *dev, struct d
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ao_mode_reg + ao_data->index, &val);
@@ -1096,7 +1096,7 @@ static ssize_t neuronspi_iio_store_secondary_ao_mode(struct device *dev, struct 
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);

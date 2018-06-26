@@ -24,10 +24,10 @@
  ************************/
 
 int neuronspi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask) {
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg, &ai_data->mode);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg + ai_data->index, &ai_data->mode);
 	switch(ai_data->mode) {
 	case 0: {
 		if (ch->type == IIO_VOLTAGE) {
@@ -56,10 +56,10 @@ int neuronspi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 
 int neuronspi_iio_stm_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg, &ao_data->mode);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &ao_data->mode);
 	switch(ao_data->mode) {
 	case 3: {
 		if (ch->type == IIO_RESISTANCE) {
@@ -79,10 +79,10 @@ int neuronspi_iio_stm_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 
 int neuronspi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int val, int val2, long mask)
 {
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg, &ao_data->mode);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &ao_data->mode);
 	switch(ao_data->mode) {
 	case 0: {
 		if (ch->type == IIO_VOLTAGE) {
@@ -111,7 +111,7 @@ int neuronspi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_sp
 
 int neuronspi_iio_sec_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_mode_reg + ai_data->index, &ai_data->mode);

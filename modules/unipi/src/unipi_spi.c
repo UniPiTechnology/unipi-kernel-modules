@@ -71,6 +71,8 @@ spinlock_t neuronspi_probe_spinlock;
 struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 struct task_struct *neuronspi_invalidate_thread;
 
+struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+
 /************************
  * Non-static Functions *
  ************************/
@@ -448,7 +450,7 @@ u8 neuronspi_spi_uart_get_ldisc(struct spi_device* spi_dev, u8 port)
  */
 void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 sec_ai_val_l = 0;
@@ -472,7 +474,7 @@ void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio
 
 void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 sec_ai_val_l = 0;
@@ -495,7 +497,7 @@ void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio
 
 void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 sec_ai_val_l = 0;
@@ -517,7 +519,7 @@ void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct 
 
 void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
 {
-	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 sec_true_val = (val * 2) / 5;
@@ -531,7 +533,7 @@ void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
  */
 void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(iio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(iio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 stm_ai_val = 0;
@@ -559,7 +561,7 @@ void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_c
 
 void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 stm_ai_val = 0;
@@ -587,7 +589,7 @@ void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *indio_dev, struct iio
 
 void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 stm_aio_val = 0;
@@ -598,7 +600,7 @@ void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct 
 
 void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
 {
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 stm_v_int_ref = 0;
@@ -624,7 +626,7 @@ void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 
 void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
 {
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u32 stm_v_int_ref = 0;
@@ -647,27 +649,6 @@ void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_
 	if (stm_true_val > 4095) stm_true_val = 4095;
 	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg, (unsigned int)stm_true_val);
 }
-
-/*
-static s32 neuronspi_spi_watchdog(void *data)
-{
-	s32 *cycle = (s32 *) data;
-	while (!kthread_should_stop()) {
-		msleep(*cycle);
-		spin_lock(neuronspi_spi_w_spinlock);
-		if (neuronspi_spi_w_flag == 0) {
-			panic_timeout = -1;
-			panic("SPI Watchdog Failure\n");
-		} else {
-			neuronspi_spi_w_flag = 0;
-		}
-		spin_unlock(neuronspi_spi_w_spinlock);
-	}
-	return 0;
-}
-*/
-
-
 
 int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val)
 {
@@ -917,7 +898,6 @@ int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value)
 s32 neuronspi_spi_probe(struct spi_device *spi)
 {
 	const struct neuronspi_devtype *devtype;
-	struct sched_param sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
 	struct neuronspi_driver_data *n_spi;
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
@@ -979,7 +959,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		ret = PTR_ERR(n_spi->primary_worker_task);
 		return ret;
 	}
-	sched_setscheduler(n_spi->primary_worker_task, SCHED_FIFO, &sched_param);
+	sched_setscheduler(n_spi->primary_worker_task, SCHED_FIFO, &neuronspi_sched_param);
 
 
 	// We perform an initial probe of registers 1000-1004 to identify the device, using a premade message
@@ -1267,9 +1247,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		}
 #endif
 		if (n_spi->features->stm_ai_count) {
-			n_spi->stm_ai_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_stm_ai_data));
-			((struct neuronspi_stm_ai_data*)iio_priv(n_spi->stm_ai_driver))->parent = spi;
-			((struct neuronspi_stm_ai_data*)iio_priv(n_spi->stm_ai_driver))->index = i;
+			n_spi->stm_ai_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ai_driver))->parent = spi;
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ai_driver))->index = i;
 			n_spi->stm_ai_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->name = "ai_type_a";
@@ -1281,9 +1261,9 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			iio_device_register(n_spi->stm_ai_driver);
 		}
 		if (n_spi->features->stm_ao_count) {
-			n_spi->stm_ao_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_stm_ai_data));
-			((struct neuronspi_stm_ao_data*)iio_priv(n_spi->stm_ao_driver))->parent = spi;
-			((struct neuronspi_stm_ao_data*)iio_priv(n_spi->stm_ao_driver))->index = i;
+			n_spi->stm_ao_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ao_driver))->parent = spi;
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ao_driver))->index = i;
 			n_spi->stm_ao_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->name = "ao_type_a";
@@ -1295,11 +1275,11 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			iio_device_register(n_spi->stm_ao_driver);
 		}
 		if (n_spi->features->sec_ai_count) {
-			n_spi->sec_ai_driver = kzalloc(sizeof(struct neuronspi_sec_ai_data*) * n_spi->features->sec_ai_count, GFP_ATOMIC);
+			n_spi->sec_ai_driver = kzalloc(sizeof(struct neuronspi_analog_data*) * n_spi->features->sec_ai_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->sec_ai_count; i++) {
-				n_spi->sec_ai_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ai_data));
-				((struct neuronspi_sec_ai_data*)iio_priv(n_spi->sec_ai_driver[i]))->parent = spi;
-				((struct neuronspi_sec_ai_data*)iio_priv(n_spi->sec_ai_driver[i]))->index = i;
+				n_spi->sec_ai_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+				((struct neuronspi_analog_data*)iio_priv(n_spi->sec_ai_driver[i]))->parent = spi;
+				((struct neuronspi_analog_data*)iio_priv(n_spi->sec_ai_driver[i]))->index = i;
 				n_spi->sec_ai_driver[i]->modes = INDIO_DIRECT_MODE;
 				n_spi->sec_ai_driver[i]->currentmode = INDIO_DIRECT_MODE;
 				n_spi->sec_ai_driver[i]->name = "ai_type_b";
@@ -1312,11 +1292,11 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 			}
 		}
 		if (n_spi->features->sec_ao_count) {
-			n_spi->sec_ao_driver = kzalloc(sizeof(struct neuronspi_sec_ao_data*) * n_spi->features->sec_ao_count, GFP_ATOMIC);
+			n_spi->sec_ao_driver = kzalloc(sizeof(struct neuronspi_analog_data*) * n_spi->features->sec_ao_count, GFP_ATOMIC);
 			for (i = 0; i < n_spi->features->sec_ao_count; i++) {
-				n_spi->sec_ao_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_sec_ao_data));
-				((struct neuronspi_sec_ao_data*)iio_priv(n_spi->sec_ao_driver[i]))->parent = spi;
-				((struct neuronspi_sec_ao_data*)iio_priv(n_spi->sec_ao_driver[i]))->index = i;
+				n_spi->sec_ao_driver[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+				((struct neuronspi_analog_data*)iio_priv(n_spi->sec_ao_driver[i]))->parent = spi;
+				((struct neuronspi_analog_data*)iio_priv(n_spi->sec_ao_driver[i]))->index = i;
 				n_spi->sec_ao_driver[i]->modes = INDIO_DIRECT_MODE;
 				n_spi->sec_ao_driver[i]->currentmode = INDIO_DIRECT_MODE;
 				n_spi->sec_ao_driver[i]->name = "ao_type_b";
