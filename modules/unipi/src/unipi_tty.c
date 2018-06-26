@@ -20,11 +20,11 @@
 #include <linux/mm.h>
 #include <linux/string.h>
 
+static struct tty_ldisc_ops neuronspi_tty_ldisc;
 
 int neuronspi_tty_init()
 {
 	int err;
-	static struct tty_ldisc_ops neuronspi_tty_ldisc;
 	printk(KERN_INFO "NEURONSPI TTYInit\n");
 	memset(&neuronspi_tty_ldisc, 0, sizeof(neuronspi_tty_ldisc));
 	n_tty_inherit_ops(&neuronspi_tty_ldisc);
