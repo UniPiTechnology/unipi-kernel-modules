@@ -39,6 +39,8 @@
 void neuronspi_uart_start_tx(struct uart_port *port);
 void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old);
 u32 neuronspi_uart_tx_empty(struct uart_port *port);
+void neuronspi_uart_break_ctl(struct uart_port *port, int break_state);
+void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl);
 void neuronspi_uart_shutdown(struct uart_port *port);
 s32 neuronspi_uart_startup(struct uart_port *port);
 s32 neuronspi_uart_request_port(struct uart_port *port);
@@ -78,12 +80,12 @@ extern struct uart_driver* neuronspi_uart;
 static const struct uart_ops neuronspi_uart_ops =
 {
 	.tx_empty			= neuronspi_uart_tx_empty,
-	.set_mctrl			= neuronspi_uart_null_void,
+	.set_mctrl			= neuronspi_uart_set_mctrl,
 	.get_mctrl			= neuronspi_uart_get_mctrl,
 	.stop_tx			= neuronspi_uart_null_void,
 	.start_tx			= neuronspi_uart_start_tx,
 	.stop_rx			= neuronspi_uart_null_void,
-	.break_ctl			= neuronspi_uart_null_void,
+	.break_ctl			= neuronspi_uart_break_ctl,
 	.startup			= neuronspi_uart_startup,
 	.shutdown			= neuronspi_uart_shutdown,
 	.set_termios		= neuronspi_uart_set_termios,

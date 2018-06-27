@@ -633,6 +633,14 @@ void neuronspi_uart_power(struct uart_port *port, s32 on)
 {
     /* Do nothing */
 }
+void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl)
+{
+    /* Do nothing */
+}
+void neuronspi_uart_break_ctl(struct uart_port *port, int break_state)
+{
+    /* Do nothing */
+}
 void neuronspi_uart_null_void(struct uart_port *port)
 {
 	/* Do nothing */
