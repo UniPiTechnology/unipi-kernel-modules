@@ -121,7 +121,7 @@ struct neuronspi_port
 	struct kthread_work			rx_work;
 	struct kthread_work			irq_work;
 	struct spinlock				tx_counter_lock;
-	struct mutex				tx_lock;
+	struct spinlock				tx_lock;
 	u8							tx_work_count;
 	u32							flags;
 	u8							ier_clear;
