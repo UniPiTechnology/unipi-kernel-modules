@@ -62,13 +62,13 @@ struct neuronspi_char_driver neuronspi_cdrv =
 
 struct mutex neuronspi_master_mutex;
 struct mutex unipi_inv_speed_mutex;
-struct spinlock* neuronspi_ldisc_spinlock;
-struct spinlock* neuronspi_spi_w_spinlock;
+struct spinlock *neuronspi_ldisc_spinlock;
+struct spinlock *neuronspi_spi_w_spinlock;
 u8 neuronspi_spi_w_flag = 1;
 u8 neuronspi_probe_count = 0;
 int neuronspi_model_id = -1;
 spinlock_t neuronspi_probe_spinlock;
-struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
+struct spi_device *neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 struct task_struct *neuronspi_invalidate_thread;
 
 struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };

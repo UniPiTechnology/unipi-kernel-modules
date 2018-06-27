@@ -991,7 +991,7 @@ static ssize_t neuronspi_spi_gpio_show_ro_count(struct device *dev, struct devic
 }
 
 
-static ssize_t neuronspi_iio_show_primary_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_stm_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
@@ -1004,7 +1004,7 @@ static ssize_t neuronspi_iio_show_primary_ai_mode(struct device *dev, struct dev
 	return ret;
 }
 
-static ssize_t neuronspi_iio_store_primary_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_stm_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
@@ -1021,7 +1021,7 @@ err_end:
 	return count;
 }
 
-static ssize_t neuronspi_iio_show_primary_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_stm_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
@@ -1034,7 +1034,7 @@ static ssize_t neuronspi_iio_show_primary_ao_mode(struct device *dev, struct dev
 	return ret;
 }
 
-static ssize_t neuronspi_iio_store_primary_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_stm_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
@@ -1051,7 +1051,7 @@ err_end:
 	return count;
 }
 
-static ssize_t neuronspi_iio_show_secondary_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_external_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
@@ -1063,7 +1063,7 @@ static ssize_t neuronspi_iio_show_secondary_ai_mode(struct device *dev, struct d
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
-static ssize_t neuronspi_iio_store_secondary_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_external_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
@@ -1079,7 +1079,7 @@ static ssize_t neuronspi_iio_store_secondary_ai_mode(struct device *dev, struct 
 err_end:
 	return count;
 }
-static ssize_t neuronspi_iio_show_secondary_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_external_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
@@ -1091,7 +1091,7 @@ static ssize_t neuronspi_iio_show_secondary_ao_mode(struct device *dev, struct d
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
-static ssize_t neuronspi_iio_store_secondary_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_external_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
@@ -1152,10 +1152,10 @@ static DEVICE_ATTR(sys_gpio_di_base, 0440, neuronspi_spi_gpio_show_di_base, NULL
 static DEVICE_ATTR(sys_gpio_ro_count, 0440, neuronspi_spi_gpio_show_ro_count, NULL);
 static DEVICE_ATTR(sys_gpio_ro_prefix, 0440, neuronspi_spi_gpio_show_ro_prefix, NULL);
 static DEVICE_ATTR(sys_gpio_ro_base, 0440, neuronspi_spi_gpio_show_ro_base, NULL);
-static DEVICE_ATTR(mode_ai_type_a, 0660, neuronspi_iio_show_primary_ai_mode, neuronspi_iio_store_primary_ai_mode);
-static DEVICE_ATTR(mode_ao_type_a, 0660, neuronspi_iio_show_primary_ao_mode, neuronspi_iio_store_primary_ao_mode);
-static DEVICE_ATTR(mode_ai_type_b, 0660, neuronspi_iio_show_secondary_ai_mode, neuronspi_iio_store_secondary_ai_mode);
-static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_secondary_ao_mode, neuronspi_iio_store_secondary_ao_mode);
+static DEVICE_ATTR(mode_ai_type_a, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
+static DEVICE_ATTR(mode_ao_type_a, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
+static DEVICE_ATTR(mode_ai_type_b, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
+static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,

@@ -20,7 +20,7 @@
 #include <linux/mm.h>
 #include <linux/string.h>
 
-static struct tty_ldisc_ops neuronspi_tty_ldisc;
+struct tty_ldisc_ops neuronspi_tty_ldisc;
 
 int neuronspi_tty_init()
 {
