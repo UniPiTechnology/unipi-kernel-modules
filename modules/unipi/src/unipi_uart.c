@@ -300,11 +300,15 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 
 	spi = neuronspi_s_dev[port->dev_index];
 	d_data = spi_get_drvdata(spi);
+	spin_lock(&port->port.lock);
 	xmit = &port->port.state->xmit;
+	spin_unlock(&port->port.lock);
 
 	if (unlikely(port->port.x_char)) {
 		neuronspi_spi_uart_write(spi, &port->port.x_char, 1, port->dev_port);
+		spin_lock(&port->port.lock);
 		port->port.icount.tx++;
+		spin_unlock(&port->port.lock);
 		port->port.x_char = 0;
 		spin_lock(&port->tx_lock);
 		port->tx_work_count--;
@@ -320,21 +324,27 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	}
 
 	/* Get length of data pending in circular buffer */
+	spin_lock(&port->port.lock);
 	to_send = uart_circ_chars_pending(xmit);
+	spin_unlock(&port->port.lock);
 	printk(KERN_INFO "NEURONSPI UART_HANDLE_TX A, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
 	if (likely(to_send)) {
 		/* Limit to size of (TX FIFO / 2) */
-		max_txlen = NEURONSPI_FIFO_SIZE >> 1;
+		max_txlen = NEURONSPI_FIFO_SIZE >> 2;
 		while (to_send > max_txlen) {
 			to_send_packet = (to_send > max_txlen) ? max_txlen : to_send;
 
 			/* Add data to send */
+			spin_lock(&port->port.lock);
 			port->port.icount.tx += to_send_packet;
+			spin_unlock(&port->port.lock);
 
 			/* Convert to linear buffer */
 			for (i = 0; i < to_send_packet; ++i) {
+				spin_lock(&port->port.lock);
 				port->buf[i] = xmit->buf[xmit->tail];
 				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+				spin_unlock(&port->port.lock);
 			}
 			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX B, to_send:%d, tx_work_count:%d\n", to_send_packet, port->tx_work_count);
 			neuronspi_uart_fifo_write(port, to_send_packet);
@@ -343,12 +353,16 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		to_send = (to_send > NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS) ? NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS : to_send;
 
 		/* Add data to send */
+		spin_lock(&port->port.lock);
 		port->port.icount.tx += to_send;
+		spin_unlock(&port->port.lock);
 
 		/* Convert to linear buffer */
 		for (i = 0; i < to_send; ++i) {
+			spin_lock(&port->port.lock);
 			port->buf[i] = xmit->buf[xmit->tail];
 			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+			spin_unlock(&port->port.lock);
 		}
 		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
 		neuronspi_uart_fifo_write(port, to_send);
@@ -359,7 +373,9 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	spin_unlock(&port->tx_lock);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
+		spin_lock(&port->port.lock);
 		uart_write_wakeup(&port->port);
+		spin_unlock(&port->port.lock);
 	}
 }
 
