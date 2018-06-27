@@ -311,18 +311,12 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		port->port.icount.tx++;
 		spin_unlock_irqrestore(&port->port.lock, flags);
 		port->port.x_char = 0;
-		spin_lock_irqsave(&port->tx_lock, flags);
-		port->tx_work_count--;
-		spin_unlock_irqrestore(&port->tx_lock, flags);
 		return;
 	}
 
 	spin_lock_irqsave(&port->port.lock, flags);
 	if (uart_circ_empty(xmit) || uart_tx_stopped(&port->port)) {
 		spin_unlock_irqrestore(&port->port.lock, flags);
-		spin_lock_irqsave(&port->tx_lock, flags);
-		port->tx_work_count--;
-		spin_unlock_irqrestore(&port->tx_lock, flags);
 		return;
 	}
 	spin_unlock_irqrestore(&port->port.lock, flags);
@@ -331,7 +325,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	spin_lock_irqsave(&port->port.lock, flags);
 	to_send = uart_circ_chars_pending(xmit);
 	spin_unlock_irqrestore(&port->port.lock, flags);
-	printk(KERN_INFO "NEURONSPI UART_HANDLE_TX A, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
+	printk(KERN_INFO "NEURONSPI UART_HANDLE_TX A, to_send:%d\n", to_send);
 	if (likely(to_send)) {
 		/* Limit to size of (TX FIFO / 2) */
 		max_txlen = NEURONSPI_FIFO_SIZE >> 2;
@@ -350,7 +344,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 				spin_unlock_irqrestore(&port->port.lock, flags);
 			}
-			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX B, to_send:%d, tx_work_count:%d\n", to_send_packet, port->tx_work_count);
+			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX B, to_send:%d\n", to_send_packet);
 			neuronspi_uart_fifo_write(port, to_send_packet);
 			to_send -= to_send_packet;
 		}
@@ -368,13 +362,10 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 			spin_unlock_irqrestore(&port->port.lock, flags);
 		}
-		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
+		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d\n", to_send);
 		neuronspi_uart_fifo_write(port, to_send);
 
 	}
-	spin_lock_irqsave(&port->tx_lock, flags);
-	port->tx_work_count--;
-	spin_unlock_irqrestore(&port->tx_lock, flags);
 
 	spin_lock_irqsave(&port->port.lock, flags);
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
@@ -458,7 +449,6 @@ s32 neuronspi_uart_probe(struct spi_device* dev, u8 device_index)
 		uart_data->p[i].port.rs485_config = neuronspi_uart_config_rs485;
 		uart_data->p[i].port.ops	= &neuronspi_uart_ops;
 		uart_data->p[i].port.line	= neuronspi_uart_alloc_line();
-		spin_lock_init(&uart_data->p[i].tx_counter_lock);
 		spin_lock_init(&uart_data->p[i].port.lock);
 		if (uart_data->p[i].port.line >= NEURONSPI_MAX_DEVS) {
 			ret = -ENOMEM;
@@ -590,20 +580,12 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 void neuronspi_uart_start_tx(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port,port);
-	unsigned long flags;
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: Start TX\n");
 #endif
-	spin_lock_irqsave(&n_port->tx_lock, flags);
-	if (n_port->tx_work_count > NEURONSPI_MAX_TX_WORK) {
-		spin_unlock_irqrestore(&n_port->tx_lock, flags);
+	if (!kthread_queue_work(&n_port->parent->kworker, &n_port->tx_work)) {
 		printk(KERN_INFO "NEURONSPI: TX WORK OVERFLOW\n");
-		return;
-	} else {
-		n_port->tx_work_count++;
 	}
-	spin_unlock_irqrestore(&n_port->tx_lock, flags);
-	kthread_queue_work(&n_port->parent->kworker, &n_port->tx_work);
 }
 
 s32 neuronspi_uart_poll(void *data)
@@ -636,6 +618,7 @@ s32 neuronspi_uart_startup(struct uart_port *port)
 		wake_up_process(d_data->poll_thread);
 	} else if (d_data->no_irq) {
 		d_data->poll_thread = kthread_create(neuronspi_uart_poll, (void *)d_data, "UART_poll_thread");
+		wake_up_process(d_data->poll_thread);
 	}
 	neuronspi_uart_power(port, 1);
 	// TODO: /* Reset FIFOs*/

@@ -973,7 +973,6 @@ static ssize_t neuronspi_spi_gpio_show_do_count(struct device *dev, struct devic
 static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	unsigned long flags;
 	struct neuronspi_di_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
