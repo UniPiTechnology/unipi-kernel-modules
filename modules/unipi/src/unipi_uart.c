@@ -317,12 +317,15 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		return;
 	}
 
+	spin_lock_irqsave(&port->port.lock, flags);
 	if (uart_circ_empty(xmit) || uart_tx_stopped(&port->port)) {
+		spin_unlock_irqrestore(&port->port.lock, flags);
 		spin_lock_irqsave(&port->tx_lock, flags);
 		port->tx_work_count--;
 		spin_unlock_irqrestore(&port->tx_lock, flags);
 		return;
 	}
+	spin_unlock_irqrestore(&port->port.lock, flags);
 
 	/* Get length of data pending in circular buffer */
 	spin_lock_irqsave(&port->port.lock, flags);
@@ -373,11 +376,11 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 	port->tx_work_count--;
 	spin_unlock_irqrestore(&port->tx_lock, flags);
 
+	spin_lock_irqsave(&port->port.lock, flags);
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
-		spin_lock_irqsave(&port->port.lock, flags);
 		uart_write_wakeup(&port->port);
-		spin_unlock_irqrestore(&port->port.lock, flags);
 	}
+	spin_unlock_irqrestore(&port->port.lock, flags);
 }
 
 void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno)

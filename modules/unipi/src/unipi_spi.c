@@ -1315,7 +1315,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 #if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_DEBUG "NEURONSPI: UART registration 1\n");
 #endif
-		n_spi->uart_buf = kzalloc(NEURONSPI_FIFO_SIZE, GFP_KERNEL);
+		n_spi->uart_buf = kzalloc(NEURONSPI_FIFO_SIZE, GFP_ATOMIC);
 		neuronspi_uart_probe(spi, n_spi->neuron_index);
 #if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_DEBUG "NEURONSPI: UART PROBE MCTRL:%d\n", neuronspi_spi_uart_get_cflag(spi, 0));
