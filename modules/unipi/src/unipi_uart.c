@@ -629,23 +629,6 @@ void neuronspi_uart_shutdown(struct uart_port *port)
  * Empty functions *
  *******************/
 
-void neuronspi_uart_stop_tx(struct uart_port *port)
-{
-	/* Do Nothing */
-}
-
-void neuronspi_uart_stop_rx(struct uart_port *port)
-{
-	/* Do Nothing */
-}
-void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl)
-{
-	/* Do Nothing */
-}
-void neuronspi_uart_break_ctl(struct uart_port *port, int break_state)
-{
-	/* Do Nothing */
-}
 void neuronspi_uart_power(struct uart_port *port, s32 on)
 {
     /* Do nothing */
