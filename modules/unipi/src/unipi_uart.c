@@ -593,7 +593,7 @@ void neuronspi_uart_start_tx(struct uart_port *port)
 #endif
 	spin_lock_irqsave(&n_port->tx_lock, flags);
 	if (n_port->tx_work_count > NEURONSPI_MAX_TX_WORK) {
-		spin_unlock(&n_port->tx_lock);
+		spin_unlock_irqrestore(&n_port->tx_lock, flags);
 		printk(KERN_INFO "NEURONSPI: TX WORK OVERFLOW\n");
 		return;
 	} else {
