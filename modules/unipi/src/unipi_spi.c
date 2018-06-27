@@ -1577,4 +1577,4 @@ module_exit(neuronspi_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tomas Knot <knot@faster.cz>");
-MODULE_DESCRIPTION("UniPi Neuron driver");
+MODULE_DESCRIPTION("UniPi PLC Driver");
