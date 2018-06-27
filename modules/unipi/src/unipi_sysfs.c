@@ -713,15 +713,16 @@ static ssize_t neuronspi_spi_show_register(struct device *dev, struct device_att
 	int read_length;
 	ssize_t ret = 0;
 	u16 val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct spi_device *spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	spi = neuronspi_s_dev[n_spi->neuron_index];
 	if (n_spi && n_spi->reg_map) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		read_length = neuronspi_spi_compose_single_register_read(n_spi->sysfs_register_target, &inp_buf, &outp_buf);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 125, 1, 0);
 		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 		ret = scnprintf(buf, 255, "%x\n", (u32)val);
@@ -733,15 +734,16 @@ static ssize_t neuronspi_spi_store_register(struct device *dev, struct device_at
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		n_spi->sysfs_register_target = val;
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 err_end:
 	return count;
@@ -753,6 +755,7 @@ static ssize_t neuronspi_spi_store_register_value(struct device *dev, struct dev
 	int write_length;
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct spi_device *spi;
 	struct platform_device *plat = to_platform_device(dev);
@@ -761,9 +764,9 @@ static ssize_t neuronspi_spi_store_register_value(struct device *dev, struct dev
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		write_length = neuronspi_spi_compose_single_register_read(n_spi->sysfs_register_target, &inp_buf, &outp_buf);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0);
 	}
 err_end:
@@ -776,16 +779,17 @@ static ssize_t neuronspi_show_regmap(struct device *dev, struct device_attribute
 {
 	ssize_t ret = 0;
 	u32 val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct spi_device *spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	spi = neuronspi_s_dev[n_spi->neuron_index];
 	if (n_spi && n_spi->reg_map) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		regmap_read(n_spi->reg_map, n_spi->sysfs_regmap_target, &val);
 		ret = scnprintf(buf, 255, "%x\n", val);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 	return ret;
 }
@@ -794,15 +798,16 @@ static ssize_t neuronspi_store_regmap(struct device *dev, struct device_attribut
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		n_spi->sysfs_regmap_target = val;
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 err_end:
 	return count;
@@ -812,15 +817,16 @@ static ssize_t neuronspi_store_regmap_value(struct device *dev, struct device_at
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		regmap_write(n_spi->reg_map, n_spi->sysfs_regmap_target, val);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 err_end:
 	return count;
@@ -963,15 +969,16 @@ static ssize_t neuronspi_spi_gpio_show_do_count(struct device *dev, struct devic
 static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
+	unsigned long flags;
 	struct neuronspi_di_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.ngpio);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 	return ret;
 }

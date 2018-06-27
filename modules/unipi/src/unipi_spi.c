@@ -178,6 +178,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
 	s32 transmit_len = len - NEURONSPI_HEADER_LENGTH;
 	s32 send_header = 0;
 	s32 delay = 25;
+	unsigned long flags;
 	struct neuronspi_file_data* private_data;
 	struct spi_device* spi_driver_data;
 	struct neuronspi_driver_data* driver_data;
@@ -247,9 +248,9 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     memcpy(private_data->send_buf, buffer, len);
     memset(private_data->recv_buf, 0, NEURONSPI_BUFFER_MAX );
     private_data->message_len = transmit_len;
-    spin_lock(neuronspi_spi_w_spinlock);
+    spin_lock_irqsave(neuronspi_spi_w_spinlock, flags);
     neuronspi_spi_w_flag = 1;
-    spin_unlock(neuronspi_spi_w_spinlock);
+    spin_unlock_irqrestore(neuronspi_spi_w_spinlock, flags);
     neuronspi_spi_send_message(spi_driver_data, &private_data->send_buf[NEURONSPI_HEADER_LENGTH], private_data->recv_buf,
     		transmit_len, frequency, delay, send_header, buffer[7]);
     mutex_unlock(&private_data->lock);
@@ -900,10 +901,11 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	struct neuronspi_driver_data *n_spi;
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
+	unsigned long flags;
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
-	spin_lock(neuronspi_probe_spinlock);
+	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
 	neuronspi_probe_count++;
-	spin_unlock(neuronspi_probe_spinlock);
+	spin_unlock_irqrestore(neuronspi_probe_spinlock, flags);
 	if (!n_spi)
 		return -ENOMEM;
 	printk(KERN_INFO "NEURONSPI: Neuronspi Probe Started\n");
@@ -1109,13 +1111,13 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_DEBUG "NEURONSPI: CHIP SELECT %d\n", spi->chip_select);
 #endif
-	spin_lock(neuronspi_probe_spinlock);
+	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
 	spi_set_drvdata(neuronspi_s_dev[n_spi->neuron_index], n_spi);
 	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {
 		neuronspi_model_id = neuronspi_find_model_id(neuronspi_probe_count);
 	}
-	spin_unlock(neuronspi_probe_spinlock);
+	spin_unlock_irqrestore(neuronspi_probe_spinlock, flags);
 	if (neuronspi_model_id != -1) {
 		printk(KERN_INFO "NEURONSPI: Detected Neuron board combination corresponding to %s\n", NEURONSPI_MODELTABLE[neuronspi_model_id].model_name);
 	}
