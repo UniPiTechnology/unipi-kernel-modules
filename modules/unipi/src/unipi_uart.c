@@ -27,11 +27,11 @@ struct neuronspi_uart_data* neuronspi_uart_glob_data;
 unsigned long neuronspi_lines;
 struct uart_driver* neuronspi_uart;
 
-struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
 
-/************************
- * Non-static Functions *
- ************************/
+/********************
+ * Static Functions *
+ ********************/
 
 static void neuronspi_uart_set_iflags(struct uart_port *port, int to)
 {
@@ -51,6 +51,10 @@ static void neuronspi_uart_set_iflags(struct uart_port *port, int to)
 	kfree(inp_buf);
 	kfree(outp_buf);
 }
+
+/************************
+ * Non-static Functions *
+ ************************/
 
 void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
 {
@@ -317,7 +321,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 
 	/* Get length of data pending in circular buffer */
 	to_send = uart_circ_chars_pending(xmit);
-	printk(KERN_INFO "NEURONSPI UART_HANDLE_TX, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
+	printk(KERN_INFO "NEURONSPI UART_HANDLE_TX A, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
 	if (likely(to_send)) {
 		/* Limit to size of (TX FIFO / 2) */
 		max_txlen = NEURONSPI_FIFO_SIZE >> 1;
@@ -332,7 +336,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 				port->buf[i] = xmit->buf[xmit->tail];
 				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 			}
-			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX, to_send:%d, tx_work_count:%d\n", to_send_packet, port->tx_work_count);
+			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX B, to_send:%d, tx_work_count:%d\n", to_send_packet, port->tx_work_count);
 			neuronspi_uart_fifo_write(port, to_send_packet);
 			to_send -= to_send_packet;
 		}
@@ -346,7 +350,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 			port->buf[i] = xmit->buf[xmit->tail];
 			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		}
-		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
+		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d, tx_work_count:%d\n", to_send, port->tx_work_count);
 		neuronspi_uart_fifo_write(port, to_send);
 
 	}

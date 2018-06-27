@@ -283,9 +283,6 @@ extern struct spinlock* neuronspi_spi_w_spinlock;
 extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 extern struct task_struct *neuronspi_invalidate_thread;
 
-extern u8 neuronspi_spi_w_flag;
-extern u8 neuronspi_probe_count;
 extern int neuronspi_model_id;
-extern spinlock_t neuronspi_probe_spinlock;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */

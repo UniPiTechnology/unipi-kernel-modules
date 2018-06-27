@@ -62,16 +62,15 @@ struct neuronspi_char_driver neuronspi_cdrv =
 
 struct mutex neuronspi_master_mutex;
 struct mutex unipi_inv_speed_mutex;
-struct spinlock *neuronspi_ldisc_spinlock;
 struct spinlock *neuronspi_spi_w_spinlock;
-u8 neuronspi_spi_w_flag = 1;
-u8 neuronspi_probe_count = 0;
 int neuronspi_model_id = -1;
-spinlock_t neuronspi_probe_spinlock;
 struct spi_device *neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 struct task_struct *neuronspi_invalidate_thread;
 
-struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+static u8 neuronspi_spi_w_flag = 1;
+static u8 neuronspi_probe_count = 0;
+static struct spinlock *neuronspi_probe_spinlock;
+static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
 
 /************************
  * Non-static Functions *
@@ -902,9 +901,9 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
-	spin_lock(&neuronspi_probe_spinlock);
+	spin_lock(neuronspi_probe_spinlock);
 	neuronspi_probe_count++;
-	spin_unlock(&neuronspi_probe_spinlock);
+	spin_unlock(neuronspi_probe_spinlock);
 	if (!n_spi)
 		return -ENOMEM;
 	printk(KERN_INFO "NEURONSPI: Neuronspi Probe Started\n");
@@ -1110,13 +1109,13 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_DEBUG "NEURONSPI: CHIP SELECT %d\n", spi->chip_select);
 #endif
-	spin_lock(&neuronspi_probe_spinlock);
+	spin_lock(neuronspi_probe_spinlock);
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
 	spi_set_drvdata(neuronspi_s_dev[n_spi->neuron_index], n_spi);
 	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {
 		neuronspi_model_id = neuronspi_find_model_id(neuronspi_probe_count);
 	}
-	spin_unlock(&neuronspi_probe_spinlock);
+	spin_unlock(neuronspi_probe_spinlock);
 	if (neuronspi_model_id != -1) {
 		printk(KERN_INFO "NEURONSPI: Detected Neuron board combination corresponding to %s\n", NEURONSPI_MODELTABLE[neuronspi_model_id].model_name);
 	}
@@ -1524,6 +1523,8 @@ static s32 __init neuronspi_init(void)
 	s32 ret = 0;
 	neuronspi_spi_w_spinlock = kzalloc(sizeof(struct spinlock), GFP_ATOMIC);
 	spin_lock_init(neuronspi_spi_w_spinlock);
+	neuronspi_probe_spinlock = kzalloc(sizeof(struct spinlock), GFP_ATOMIC);
+	spin_lock_init(neuronspi_probe_spinlock);
 	mutex_init(&neuronspi_master_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
