@@ -1766,11 +1766,11 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_write(reg, &inp_buf, &outp_buf, (val >> 8));
 	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
+		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
 		}
 	}
-	memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 	kfree(inp_buf);
 	kfree(outp_buf);
 	return 0;
