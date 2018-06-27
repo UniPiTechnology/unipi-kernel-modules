@@ -778,6 +778,7 @@ err_end:
 static ssize_t neuronspi_show_regmap(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
+	unsigned int target = 0;
 	u32 val = 0;
 	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
@@ -787,9 +788,10 @@ static ssize_t neuronspi_show_regmap(struct device *dev, struct device_attribute
 	spi = neuronspi_s_dev[n_spi->neuron_index];
 	if (n_spi && n_spi->reg_map) {
 		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
-		regmap_read(n_spi->reg_map, n_spi->sysfs_regmap_target, &val);
-		ret = scnprintf(buf, 255, "%x\n", val);
+		target = n_spi->sysfs_regmap_target;
 		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		regmap_read(n_spi->reg_map, target, &val);
+		ret = scnprintf(buf, 255, "%x\n", val);
 	}
 	return ret;
 }
@@ -817,6 +819,7 @@ static ssize_t neuronspi_store_regmap_value(struct device *dev, struct device_at
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned int target = 0;
 	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
@@ -825,8 +828,9 @@ static ssize_t neuronspi_store_regmap_value(struct device *dev, struct device_at
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
 		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
-		regmap_write(n_spi->reg_map, n_spi->sysfs_regmap_target, val);
+		target = n_spi->sysfs_regmap_target;
 		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		regmap_write(n_spi->reg_map, n_spi->sysfs_regmap_target, val);
 	}
 err_end:
 	return count;
@@ -976,9 +980,7 @@ static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct devic
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.ngpio);
-		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
 	}
 	return ret;
 }
