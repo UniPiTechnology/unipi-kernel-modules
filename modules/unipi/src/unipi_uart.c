@@ -265,7 +265,8 @@ s32 neuronspi_uart_alloc_line(void)
 
 void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 {
-	u32 ch, flag, flags, bytes_read, i;
+	unsigned long flags;
+	u32 ch, flag, bytes_read, i;
 	while (rxlen) {
 		neuronspi_uart_fifo_read(&port->port, rxlen);
 		bytes_read = rxlen;
