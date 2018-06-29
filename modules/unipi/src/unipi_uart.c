@@ -163,10 +163,9 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 //#endif
 	neuronspi_spi_uart_set_cflag(neuronspi_s_dev[n_port->dev_index], n_port->dev_port, termios->c_cflag);
 	if (old && termios && (old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)) {
+		neuronspi_uart_set_iflags(port, termios->c_iflag);
 		if (termios->c_iflag & PARMRK) {
-			neuronspi_uart_set_iflags(port, termios->c_iflag);
-		} else {
-			neuronspi_uart_set_iflags(port, termios->c_iflag);
+			termios->c_iflag &= ~PARMRK;
 		}
 	}
 	if (old && termios && old->c_line != termios->c_line) {
@@ -266,15 +265,13 @@ s32 neuronspi_uart_alloc_line(void)
 
 void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 {
-	u32 ch, flag, bytes_read, i;
+	u32 ch, flag, flags, bytes_read, i;
 	while (rxlen) {
-
 		neuronspi_uart_fifo_read(&port->port, rxlen);
 		bytes_read = rxlen;
-
+		spin_lock_irqsave(&port->port.lock, flags);
 		port->port.icount.rx++;
 		flag = TTY_NORMAL;
-
 		for (i = 0; i < bytes_read; ++i) {
 #if NEURONSPI_DETAILED_DEBUG > 0
 			printk(KERN_INFO "NEURONSPI: UART Insert Char:%x\n", port->buf[i]);
@@ -286,14 +283,14 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 			uart_insert_char(&port->port, 0, 0, ch, flag);
 		}
 		rxlen -= bytes_read;
+		spin_lock_irqrestore(&port->port.lock, flags);
 	}
-
 	tty_flip_buffer_push(&port->port.state->port);
 }
 
 void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 {
-	u32 max_txlen, to_send, to_send_packet, i;
+	s32 max_txlen, to_send, to_send_packet, i;
 	unsigned long flags;
 	struct spi_device *spi;
 	struct neuronspi_driver_data *d_data;
@@ -335,36 +332,31 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 			/* Add data to send */
 			spin_lock_irqsave(&port->port.lock, flags);
 			port->port.icount.tx += to_send_packet;
-			spin_unlock_irqrestore(&port->port.lock, flags);
-
 			/* Convert to linear buffer */
 			for (i = 0; i < to_send_packet; ++i) {
-				spin_lock_irqsave(&port->port.lock, flags);
 				port->buf[i] = xmit->buf[xmit->tail];
 				xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-				spin_unlock_irqrestore(&port->port.lock, flags);
 			}
+			spin_unlock_irqrestore(&port->port.lock, flags);
 			printk(KERN_INFO "NEURONSPI UART_HANDLE_TX B, to_send:%d\n", to_send_packet);
 			neuronspi_uart_fifo_write(port, to_send_packet);
-			to_send -= to_send_packet;
-		}
-		to_send = (to_send > NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS) ? NEURONSPI_FIFO_SIZE - NEURONSPI_FIFO_MIN_CONTINUOUS : to_send;
-
-		/* Add data to send */
-		spin_lock_irqsave(&port->port.lock, flags);
-		port->port.icount.tx += to_send;
-		spin_unlock_irqrestore(&port->port.lock, flags);
-
-		/* Convert to linear buffer */
-		for (i = 0; i < to_send; ++i) {
 			spin_lock_irqsave(&port->port.lock, flags);
-			port->buf[i] = xmit->buf[xmit->tail];
-			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+			to_send = uart_circ_chars_pending(xmit);
 			spin_unlock_irqrestore(&port->port.lock, flags);
 		}
-		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d\n", to_send);
-		neuronspi_uart_fifo_write(port, to_send);
-
+		spin_lock_irqsave(&port->port.lock, flags);
+		to_send = uart_circ_chars_pending(xmit);
+		to_send_packet = (to_send > max_txlen) ? max_txlen : to_send;
+		/* Add data to send */
+		port->port.icount.tx += to_send_packet;
+		/* Convert to linear buffer */
+		for (i = 0; i < to_send_packet; ++i) {
+			port->buf[i] = xmit->buf[xmit->tail];
+			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+		}
+		spin_unlock_irqrestore(&port->port.lock, flags);
+		printk(KERN_INFO "NEURONSPI UART_HANDLE_TX C, to_send:%d\n", to_send_packet);
+		neuronspi_uart_fifo_write(port, to_send_packet);
 	}
 
 	spin_lock_irqsave(&port->port.lock, flags);
@@ -563,7 +555,9 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 		if (recv_buf[6] == 0x65 && recv_buf[7] > 0) {
 			mutex_lock(&neuronspi_master_mutex);
 			memcpy(&d_data->uart_buf[0], &recv_buf[10], recv_buf[7]);
+			mutex_unlock(&neuronspi_master_mutex);
 			neuronspi_uart_handle_rx(n_port, recv_buf[7], 1);
+			mutex_lock(&neuronspi_master_mutex);
 			read_count = recv_buf[9];
 			mutex_unlock(&neuronspi_master_mutex);
 		} else if (recv_buf[0] != 0x41) {
