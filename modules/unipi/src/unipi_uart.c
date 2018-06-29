@@ -284,7 +284,7 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, u32 rxlen, u32 iir)
 			uart_insert_char(&port->port, 0, 0, ch, flag);
 		}
 		rxlen -= bytes_read;
-		spin_lock_irqrestore(&port->port.lock, flags);
+		spin_unlock_irqrestore(&port->port.lock, flags);
 	}
 	tty_flip_buffer_push(&port->port.state->port);
 }
