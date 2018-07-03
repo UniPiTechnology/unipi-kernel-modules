@@ -457,7 +457,7 @@ void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio
 	u32 sec_ai_val_h = 0;
 	u32 sec_ai_val_m = 0;
 	u8 sec_ai_exp = 0;
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 (2 * ai_data->index), &sec_ai_val_h);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
 	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
 	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
