@@ -1160,10 +1160,10 @@ static DEVICE_ATTR(sys_gpio_di_base, 0440, neuronspi_spi_gpio_show_di_base, NULL
 static DEVICE_ATTR(sys_gpio_ro_count, 0440, neuronspi_spi_gpio_show_ro_count, NULL);
 static DEVICE_ATTR(sys_gpio_ro_prefix, 0440, neuronspi_spi_gpio_show_ro_prefix, NULL);
 static DEVICE_ATTR(sys_gpio_ro_base, 0440, neuronspi_spi_gpio_show_ro_base, NULL);
-static DEVICE_ATTR(mode_ai_type_a, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
-static DEVICE_ATTR(mode_ao_type_a, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
-static DEVICE_ATTR(mode_ai_type_b, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
-static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
+static DEVICE_ATTR(mode_ai_voltage_current, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
+static DEVICE_ATTR(mode_ao_voltage_current_resistance, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
+static DEVICE_ATTR(mode_ai_voltage_current_resistance, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
+static DEVICE_ATTR(mode_ao_voltage, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
@@ -1226,22 +1226,22 @@ static struct attribute *neuron_gpio_ro_attrs[] = {
 };
 
 static struct attribute *neuron_stm_ai_attrs[] = {
-		&dev_attr_mode_ai_type_a.attr,
+		&dev_attr_mode_ai_voltage_current.attr,
 		NULL,
 };
 
 static struct attribute *neuron_stm_ao_attrs[] = {
-		&dev_attr_mode_ao_type_a.attr,
+		&dev_attr_mode_ao_voltage_current_resistance.attr,
 		NULL,
 };
 
 static struct attribute *neuron_sec_ai_attrs[] = {
-		&dev_attr_mode_ai_type_b.attr,
+		&dev_attr_mode_ai_voltage_current_resistance.attr,
 		NULL,
 };
 
 static struct attribute *neuron_sec_ao_attrs[] = {
-		&dev_attr_mode_ao_type_b.attr,
+		&dev_attr_mode_ao_voltage.attr,
 		NULL,
 };
 
