@@ -1252,7 +1252,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (n_spi->features->stm_ai_count) {
 			n_spi->stm_ai_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
 			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ai_driver))->parent = spi;
-			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ai_driver))->index = i;
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ai_driver))->index = 0;
 			n_spi->stm_ai_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ai_driver->name = "ai_type_a";
@@ -1266,7 +1266,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		if (n_spi->features->stm_ao_count) {
 			n_spi->stm_ao_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
 			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ao_driver))->parent = spi;
-			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ao_driver))->index = i;
+			((struct neuronspi_analog_data*)iio_priv(n_spi->stm_ao_driver))->index = 0;
 			n_spi->stm_ao_driver->modes = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->currentmode = INDIO_DIRECT_MODE;
 			n_spi->stm_ao_driver->name = "ao_type_a";
