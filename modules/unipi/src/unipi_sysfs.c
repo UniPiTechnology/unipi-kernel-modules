@@ -200,7 +200,9 @@ static ssize_t neuronspi_spi_show_uart_timeout(struct device *dev, struct device
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: Index %d\n", n_spi->neuron_index);
+#endif
 	spi = neuronspi_s_dev[n_spi->neuron_index];
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
 		read_length = neuronspi_spi_compose_single_register_read(504, &inp_buf, &outp_buf);
@@ -224,7 +226,9 @@ static ssize_t neuronspi_spi_store_uart_timeout(struct device *dev, struct devic
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: Index %d\n", n_spi->neuron_index);
+#endif
 	spi = neuronspi_s_dev[n_spi->neuron_index];
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
@@ -1008,7 +1012,6 @@ static ssize_t neuronspi_iio_show_stm_ai_mode(struct device *dev, struct device_
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg + ai_data->index, &val);
-
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
@@ -1038,9 +1041,10 @@ static ssize_t neuronspi_iio_show_stm_ao_mode(struct device *dev, struct device_
 	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &val);
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
+#endif
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
@@ -1056,7 +1060,9 @@ static ssize_t neuronspi_iio_store_stm_ao_mode(struct device *dev, struct device
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != -1 && n_spi->reg_map) {
+#if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "NEURONSPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
+#endif
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
 	}
 err_end:

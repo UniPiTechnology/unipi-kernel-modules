@@ -25,7 +25,9 @@ struct tty_ldisc_ops neuronspi_tty_ldisc;
 int neuronspi_tty_init()
 {
 	int err;
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "NEURONSPI TTY Init\n");
+#endif
 	memset(&neuronspi_tty_ldisc, 0, sizeof(neuronspi_tty_ldisc));
 	n_tty_inherit_ops(&neuronspi_tty_ldisc);
 	neuronspi_tty_ldisc.magic 			= TTY_LDISC_MAGIC;

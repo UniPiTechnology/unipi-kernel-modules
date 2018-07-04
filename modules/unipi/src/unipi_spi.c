@@ -635,7 +635,7 @@ void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_
 	u32 stm_v_inp_ref = 0;
 	u32 stm_i_err = 0;
 	u32 stm_i_off = 0;
-	u64 stm_true_val = 0;
+	u64 stm_true_val = val;
 	u64 stm_true_ref = 0;
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
