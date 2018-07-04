@@ -1163,7 +1163,7 @@ static DEVICE_ATTR(sys_gpio_ro_base, 0440, neuronspi_spi_gpio_show_ro_base, NULL
 static DEVICE_ATTR(mode_ai_voltage_current, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
 static DEVICE_ATTR(mode_ao_voltage_current_resistance, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
 static DEVICE_ATTR(mode_ai_voltage_current_resistance, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
-static DEVICE_ATTR(mode_ao_voltage, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
+//static DEVICE_ATTR(mode_ao_voltage, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
@@ -1240,10 +1240,12 @@ static struct attribute *neuron_sec_ai_attrs[] = {
 		NULL,
 };
 
-static struct attribute *neuron_sec_ao_attrs[] = {
+/*
+ * static struct attribute *neuron_sec_ao_attrs[] = {
 		&dev_attr_mode_ao_voltage.attr,
 		NULL,
 };
+*/
 
 static struct attribute_group neuron_plc_attr_group = {
 	.attrs = neuron_plc_attrs,
@@ -1277,9 +1279,11 @@ const struct attribute_group neuron_sec_ai_group = {
 	.attrs = neuron_sec_ai_attrs,
 };
 
+/*
 const struct attribute_group neuron_sec_ao_group = {
 	.attrs = neuron_sec_ao_attrs,
 };
+*/
 
 const struct attribute_group *neuron_plc_attr_groups[] = {
 	&neuron_plc_attr_group,
