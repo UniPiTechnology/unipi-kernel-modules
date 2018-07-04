@@ -321,7 +321,7 @@ static const struct iio_info neuronspi_sec_ai_info = {
 static const struct iio_info neuronspi_sec_ao_info = {
 	.write_raw = neuronspi_iio_sec_ao_write_raw,
 	.driver_module = THIS_MODULE,
-	.attrs = &neuron_sec_ao_group,
+	//.attrs = &neuron_sec_ao_group,
 };
 
 // These defines need to be at the end
