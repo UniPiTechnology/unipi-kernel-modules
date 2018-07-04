@@ -41,7 +41,7 @@ int neuronspi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 	case 1: {
 		if (ch->type == IIO_CURRENT) {
 			neuronspi_spi_iio_stm_ai_read_current(indio_dev, ch, val, val2, mask);
-			return IIO_VAL_INT;
+			return IIO_VAL_FRACTIONAL;
 		} else {
 			return -EINVAL;
 		}

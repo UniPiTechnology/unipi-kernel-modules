@@ -586,6 +586,7 @@ void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *indio_dev, struct iio
 	stm_true_val += stm_i_off;
 	do_div(stm_true_val, 10000);
 	*val = stm_true_val;
+	*val2 = 1000;
 }
 
 void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
