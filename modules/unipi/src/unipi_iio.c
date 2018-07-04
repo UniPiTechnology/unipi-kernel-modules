@@ -64,7 +64,7 @@ int neuronspi_iio_stm_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 	case 3: {
 		if (ch->type == IIO_RESISTANCE) {
 			neuronspi_spi_iio_stm_ao_read_resistance(indio_dev, ch, val, val2, mask);
-			return IIO_VAL_INT;
+			return IIO_VAL_FRACTIONAL;
 		} else {
 			return -EINVAL;
 		}

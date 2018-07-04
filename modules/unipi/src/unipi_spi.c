@@ -610,6 +610,7 @@ void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	u32 stm_v_err = 0;
 	u32 stm_v_off = 0;
 	u64 stm_true_val = val;
+	u64 stm_true_val_fraction = val2;
 	u64 stm_true_ref = 0;
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
@@ -617,7 +618,7 @@ void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_vol_off, &stm_v_off);
 	stm_true_ref = ((u64)stm_v_int_ref) * (99000 + stm_v_err) * 1000;
 	stm_v_inp_ref = stm_v_inp_ref * 10000;
-	stm_true_val = ((stm_true_val * 10000) - stm_v_off) * 4095;
+	stm_true_val = ((stm_true_val * 10000) + (stm_true_val_fraction / 100) - stm_v_off) * 4095;
 	do_div(stm_true_ref, stm_v_inp_ref);
 	stm_v_inp_ref = stm_true_ref;
 	do_div(stm_true_val, stm_v_inp_ref);
@@ -636,15 +637,15 @@ void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_
 	u32 stm_i_err = 0;
 	u32 stm_i_off = 0;
 	u64 stm_true_val = val;
+	u64 stm_true_val_fraction = val2;
 	u64 stm_true_ref = 0;
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_curr_err, &stm_i_err);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_curr_off, &stm_i_off);
-	printk(KERN_INFO "NEURONSPI: Val2: %d\n", val2);
 	stm_true_ref = ((u64)stm_v_int_ref) * (330000 + stm_i_err) * 100;
 	stm_v_inp_ref = stm_v_inp_ref * 1000;
-	stm_true_val = ((stm_true_val * 10000) - stm_i_off) * 4095;
+	stm_true_val = (((stm_true_val * 10000) + (stm_true_val_fraction / 100)) - stm_i_off) * 4095;
 	do_div(stm_true_ref, stm_v_inp_ref);
 	stm_v_inp_ref = stm_true_ref;
 	do_div(stm_true_val, stm_v_inp_ref);
