@@ -647,7 +647,7 @@ void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_
 	do_div(stm_true_ref, stm_v_inp_ref);
 	stm_v_inp_ref = stm_true_ref;
 	do_div(stm_true_val, stm_v_inp_ref);
-	do_div(stm_true_val, 10000);
+	do_div(stm_true_val, 10);
 	if (stm_true_val > 4095) stm_true_val = 4095;
 	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg, (unsigned int)stm_true_val);
 }
