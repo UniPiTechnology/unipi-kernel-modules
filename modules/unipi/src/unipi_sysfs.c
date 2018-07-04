@@ -1008,6 +1008,7 @@ static ssize_t neuronspi_iio_show_stm_ai_mode(struct device *dev, struct device_
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg + ai_data->index, &val);
+
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
@@ -1037,7 +1038,9 @@ static ssize_t neuronspi_iio_show_stm_ao_mode(struct device *dev, struct device_
 	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &val);
+	printk(KERN_INFO "NEURONSPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
@@ -1053,6 +1056,7 @@ static ssize_t neuronspi_iio_store_stm_ao_mode(struct device *dev, struct device
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != -1 && n_spi->reg_map) {
+		printk(KERN_INFO "NEURONSPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
 	}
 err_end:
@@ -1071,6 +1075,7 @@ static ssize_t neuronspi_iio_show_external_ai_mode(struct device *dev, struct de
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
+
 static ssize_t neuronspi_iio_store_external_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
@@ -1087,6 +1092,7 @@ static ssize_t neuronspi_iio_store_external_ai_mode(struct device *dev, struct d
 err_end:
 	return count;
 }
+
 static ssize_t neuronspi_iio_show_external_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
@@ -1099,6 +1105,7 @@ static ssize_t neuronspi_iio_show_external_ao_mode(struct device *dev, struct de
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
+
 static ssize_t neuronspi_iio_store_external_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
