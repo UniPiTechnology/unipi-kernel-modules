@@ -596,6 +596,7 @@ void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct 
 	u32 stm_aio_val = 0;
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_aio_val_reg, &stm_aio_val);
 	*val = stm_aio_val;
+	*val2 = 10;
 }
 
 
