@@ -523,8 +523,9 @@ void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 sec_true_val;
 	if (val > 10000) val = 10000;
-	u32 sec_true_val = (val * 2) / 5;
+	sec_true_val = (val * 2) / 5;
 	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg + ao_data->index, sec_true_val);
 }
 
