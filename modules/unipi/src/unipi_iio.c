@@ -175,7 +175,7 @@ int neuronspi_iio_sec_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int val, int val2, long mask)
 {
 	if (ch->type == IIO_VOLTAGE) {
-		neuronspi_spi_iio_stm_ao_set_voltage(indio_dev, ch, val, val2, mask);
+		neuronspi_spi_iio_sec_ao_set_voltage(indio_dev, ch, val, val2, mask);
 		return 0;
 	} else {
 		return -EINVAL;
