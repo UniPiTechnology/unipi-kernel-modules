@@ -526,7 +526,7 @@ void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_
 	u32 sec_true_val;
 	if (val > 10000) val = 10000;
 	sec_true_val = (val * 2) / 5;
-	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg + ao_data->index, sec_true_val);
+	regmap_write(n_spi->reg_map, n_spi->regstart_table->sec_ao_val_reg + ao_data->index, sec_true_val);
 }
 
 /*
