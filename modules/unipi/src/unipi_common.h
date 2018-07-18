@@ -51,7 +51,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.12:25:06:2018"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.13:2018:08:07"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				128
@@ -70,9 +70,9 @@
 #define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 
-#define NEURON_DEVICE_NAME 				"neuronspi"
+#define NEURON_DEVICE_NAME 				"unipispi"
 #define NEURON_DEVICE_CLASS 			"modbus_spi"
-#define NEURON_DRIVER_NAME				"NEURONSPI"
+#define NEURON_DRIVER_NAME				"UNIPISPI"
 #define PORT_NEURONSPI					184
 
 #define STRICT_RESERVING
@@ -251,7 +251,7 @@ struct neuronspi_led_driver
 	struct kthread_work	led_work;
 	int					id;
 	int					brightness;
-	char				name[sizeof("neuron:green:uled-x1")];
+	char				name[sizeof("unipi:green:uled-x1")];
 	spinlock_t			lock;
 };
 

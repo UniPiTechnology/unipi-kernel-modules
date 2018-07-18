@@ -127,6 +127,7 @@ static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
 
 static const struct of_device_id neuronspi_id_match[] = {
 		{.compatible = "unipi,neuron"},
+		{.compatible = "unipi,axon"},
 		{.compatible = NEURON_DEVICE_NAME},
 		{}
 };
@@ -213,7 +214,7 @@ static const struct regmap_bus neuronspi_regmap_bus =
 
 static const struct regmap_config neuronspi_regmap_config_default =
 {
-		.name 					= "Neuronspi Regmap",
+		.name 					= "UniPiSPI Regmap",
 		.reg_bits				= 16,
 		.reg_stride				= 0,
 		.pad_bits				= 0,

@@ -26,7 +26,7 @@ int neuronspi_tty_init()
 {
 	int err;
 #if NEURONSPI_DETAILED_DEBUG > 0
-	printk(KERN_INFO "NEURONSPI TTY Init\n");
+	printk(KERN_INFO "UNIPISPI: TTY Init\n");
 #endif
 	memset(&neuronspi_tty_ldisc, 0, sizeof(neuronspi_tty_ldisc));
 	n_tty_inherit_ops(&neuronspi_tty_ldisc);
@@ -35,7 +35,7 @@ int neuronspi_tty_init()
 	neuronspi_tty_ldisc.owner 			= THIS_MODULE;
 	err = tty_register_ldisc(N_PROFIBUS_FDL, &neuronspi_tty_ldisc);
 	if (err) {
-		printk(KERN_INFO "UniPi line discipline registration failed. (%d)", err);
+		printk(KERN_INFO "UNIPISPI: UniPi line discipline registration failed. (%d)", err);
 		return err;
 	}
 	return 0;

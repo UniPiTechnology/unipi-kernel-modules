@@ -1682,7 +1682,7 @@ void neuronspi_regmap_invalidate_device(struct regmap *reg_map, struct neuronspi
 				case NEURONSPI_REGFLAG_ACC_AFAP: {
 					if (regcache_drop_region(reg_map, block_start + block_counter - period_len + 1, block_start + block_counter)) {
 #if NEURONSPI_DETAILED_DEBUG > 0
-						printk(KERN_INFO "NEURONSPI: RegCache dropping failed");
+						printk(KERN_INFO "UNIPISPI: RegCache dropping failed");
 #endif
 					}
 					break;
