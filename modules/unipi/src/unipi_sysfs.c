@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -185,6 +185,58 @@ static ssize_t neuronspi_spi_store_uart_config(struct device *dev, struct device
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->uart_conf_reg, val);
+	}
+err_end:
+	return count;
+}
+
+static ssize_t neuronspi_spi_show_uart_timeout(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	u32 val = 0;
+	u8 *inp_buf, *outp_buf;
+	int read_length;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: Index %d\n", n_spi->neuron_index);
+#endif
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
+		read_length = neuronspi_spi_compose_single_register_read(504, &inp_buf, &outp_buf);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 25, 1, 0);
+		val = outp_buf[11];
+		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
+		kfree(inp_buf);
+		kfree(outp_buf);
+		ret = scnprintf(buf, 255, "%d\n", val);
+	}
+	return ret;
+}
+
+static ssize_t neuronspi_spi_store_uart_timeout(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	u8 *inp_buf, *outp_buf;
+	int write_length;
+	struct spi_device *spi;
+	struct neuronspi_driver_data *n_spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: Index %d\n", n_spi->neuron_index);
+#endif
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
+		write_length = neuronspi_spi_compose_single_register_write(504, &inp_buf, &outp_buf, val);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
+		kfree(inp_buf);
+		kfree(outp_buf);
 	}
 err_end:
 	return count;
@@ -658,18 +710,92 @@ err_end:
 	return count;
 }
 
-static ssize_t neuronspi_show_regmap(struct device *dev, struct device_attribute *attr, char *buf)
+
+static ssize_t neuronspi_spi_show_register(struct device *dev, struct device_attribute *attr, char *buf)
 {
+	u8 *inp_buf, *outp_buf;
+	int read_length;
 	ssize_t ret = 0;
-	u32 val = 0;
+	u16 val = 0;
+	unsigned long flags;
+	struct neuronspi_driver_data *n_spi;
+	struct spi_device *spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	if (n_spi && n_spi->reg_map) {
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
+		read_length = neuronspi_spi_compose_single_register_read(n_spi->sysfs_register_target, &inp_buf, &outp_buf);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, read_length, n_spi->ideal_frequency, 125, 1, 0);
+		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
+		ret = scnprintf(buf, 255, "%x\n", (u32)val);
+	}
+	return ret;
+}
+
+static ssize_t neuronspi_spi_store_register(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (n_spi && n_spi->reg_map && val < 65536) {
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
+		n_spi->sysfs_register_target = val;
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+	}
+err_end:
+	return count;
+}
+
+static ssize_t neuronspi_spi_store_register_value(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	u8 *inp_buf, *outp_buf;
+	int write_length;
+	ssize_t err = 0;
+	unsigned int val = 0;
+	unsigned long flags;
+	struct neuronspi_driver_data *n_spi;
+	struct spi_device *spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	spi = neuronspi_s_dev[n_spi->neuron_index];
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (n_spi && n_spi->reg_map && val < 65536) {
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
+		write_length = neuronspi_spi_compose_single_register_read(n_spi->sysfs_register_target, &inp_buf, &outp_buf);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0);
+	}
+err_end:
+	return count;
+}
+
+
+
+static ssize_t neuronspi_show_regmap(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	unsigned int target = 0;
+	u32 val = 0;
+	unsigned long flags;
+	struct neuronspi_driver_data *n_spi;
+	struct spi_device *spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	spi = neuronspi_s_dev[n_spi->neuron_index];
 	if (n_spi && n_spi->reg_map) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
-		regmap_read(n_spi->reg_map, n_spi->sysfs_regmap_target, &val);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
+		target = n_spi->sysfs_regmap_target;
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		regmap_read(n_spi->reg_map, target, &val);
 		ret = scnprintf(buf, 255, "%x\n", val);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
 	}
 	return ret;
 }
@@ -678,15 +804,37 @@ static ssize_t neuronspi_store_regmap(struct device *dev, struct device_attribut
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
+	unsigned long flags;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_spi = platform_get_drvdata(plat);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->reg_map && val < 65536) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
 		n_spi->sysfs_regmap_target = val;
-		spin_unlock(&n_spi->sysfs_regmap_lock);
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+	}
+err_end:
+	return count;
+}
+
+static ssize_t neuronspi_store_regmap_value(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	unsigned int target = 0;
+	unsigned long flags;
+	struct neuronspi_driver_data *n_spi;
+	struct platform_device *plat = to_platform_device(dev);
+	n_spi = platform_get_drvdata(plat);
+	err = kstrtouint(buf, 0, &val);
+	if (err < 0) goto err_end;
+	if (n_spi && n_spi->reg_map && val < 65536) {
+		spin_lock_irqsave(&n_spi->sysfs_regmap_lock, flags);
+		target = n_spi->sysfs_regmap_target;
+		spin_unlock_irqrestore(&n_spi->sysfs_regmap_lock, flags);
+		regmap_write(n_spi->reg_map, n_spi->sysfs_regmap_target, val);
 	}
 err_end:
 	return count;
@@ -835,9 +983,7 @@ static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct devic
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		spin_lock(&n_spi->sysfs_regmap_lock);
 		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.ngpio);
-		spin_unlock(&n_spi->sysfs_regmap_lock);
 	}
 	return ret;
 }
@@ -857,12 +1003,12 @@ static ssize_t neuronspi_spi_gpio_show_ro_count(struct device *dev, struct devic
 }
 
 
-static ssize_t neuronspi_iio_show_primary_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_stm_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_mode_reg + ai_data->index, &val);
@@ -870,12 +1016,12 @@ static ssize_t neuronspi_iio_show_primary_ai_mode(struct device *dev, struct dev
 	return ret;
 }
 
-static ssize_t neuronspi_iio_store_primary_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_stm_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -887,54 +1033,61 @@ err_end:
 	return count;
 }
 
-static ssize_t neuronspi_iio_show_primary_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_stm_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, &val);
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
+#endif
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
 
-static ssize_t neuronspi_iio_store_primary_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t neuronspi_iio_store_stm_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_stm_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != -1 && n_spi->reg_map) {
+#if NEURONSPI_DETAILED_DEBUG > 0
+		printk(KERN_INFO "UNIPISPI: Mode register %d set to %x", n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
+#endif
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_mode_reg + ao_data->index, val);
 	}
 err_end:
 	return count;
 }
 
-static ssize_t neuronspi_iio_show_secondary_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t neuronspi_iio_show_external_ai_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_mode_reg + ai_data->index, &val);
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
-static ssize_t neuronspi_iio_store_secondary_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+
+static ssize_t neuronspi_iio_store_external_ai_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ai_data *ai_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -945,24 +1098,26 @@ static ssize_t neuronspi_iio_store_secondary_ai_mode(struct device *dev, struct 
 err_end:
 	return count;
 }
-static ssize_t neuronspi_iio_show_secondary_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
+
+static ssize_t neuronspi_iio_show_external_ao_mode(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ao_mode_reg + ao_data->index, &val);
 	ret = scnprintf(buf, 255, "%d\n", val);
 	return ret;
 }
-static ssize_t neuronspi_iio_store_secondary_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+
+static ssize_t neuronspi_iio_store_external_ao_mode(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct neuronspi_sec_ao_data *ao_data = iio_priv(indio_dev);
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
 	struct spi_device *spi = ao_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	err = kstrtouint(buf, 0, &val);
@@ -978,18 +1133,21 @@ err_end:
  * Function Structure Definitions *
  **********************************/
 
-static DEVICE_ATTR(model_name, 0440, neuronspi_show_model, NULL);
+static DEVICE_ATTR(model_name, 0444, neuronspi_show_model, NULL);
 static DEVICE_ATTR(sys_reading_freq, 0660, neuronspi_show_sysfs_speed, neuronspi_store_sysfs_speed);
-static DEVICE_ATTR(sys_eeprom_name, 0440, neuronspi_show_eeprom, NULL);
-static DEVICE_ATTR(driver_version, 0440, neuronspi_show_driver_version, NULL);
-static DEVICE_ATTR(register_read, 0660, neuronspi_show_regmap, neuronspi_store_regmap);
+static DEVICE_ATTR(sys_eeprom_name, 0444, neuronspi_show_eeprom, NULL);
+static DEVICE_ATTR(driver_version, 0444, neuronspi_show_driver_version, NULL);
+static DEVICE_ATTR(register_read, 0660, neuronspi_spi_show_register, neuronspi_spi_store_register);
+static DEVICE_ATTR(register_set, 0220, NULL, neuronspi_spi_store_register_value);
+static DEVICE_ATTR(regmap_read, 0660, neuronspi_show_regmap, neuronspi_store_regmap);
+static DEVICE_ATTR(regmap_set, 0220, NULL, neuronspi_store_regmap_value);
 static DEVICE_ATTR(sys_board_serial, 0440, neuronspi_spi_show_serial, NULL);
-static DEVICE_ATTR(sys_board_name, 0440, neuronspi_spi_show_board, NULL);
-static DEVICE_ATTR(sys_primary_major_id, 0440, neuronspi_spi_show_lboard_id, NULL);
-static DEVICE_ATTR(sys_secondary_major_id, 0440, neuronspi_spi_show_uboard_id, NULL);
-static DEVICE_ATTR(sys_primary_minor_id, 0440, neuronspi_spi_show_hw_version, NULL);
-static DEVICE_ATTR(sys_secondary_minor_id, 0440, neuronspi_spi_show_hw_flash_version, NULL);
-static DEVICE_ATTR(firmware_version, 0440, neuronspi_spi_show_fw_version, NULL);
+static DEVICE_ATTR(sys_board_name, 0444, neuronspi_spi_show_board, NULL);
+static DEVICE_ATTR(sys_primary_major_id, 0444, neuronspi_spi_show_lboard_id, NULL);
+static DEVICE_ATTR(sys_secondary_major_id, 0444, neuronspi_spi_show_uboard_id, NULL);
+static DEVICE_ATTR(sys_primary_minor_id, 0444, neuronspi_spi_show_hw_version, NULL);
+static DEVICE_ATTR(sys_secondary_minor_id, 0444, neuronspi_spi_show_hw_flash_version, NULL);
+static DEVICE_ATTR(firmware_version, 0444, neuronspi_spi_show_fw_version, NULL);
 static DEVICE_ATTR(watchdog_status, 0660, neuronspi_spi_show_watchdog_status, neuronspi_spi_store_watchdog_status);
 static DEVICE_ATTR(watchdog_timeout, 0660, neuronspi_spi_show_watchdog_timeout, neuronspi_spi_store_watchdog_timeout);
 static DEVICE_ATTR(sys_gpio_do_count, 0440, neuronspi_spi_gpio_show_do_count, NULL);
@@ -1009,15 +1167,16 @@ static DEVICE_ATTR(pwm_frequency_cycle, 0660, neuronspi_spi_gpio_show_pwm_freq, 
 static DEVICE_ATTR(pwm_prescale, 0660, neuronspi_spi_gpio_show_pwm_presc, neuronspi_spi_gpio_store_pwm_presc);
 static DEVICE_ATTR(pwm_duty_cycle, 0660, neuronspi_spi_gpio_show_pwm_cycle, neuronspi_spi_gpio_store_pwm_cycle);
 static DEVICE_ATTR(uart_queue_length, 0440, neuronspi_spi_show_uart_queue_length, NULL);
-static DEVICE_ATTR(uart_config, 0660, neuronspi_spi_show_uart_config, neuronspi_spi_store_uart_config);
+static DEVICE_ATTR(uart_config, 0664, neuronspi_spi_show_uart_config, neuronspi_spi_store_uart_config);
+static DEVICE_ATTR(uart_timeout, 0664, neuronspi_spi_show_uart_timeout, neuronspi_spi_store_uart_timeout);
 static DEVICE_ATTR(sys_gpio_di_base, 0440, neuronspi_spi_gpio_show_di_base, NULL);
 static DEVICE_ATTR(sys_gpio_ro_count, 0440, neuronspi_spi_gpio_show_ro_count, NULL);
 static DEVICE_ATTR(sys_gpio_ro_prefix, 0440, neuronspi_spi_gpio_show_ro_prefix, NULL);
 static DEVICE_ATTR(sys_gpio_ro_base, 0440, neuronspi_spi_gpio_show_ro_base, NULL);
-static DEVICE_ATTR(mode_ai_type_a, 0660, neuronspi_iio_show_primary_ai_mode, neuronspi_iio_store_primary_ai_mode);
-static DEVICE_ATTR(mode_ao_type_a, 0660, neuronspi_iio_show_primary_ao_mode, neuronspi_iio_store_primary_ao_mode);
-static DEVICE_ATTR(mode_ai_type_b, 0660, neuronspi_iio_show_secondary_ai_mode, neuronspi_iio_store_secondary_ai_mode);
-static DEVICE_ATTR(mode_ao_type_b, 0660, neuronspi_iio_show_secondary_ao_mode, neuronspi_iio_store_secondary_ao_mode);
+static DEVICE_ATTR(mode_ai_voltage_current, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
+static DEVICE_ATTR(mode_ao_voltage_current_resistance, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
+static DEVICE_ATTR(mode_ai_voltage_current_resistance, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
+//static DEVICE_ATTR(mode_ao_voltage, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,
@@ -1039,7 +1198,11 @@ static struct attribute *neuron_board_attrs[] = {
 		&dev_attr_sys_board_serial.attr,
 		&dev_attr_uart_queue_length.attr,
 		&dev_attr_uart_config.attr,
+		&dev_attr_uart_timeout.attr,
 		&dev_attr_register_read.attr,
+		&dev_attr_register_set.attr,
+		&dev_attr_regmap_read.attr,
+		&dev_attr_regmap_set.attr,
 		NULL,
 };
 
@@ -1076,24 +1239,26 @@ static struct attribute *neuron_gpio_ro_attrs[] = {
 };
 
 static struct attribute *neuron_stm_ai_attrs[] = {
-		&dev_attr_mode_ai_type_a.attr,
+		&dev_attr_mode_ai_voltage_current.attr,
 		NULL,
 };
 
 static struct attribute *neuron_stm_ao_attrs[] = {
-		&dev_attr_mode_ao_type_a.attr,
+		&dev_attr_mode_ao_voltage_current_resistance.attr,
 		NULL,
 };
 
 static struct attribute *neuron_sec_ai_attrs[] = {
-		&dev_attr_mode_ai_type_b.attr,
+		&dev_attr_mode_ai_voltage_current_resistance.attr,
 		NULL,
 };
 
-static struct attribute *neuron_sec_ao_attrs[] = {
-		&dev_attr_mode_ao_type_b.attr,
+/*
+ * static struct attribute *neuron_sec_ao_attrs[] = {
+		&dev_attr_mode_ao_voltage.attr,
 		NULL,
 };
+*/
 
 static struct attribute_group neuron_plc_attr_group = {
 	.attrs = neuron_plc_attrs,
@@ -1127,9 +1292,11 @@ const struct attribute_group neuron_sec_ai_group = {
 	.attrs = neuron_sec_ai_attrs,
 };
 
+/*
 const struct attribute_group neuron_sec_ao_group = {
 	.attrs = neuron_sec_ao_attrs,
 };
+*/
 
 const struct attribute_group *neuron_plc_attr_groups[] = {
 	&neuron_plc_attr_group,

@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -1682,7 +1682,7 @@ void neuronspi_regmap_invalidate_device(struct regmap *reg_map, struct neuronspi
 				case NEURONSPI_REGFLAG_ACC_AFAP: {
 					if (regcache_drop_region(reg_map, block_start + block_counter - period_len + 1, block_start + block_counter)) {
 #if NEURONSPI_DETAILED_DEBUG > 0
-						printk(KERN_INFO "NEURONSPI: RegCache dropping failed");
+						printk(KERN_INFO "UNIPISPI: RegCache dropping failed");
 #endif
 					}
 					break;
@@ -1766,11 +1766,11 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_write(reg, &inp_buf, &outp_buf, (val >> 8));
 	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
+		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
 		}
 	}
-	memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 	kfree(inp_buf);
 	kfree(outp_buf);
 	return 0;
@@ -1936,7 +1936,7 @@ s32 neuronspi_find_model_id(u32 probe_count)
 {
 	struct neuronspi_driver_data *n_spi;
 	int i,j, ret = -1;
-	u8 *inv = kzalloc(sizeof(*inv) * NEURONSPI_MODELTABLE_LEN, GFP_KERNEL);
+	u8 *inv = kzalloc(sizeof(*inv) * NEURONSPI_MODELTABLE_LEN, GFP_ATOMIC);
 	for (i = 0; i < probe_count; i++) {
 		if (neuronspi_s_dev[i]) {
 			n_spi = spi_get_drvdata(neuronspi_s_dev[i]);
