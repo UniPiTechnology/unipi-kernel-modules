@@ -1,6 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2017 UniPi Tech
-nologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
