@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -33,8 +33,9 @@ void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness
 {
 	struct neuronspi_led_driver *led = container_of(ldev, struct neuronspi_led_driver, ldev);
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(led->spi);
-	spin_lock(&led->lock);
+	unsigned long flags;
+	spin_lock_irqsave(&led->lock, flags);
 	led->brightness = brightness;
 	kthread_queue_work(&n_spi->primary_worker, &led->led_work);
-	spin_unlock(&led->lock);
+	spin_unlock_irqrestore(&led->lock, flags);
 }

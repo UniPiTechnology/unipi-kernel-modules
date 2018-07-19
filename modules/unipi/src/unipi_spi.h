@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2017 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -127,6 +127,7 @@ static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
 
 static const struct of_device_id neuronspi_id_match[] = {
 		{.compatible = "unipi,neuron"},
+		{.compatible = "unipi,axon"},
 		{.compatible = NEURON_DEVICE_NAME},
 		{}
 };
@@ -213,7 +214,7 @@ static const struct regmap_bus neuronspi_regmap_bus =
 
 static const struct regmap_config neuronspi_regmap_config_default =
 {
-		.name 					= "Neuronspi Regmap",
+		.name 					= "UniPiSPI Regmap",
 		.reg_bits				= 16,
 		.reg_stride				= 0,
 		.pad_bits				= 0,
@@ -321,7 +322,7 @@ static const struct iio_info neuronspi_sec_ai_info = {
 static const struct iio_info neuronspi_sec_ao_info = {
 	.write_raw = neuronspi_iio_sec_ao_write_raw,
 	.driver_module = THIS_MODULE,
-	.attrs = &neuron_sec_ao_group,
+	//.attrs = &neuron_sec_ao_group,
 };
 
 // These defines need to be at the end
@@ -348,8 +349,8 @@ static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 in
 static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start, u8 **buf_inp, u8 **buf_outp, u8 data)
 {
 	u16 crc1;
-	*buf_outp = kzalloc(6, GFP_KERNEL);
-	*buf_inp = kzalloc(6, GFP_KERNEL);
+	*buf_outp = kzalloc(6, GFP_ATOMIC);
+	*buf_inp = kzalloc(6, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x05;
 	(*buf_inp)[1] = data;
 	(*buf_inp)[2] = start & 0xFF;
@@ -362,8 +363,8 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start,
 static __always_inline size_t neuronspi_spi_compose_single_coil_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x01;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -379,8 +380,8 @@ static __always_inline size_t neuronspi_spi_compose_single_coil_read(u16 start, 
 static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x0F;
 	(*buf_inp)[1] = 4 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 	(*buf_inp)[2] = start & 0xFF;
@@ -398,8 +399,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_write(u8 numbe
 static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x01;
 	(*buf_inp)[1] = 4 + NEURONSPI_GET_COIL_READ_PHASE2_BYTE_LENGTH(number);
 	(*buf_inp)[2] = start & 0xFF;
@@ -415,8 +416,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_coil_read(u8 number
 static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 start, u8 **buf_inp, u8 **buf_outp, u16 data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x06;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -434,8 +435,8 @@ static __always_inline size_t neuronspi_spi_compose_single_register_write(u16 st
 static __always_inline size_t neuronspi_spi_compose_single_register_read(u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(14, GFP_KERNEL);
-	*buf_inp = kzalloc(14, GFP_KERNEL);
+	*buf_outp = kzalloc(14, GFP_ATOMIC);
+	*buf_inp = kzalloc(14, GFP_ATOMIC);
 	(*buf_inp)[0] = 0x03;
 	(*buf_inp)[1] = 0x06;
 	(*buf_inp)[2] = start & 0xFF;
@@ -452,8 +453,8 @@ static __always_inline size_t neuronspi_spi_compose_single_register_read(u16 sta
 static __always_inline size_t neuronspi_spi_compose_multiple_register_write(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp, u8 *data)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + (number * 2), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + (number * 2), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x10;
 	(*buf_inp)[1] = 4 + (number * 2);
 	(*buf_inp)[2] = start & 0xFF;
@@ -471,8 +472,8 @@ static __always_inline size_t neuronspi_spi_compose_multiple_register_write(u8 n
 static __always_inline size_t neuronspi_spi_compose_multiple_register_read(u8 number, u16 start, u8 **buf_inp, u8 **buf_outp)
 {
 	u16 crc1, crc2;
-	*buf_outp = kzalloc(12 + (number * 2), GFP_KERNEL);
-	*buf_inp = kzalloc(12 + (number * 2), GFP_KERNEL);
+	*buf_outp = kzalloc(12 + (number * 2), GFP_ATOMIC);
+	*buf_inp = kzalloc(12 + (number * 2), GFP_ATOMIC);
 	(*buf_inp)[0] = 0x03;
 	(*buf_inp)[1] = 4 + (number * 2);
 	(*buf_inp)[2] = start & 0xFF;

@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -51,7 +51,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.12:14:06:2018"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Development Beta Version 0.13:2018:08:07"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				128
@@ -66,12 +66,13 @@
 #define NEURONSPI_MAX_TX				62
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
+#define NEURONSPI_FIFO_MIN_CONTINUOUS	50
 #define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 
-#define NEURON_DEVICE_NAME 				"neuronspi"
+#define NEURON_DEVICE_NAME 				"unipispi"
 #define NEURON_DEVICE_CLASS 			"modbus_spi"
-#define NEURON_DRIVER_NAME				"NEURONSPI"
+#define NEURON_DRIVER_NAME				"UNIPISPI"
 #define PORT_NEURONSPI					184
 
 #define STRICT_RESERVING
@@ -191,6 +192,7 @@ struct neuronspi_driver_data
 	u8 combination_id;
 	s32 neuron_index;
 	u16 sysfs_regmap_target;
+	u16 sysfs_register_target;
 	u16 sysfs_counter_target;
 	u32 ideal_frequency;
 };
@@ -233,33 +235,13 @@ struct neuronspi_sec_ao_driver
 	u16 dev_count;
 };
 
-struct neuronspi_stm_ai_data
+struct neuronspi_analog_data
 {
 	u32 index;
 	u32 mode;
 	struct spi_device *parent;
 };
 
-struct neuronspi_stm_ao_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
-
-struct neuronspi_sec_ai_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
-
-struct neuronspi_sec_ao_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
 
 // Instantiated once per LED
 struct neuronspi_led_driver
@@ -269,7 +251,7 @@ struct neuronspi_led_driver
 	struct kthread_work	led_work;
 	int					id;
 	int					brightness;
-	char				name[sizeof("neuron:green:uled-x1")];
+	char				name[sizeof("unipi:green:uled-x1")];
 	spinlock_t			lock;
 };
 
@@ -298,9 +280,6 @@ extern struct spinlock* neuronspi_spi_w_spinlock;
 extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 extern struct task_struct *neuronspi_invalidate_thread;
 
-extern u8 neuronspi_spi_w_flag;
-extern u8 neuronspi_probe_count;
 extern int neuronspi_model_id;
-extern spinlock_t neuronspi_probe_spinlock;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */

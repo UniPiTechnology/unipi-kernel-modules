@@ -1,5 +1,5 @@
 /*
- * UniPi Neuron tty serial driver - Copyright (C) 2018 UniPi Technologies
+ * UniPi PLC device driver - Copyright (C) 2018 UniPi Technology
  * Author: Tomas Knot <tomasknot@gmail.com>
  *
  *  Based on the SC16IS7xx driver by Jon Ringle <jringle@gridpoint.com>,
@@ -30,21 +30,21 @@
 #define NEURONSPI_UART_LDISC_REGISTER 	503
 #define NEURONSPI_UART_TIMEOUT_REGISTER 504
 
+#define NEURONSPI_MAX_TX_WORK	4
+
 /*************************
  * Function Declarations *
  *************************/
 
 void neuronspi_uart_start_tx(struct uart_port *port);
-void neuronspi_uart_stop_tx(struct uart_port *port);
-void neuronspi_uart_stop_rx(struct uart_port *port);
 void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old);
 u32 neuronspi_uart_tx_empty(struct uart_port *port);
 void neuronspi_uart_break_ctl(struct uart_port *port, int break_state);
+void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl);
 void neuronspi_uart_shutdown(struct uart_port *port);
 s32 neuronspi_uart_startup(struct uart_port *port);
 s32 neuronspi_uart_request_port(struct uart_port *port);
 s32 neuronspi_uart_alloc_line(void);
-void neuronspi_uart_set_mctrl(struct uart_port *port, u32 mctrl);
 int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg);
 void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm);
 u32 neuronspi_uart_get_mctrl(struct uart_port *port);
@@ -82,9 +82,9 @@ static const struct uart_ops neuronspi_uart_ops =
 	.tx_empty			= neuronspi_uart_tx_empty,
 	.set_mctrl			= neuronspi_uart_set_mctrl,
 	.get_mctrl			= neuronspi_uart_get_mctrl,
-	.stop_tx			= neuronspi_uart_stop_tx,
+	.stop_tx			= neuronspi_uart_null_void,
 	.start_tx			= neuronspi_uart_start_tx,
-	.stop_rx			= neuronspi_uart_stop_rx,
+	.stop_rx			= neuronspi_uart_null_void,
 	.break_ctl			= neuronspi_uart_break_ctl,
 	.startup			= neuronspi_uart_startup,
 	.shutdown			= neuronspi_uart_shutdown,
