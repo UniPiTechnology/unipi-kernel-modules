@@ -2,7 +2,7 @@
 # filesystems (notably VirtualBox vmfs); therefore we allow using /run/ through the 'symlink' target,
 # if necessary.
  
-SYMLINK_DIR_PATH = /run/kernel/neuron_spi
+SYMLINK_DIR_PATH = /run/kernel/unipi_spi
 LINUX_DIR_PATH = /root/linux/4_9_14/linux/
 SRC_DIR_PATH = $(PWD)/src
 BIN_DIR_PATH = $(PWD)/bin
