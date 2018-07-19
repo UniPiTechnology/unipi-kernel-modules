@@ -1,1 +1,1 @@
-Repository:unipi-kernel ActiveBranch:[uart_timeout] PrecedingRelease:v.0.12 PrecedingRevision:92(7123bf9) LatestCommit:Thu Jul 19 16:06:21 CEST 2018
+Repository:unipi-kernel ActiveBranch:[uart_timeout] PrecedingRelease:v.0.12 PrecedingRevision:93(3db7517) LatestCommit:Thu Jul 19 16:31:58 CEST 2018
