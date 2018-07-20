@@ -913,7 +913,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	spin_unlock_irqrestore(neuronspi_probe_spinlock, flags);
 	if (!n_spi)
 		return -ENOMEM;
-	printk(KERN_INFO "UNIPISPI: Neuronspi Probe Started\n");
+	printk(KERN_INFO "UNIPISPI: Probe Started\n");
 	if (n_spi == NULL || spi == NULL) {
 		return -8;
 	}
