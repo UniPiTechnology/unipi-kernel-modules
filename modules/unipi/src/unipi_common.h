@@ -41,7 +41,7 @@
 #include <linux/leds.h>
 #include <linux/uaccess.h>
 #include <asm/termbits.h>
-#include <asm/gpio.h>
+//#include <asm/gpio.h>
 
 /***************
  * Definitions *

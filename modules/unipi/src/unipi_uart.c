@@ -67,7 +67,7 @@ void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
 	spi = neuronspi_s_dev[n_port->dev_index];
 	n_spi = spi_get_drvdata(spi);
 #if NEURONSPI_DETAILED_DEBUG > 0
-	printk(KERN_INFO "UNIPISPI: PROFIBUS discipline set\n");
+	printk(KERN_INFO "UNIPISPI: line discipline set\n");
 #endif
 	write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_LDISC_REGISTER, &inp_buf, &outp_buf, kterm->c_line);
 	neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
@@ -124,7 +124,9 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		printk(KERN_INFO "UNIPISPI: IOCTL 0x5481\n");
 #endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, (ioctl_arg * 1000000) / n_port->baud);
-		printk(KERN_INFO "UNIPISPI: val_upper: %x, val_lower: %x", inp_buf[10], inp_buf[11]);
+#if NEURONSPI_DETAILED_DEBUG > 0
+		printk(KERN_INFO "UNIPISPI: val_upper: 0x%x, val_lower: 0x%x", inp_buf[10], inp_buf[11]);
+#endif
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
@@ -135,7 +137,9 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
 		printk(KERN_INFO "UNIPISPI: IOCTL 0x5480\n");
 #endif
 		write_length = neuronspi_spi_compose_single_register_write(NEURONSPI_UART_TIMEOUT_REGISTER, &inp_buf, &outp_buf, ioctl_arg * 10);
-		printk(KERN_INFO "UNIPISPI: val_upper: %x, val_lower: %x", inp_buf[10], inp_buf[11]);
+#if NEURONSPI_DETAILED_DEBUG > 0
+		printk(KERN_INFO "UNIPISPI: val_upper: 0x%x, val_lower: 0x%x", inp_buf[10], inp_buf[11]);
+#endif
 		neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0);
 		kfree(inp_buf);
 		kfree(outp_buf);
@@ -153,26 +157,27 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
 {
 	struct neuronspi_port *n_port;
 	n_port = to_neuronspi_port(port, port);
+
+#if NEURONSPI_DETAILED_DEBUG > 0
 	if (old && old->c_iflag && old->c_iflag != termios->c_iflag) {
-#if NEURONSPI_DETAILED_DEBUG > 0
-		printk(KERN_INFO "UNIPISPI: c_iflag termios:%d\n", termios->c_iflag);
-#endif
+		printk(KERN_INFO "UNIPI_UART: c_iflag termios:%d\n", termios->c_iflag);
 	}
-#if NEURONSPI_DETAILED_DEBUG > 0
-	printk(KERN_DEBUG "UNIPISPI: TERMIOS Set, p:%d, c_cflag:%x\n", port->line, termios->c_cflag);
+	printk(KERN_INFO "UNIPI_UART: Termios port:%d new:0x%x %x %x %x", port->line,\
+         termios->c_lflag, termios->c_iflag, \
+         termios->c_oflag,  termios->c_cflag);
 #endif
 	neuronspi_spi_uart_set_cflag(neuronspi_s_dev[n_port->dev_index], n_port->dev_port, termios->c_cflag);
 	if (old && termios && (old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)) {
 		neuronspi_uart_set_iflags(port, termios->c_iflag);
+#if 0
+		/* No more required to disable PARMRK */
 		if (termios->c_iflag & PARMRK) {
 			termios->c_iflag &= ~PARMRK;
 		}
-	}
-	if (old && termios && old->c_line != termios->c_line) {
-		if (termios->c_line == N_PROFIBUS_FDL) {
-#if NEURONSPI_DETAILED_DEBUG > 0
-			printk(KERN_INFO "UNIPISPI: Line Discipline change\n");
 #endif
+	}
+	if (termios) { 
+		if (!old || old->c_line != termios->c_line) {
 			neuronspi_uart_set_ldisc(port, termios);
 		}
 	}
