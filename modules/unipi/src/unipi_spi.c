@@ -140,7 +140,7 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
     driver_data = spi_get_drvdata(spi_driver_data);
     if (driver_data == NULL) return -2;
     if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
-    if (driver_data->first_probe_reply[0] == 0) return -3; // No device present
+    if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) return -3; // Device not present
     mutex_lock(&(private_data->lock));
     if (private_data->recv_buf == NULL) {
     	mutex_unlock(&(private_data->lock));
@@ -211,7 +211,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     driver_data = spi_get_drvdata(spi_driver_data);
     if (driver_data == NULL) return -2;
     if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
-    if (driver_data->first_probe_reply[0] == 0) return -3; // Device not present
+    if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) return -3; // Device not present
     send_header = buffer[3];
     if (buffer[4]) {	// Frequency setting
     	frequency = (buffer[4] << 8 | buffer[5]) * 1000;

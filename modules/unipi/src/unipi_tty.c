@@ -930,6 +930,7 @@ static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
 	}
 }
 
+#ifdef CONFIG_COMPAT
 static long unipi_tty_compat_ioctl(struct tty_struct *tty, struct file *file,
 		       unsigned int cmd, unsigned long arg)
 {
@@ -949,7 +950,7 @@ static long unipi_tty_compat_ioctl(struct tty_struct *tty, struct file *file,
 		return n_tty_compat_ioctl_helper(tty, file, cmd, arg);
 	}
 }
-
+#endif
 
 static struct tty_ldisc_ops unipi_tty_ops = {
 	.magic           = TTY_LDISC_MAGIC,
@@ -961,7 +962,9 @@ static struct tty_ldisc_ops unipi_tty_ops = {
 	.read            = unipi_tty_read,
 	.write           = unipi_tty_write,
 	.ioctl           = unipi_tty_ioctl,
+#ifdef CONFIG_COMPAT
 	.compat_ioctl    = unipi_tty_compat_ioctl,
+#endif
 	.set_termios     = unipi_tty_set_termios,
 	.poll            = unipi_tty_poll,
 	.receive_buf     = unipi_tty_receive_buf,
