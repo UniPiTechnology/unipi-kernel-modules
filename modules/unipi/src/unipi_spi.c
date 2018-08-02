@@ -1550,7 +1550,7 @@ static s32 __init neuronspi_init(void)
 	if (neuronspi_invalidate_thread != NULL) {
 		wake_up_process(neuronspi_invalidate_thread);
 	}
-	neuronspi_tty_init();
+	unipi_tty_init();
 	return ret;
 }
 

@@ -17,6 +17,6 @@
 
 #include "unipi_common.h"
 
-int neuronspi_tty_init(void);
+int unipi_tty_init(void);
 
 #endif /* MODULES_UNIPI_SRC_UNIPI_TTY_H_ */
