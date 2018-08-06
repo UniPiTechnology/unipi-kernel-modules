@@ -25,6 +25,7 @@
 		     status = "okay";
 		     neuron-board-index = <0>;
 		     neuron-probe-always-succeeds = <0>;
+			 neuron-always-create-tty = <0>;
 		  };
 		  neuronspi1: neuronspi@1 {
 		     compatible = "unipi,neuron";
@@ -39,6 +40,7 @@
 		     status = "okay";
 		     neuron-board-index = <1>;
 		     neuron-probe-always-succeeds = <0>;
+			 neuron-always-create-tty = <0>;
 		  };
 		  neuronspi2: neuronspi@2 {
 		     compatible = "unipi,neuron";
@@ -53,6 +55,7 @@
 		     status = "okay";
 		     neuron-board-index = <2>;
 		     neuron-probe-always-succeeds = <0>;
+			 neuron-always-create-tty = <0>;
 		  }; 
        };
     };
