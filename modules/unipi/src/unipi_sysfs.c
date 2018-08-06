@@ -1176,7 +1176,6 @@ static DEVICE_ATTR(sys_gpio_ro_base, 0440, neuronspi_spi_gpio_show_ro_base, NULL
 static DEVICE_ATTR(mode_ai_voltage_current, 0660, neuronspi_iio_show_stm_ai_mode, neuronspi_iio_store_stm_ai_mode);
 static DEVICE_ATTR(mode_ao_voltage_current_resistance, 0660, neuronspi_iio_show_stm_ao_mode, neuronspi_iio_store_stm_ao_mode);
 static DEVICE_ATTR(mode_ai_voltage_current_resistance, 0660, neuronspi_iio_show_external_ai_mode, neuronspi_iio_store_external_ai_mode);
-//static DEVICE_ATTR(mode_ao_voltage, 0660, neuronspi_iio_show_external_ao_mode, neuronspi_iio_store_external_ao_mode);
 
 static struct attribute *neuron_plc_attrs[] = {
 		&dev_attr_model_name.attr,

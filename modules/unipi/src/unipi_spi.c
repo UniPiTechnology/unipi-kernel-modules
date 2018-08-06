@@ -948,6 +948,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		}
 		of_property_read_u32_array(spi->dev.of_node, "neuron-board-index", &(n_spi->neuron_index), 1);
 		of_property_read_u32_array(spi->dev.of_node, "neuron-probe-always-succeeds", &(n_spi->probe_always_succeeds), 1);
+		of_property_read_u32_array(spi->dev.of_node, "neuron-always-create-tty", &(n_spi->always_create_uart), 1);
 		devtype = (struct neuronspi_devtype *)of_id->data;
 #if NEURONSPI_DETAILED_DEBUG > 0
 		printk(KERN_INFO "UNIPISPI: DEVICE TREE NODE FOUND %d\n", n_spi->neuron_index);
@@ -1011,6 +1012,8 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		kfree(n_spi);
 		printk(KERN_INFO "UNIPISPI: Probe did not detect a valid UniPi device on CS %d\n", spi->chip_select);
 		return ret;
+	} else if (n_spi->always_create_uart) {
+		uart_count = 1;
 	}
 
 	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
