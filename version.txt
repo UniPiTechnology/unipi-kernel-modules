@@ -1,1 +1,1 @@
-Repository:unipi-kernel ActiveBranch:[master] PrecedingRelease:v.0.12 PrecedingRevision:100(1ab48c5) LatestCommit:Mon Aug 6 16:55:47 CEST 2018
+Repository:unipi-kernel ActiveBranch:[master] PrecedingRelease:v.0.12 PrecedingRevision:101(d663411) LatestCommit:Tue Aug 14 18:02:57 CEST 2018
