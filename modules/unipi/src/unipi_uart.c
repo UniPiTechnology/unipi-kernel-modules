@@ -579,6 +579,7 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 			end_flag = 1;
 			mutex_unlock(&neuronspi_master_mutex);
 		}
+		mutex_unlock(&neuronspi_uart_mutex);
 	}
 	kfree(recv_buf);
 	kfree(send_buf);

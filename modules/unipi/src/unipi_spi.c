@@ -60,6 +60,7 @@ struct neuronspi_char_driver neuronspi_cdrv =
 };
 
 struct mutex neuronspi_master_mutex;
+struct mutex neuronspi_uart_mutex;
 struct mutex unipi_inv_speed_mutex;
 struct spinlock *neuronspi_spi_w_spinlock;
 int neuronspi_model_id = -1;
@@ -747,6 +748,7 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 #if NEURONSPI_DETAILED_DEBUG > 1
 		printk(KERN_INFO "UNIPISPI: SPI CRC1 Correct");
 #endif
+			mutex_lock(&neuronspi_uart_mutex);
 			if (d_data && recv_buf[0] == 0x41) {
 				d_data->uart_buf[0] = recv_buf[3];
 #if NEURONSPI_DETAILED_DEBUG > 0
@@ -769,6 +771,10 @@ int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *rec
 						}
 					}
 				}
+			}
+			mutex_unlock(&neuronspi_uart_mutex);
+			if (d_data && recv_buf[0] == 0x65) {
+				mutex_lock(&neuronspi_uart_mutex);
 			}
 		}
 #if NEURONSPI_DETAILED_DEBUG > 0
@@ -1536,6 +1542,7 @@ static s32 __init neuronspi_init(void)
 	neuronspi_probe_spinlock = kzalloc(sizeof(struct spinlock), GFP_ATOMIC);
 	spin_lock_init(neuronspi_probe_spinlock);
 	mutex_init(&neuronspi_master_mutex);
+	mutex_init(&neuronspi_uart_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
 	ret = spi_register_driver(&neuronspi_spi_driver);
