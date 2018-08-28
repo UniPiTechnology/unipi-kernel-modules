@@ -23,6 +23,52 @@
  * Non-static Functions *
  ************************/
 
+int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id)
+{
+	u8 *recv_buf;
+	bool ret = 0;
+	u32 offset = id / 16;
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
+	recv_buf = kzalloc(4, GFP_ATOMIC);
+	regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, (void*)recv_buf);
+	if (*recv_buf & (0x1 << offset)) {
+		ret = 1;
+	}
+	kfree(recv_buf);
+	return ret;
+}
+
+int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value)
+{
+	u32 current_value = 0;
+	bool ret = 0;
+	u32 offset = id / 16;
+	u16 off_val = value << (id % 16);
+	u16 mask = ~(1 << (id % 16));
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
+	regmap_read(d_data->reg_map, d_data->regstart_table->do_val_reg + offset, &current_value);
+	current_value&= mask;
+	current_value|= off_val;
+	regmap_write(d_data->reg_map, d_data->regstart_table->do_val_reg + offset, current_value);
+	return ret;
+}
+
+int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value)
+{
+	u32 current_value = 0;
+	bool ret = 0;
+	u32 offset = id / 16;
+	u16 off_val = value << (id % 16);
+	u16 mask = ~(1 << (id % 16));
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
+	regmap_read(d_data->reg_map, d_data->regstart_table->ro_val_reg + offset, &current_value);
+	current_value&= mask;
+	current_value|= off_val;
+	regmap_write(d_data->reg_map, d_data->regstart_table->ro_val_reg + offset, current_value);
+	return ret;
+}
+
+
 int neuronspi_gpio_di_direction_input(struct gpio_chip *chip, unsigned offset) {
 	return 0;
 }

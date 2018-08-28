@@ -69,7 +69,7 @@
 
 
 // #undef UNIPI_TTY_TRACE
-#ifdef NEURONSPI_DETAILED_DEBUG
+#if NEURONSPI_DETAILED_DEBUG > 0
 # define unipi_tty_trace(f, args...)	trace_printk(f, ##args)
 #else
 # define unipi_tty_trace(f, args...)
