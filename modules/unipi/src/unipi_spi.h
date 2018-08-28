@@ -33,6 +33,7 @@ static const u16 NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
 
+/*
 #define NEURONSPI_PROBE_MESSAGE_LEN						22
 static const u8 NEURONSPI_PROBE_MESSAGE[NEURONSPI_PROBE_MESSAGE_LEN] = {
 		0x04, 0x0e, 0xe8, 0x03, 0xa0, 0xdd,
@@ -40,12 +41,29 @@ static const u8 NEURONSPI_PROBE_MESSAGE[NEURONSPI_PROBE_MESSAGE_LEN] = {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00,	0x12, 0x16
 };
+*/
 
+#define UNIPISPI_PROBE_MESSAGE_LEN						16
+static u8 _probe_message_second[UNIPISPI_PROBE_MESSAGE_LEN] = 
+                   {0x04, 0x00, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x16};
+static const struct neuronspi_op_buffer UNIPISPI_PROBE_MESSAGE = {
+    first_message: {0x04, 0x0e, 0xe8, 0x03, 0xa0, 0xdd},
+    second_message: _probe_message_second,
+};
+
+/*
 #define NEURONSPI_UART_PROBE_MESSAGE_LEN				6
 static const u8 NEURONSPI_UART_PROBE_MESSAGE[NEURONSPI_UART_PROBE_MESSAGE_LEN] = {
 		0xfa, 0x00, 0x55, 0x0e, 0xb6, 0x0a
 };
+*/
 
+static const struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
+    first_message: {0xfa, 0x00, 0x55, 0x0e, 0xb6, 0x0a},
+    second_message: NULL,
+};
+
+/*
 #define NEURONSPI_SPI_UART_SHORT_MESSAGE_LEN			6
 static const u8 NEURONSPI_SPI_UART_SHORT_MESSAGE[NEURONSPI_SPI_UART_SHORT_MESSAGE_LEN] = {
 		0x41, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -64,8 +82,15 @@ static const u8 NEURONSPI_SPI_UART_READ_MESSAGE[NEURONSPI_SPI_UART_READ_MESSAGE_
 		0x6a, 0x0c
 };
 
+#define NEURONSPI_SPI_UART_READ_MESSAGE0_LEN				14
+static const u8 NEURONSPI_SPI_UART_READ_MESSAGE0[NEURONSPI_SPI_UART_READ_MESSAGE0_LEN] = {
+		0x68, 0x06, 0x00, 0x00, 0x00, 0x00,
+		0x65, 0x03, 0x00, 0x00, 0x00, 0x05,
+		0x6a, 0x0c
+};
+
 #define NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN				14
-static const u8 NEURONSPI_SPI_IRQ_SET_MESSAGE[NEURONSPI_SPI_UART_READ_MESSAGE_LEN] = {
+static const u8 NEURONSPI_SPI_IRQ_SET_MESSAGE[NEURONSPI_SPI_IRQ_SET_MESSAGE_LEN] = {
 		0x06, 0x06, 0xef, 0x03, 0x00, 0x00,
 		0x06, 0x01, 0xef, 0x03, 0x05, 0x00,
 		0x00, 0x00
@@ -96,6 +121,7 @@ static const u8 NEURONSPI_SPI_UART_SET_CFLAG_MESSAGE[NEURONSPI_SPI_UART_SET_CFLA
 static const u8 NEURONSPI_SPI_LED_SET_MESSAGE[NEURONSPI_SPI_LED_SET_MESSAGE_LEN] = {
 		0x05, 0x00, 0x08, 0x00, 0x00, 0x00
 };
+*/ 
 
 #define NEURONSPI_CRC16TABLE_LEN						256
 static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
@@ -147,7 +173,7 @@ static const struct of_device_id neuronspi_id_match[] = {
 #define NEURONSPI_RECONF_IER				(1 << 1)
 #define NEURONSPI_RECONF_RS485				(1 << 2)
 
-#define MODBUS_FIRST_DATA_BYTE				10
+//#define MODBUS_FIRST_DATA_BYTE				10
 
 #define MODBUS_MAX_READ_BITS                2000
 #define MODBUS_MAX_WRITE_BITS               1968
@@ -155,6 +181,10 @@ static const struct of_device_id neuronspi_id_match[] = {
 #define MODBUS_MAX_WRITE_REGISTERS          123
 #define MODBUS_MAX_WR_WRITE_REGISTERS       121
 #define MODBUS_MAX_WR_READ_REGISTERS        125
+
+#define UNIPISPI_OP_MODE_SEND_HEADER        0x1
+#define UNIPISPI_OP_MODE_DO_CRC             0x2
+#define UNIPISPI_OP_MODE_HAVE_CRC_SPACE     0x4
 
 /*************************
  * Function Declarations *
@@ -169,10 +199,28 @@ s32 char_unregister_driver(void);
 irqreturn_t neuronspi_spi_irq(s32 irq, void *dev_id);
 s32 neuronspi_spi_probe(struct spi_device *spi);
 s32 neuronspi_spi_remove(struct spi_device *spi);
-int neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val);
-s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, u8 length, u8 uart_index);
-void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, u8 uart_index);
+
+int neuronspi_spi_send_const_op(struct spi_device* spi_dev, const struct neuronspi_op_buffer* send_buf,
+                            struct neuronspi_op_buffer* recv_buf, s32 len, 
+                            s32 freq, s32 delay);
+int neuronspi_spi_send_op(struct spi_device* spi_dev, struct neuronspi_op_buffer* send_buf, 
+                            struct neuronspi_op_buffer* recv_buf, s32 len, 
+                            s32 freq, s32 delay, s32 send_header, u8 lock_val);
+//int neuronspi_spi_send_message_crc(struct spi_device* spi_dev, struct neuronspi_op_buffer* send_buf, struct neuronspi_op_buffer* recv_buf, s32 len, s32 freq, s32 delay);
+//int neuronspi_spi_send_message(struct spi_device *spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val);
+s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, int length, u8 uart_index);
+//void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, u8 uart_index);
+void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *recv_buf, s32 len, u8 uart_index);
+int unipispi_modbus_read_register(struct spi_device* spi_dev, u16 reg, u16* value);
+int unipispi_modbus_read_u32(struct spi_device* spi_dev, u16 reg, u32* value);
+int unipispi_modbus_read_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
+int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 value);
+int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value);
+int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
+int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
+
 void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
+/*
 void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brightness brightness, int id);
 void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
@@ -183,6 +231,7 @@ void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *iio_dev, struct iio_c
 void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
+ */ 
 int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
@@ -197,7 +246,6 @@ extern struct spi_driver neuronspi_spi_driver;
 extern struct file_operations file_ops;
 
 extern struct mutex unipi_inv_speed_mutex;
-extern struct mutex neuronspi_uart_mutex;
 
 static const struct regmap_bus neuronspi_regmap_bus =
 {
@@ -347,6 +395,7 @@ static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 in
     return result;
 }
 
+/*
 static __always_inline size_t neuronspi_spi_compose_single_coil_write(u16 start, u8 **buf_inp, u8 **buf_outp, u8 data)
 {
 	u16 crc1;
@@ -487,5 +536,6 @@ static __always_inline size_t neuronspi_spi_compose_multiple_register_read(u8 nu
 	memcpy(&(*buf_inp)[10 + (number * 2)], &crc2, 2);
 	return 12 + (number * 2);
 }
+*/
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_SPI_H_ */

@@ -22,6 +22,217 @@
 /************************
  * Non-static Functions *
  ************************/
+/*
+ * NOTE: This function uses 64-bit fixed-point arithmetic,
+ * which necessitates using the do_div macro to avoid unnecessary long/long division.
+ */
+void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
+	struct spi_device *spi = ai_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 sec_ai_val_l = 0;
+	u32 sec_ai_val_h = 0;
+	u32 sec_ai_val_m = 0;
+	u8 sec_ai_exp = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
+	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
+	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
+
+	*val = sec_ai_val_m | 0x00010000;
+	if (142 - ((int)sec_ai_exp) <= 0) {
+		*val = (*val << (((int)sec_ai_exp) - 142)) * 1000;
+		*val2 = 1;
+	} else {
+		*val = *val * 1000;
+		*val2 = 2 << (142 - sec_ai_exp);
+	}
+
+}
+
+void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
+	struct spi_device *spi = ai_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 sec_ai_val_l = 0;
+	u32 sec_ai_val_h = 0;
+	u32 sec_ai_val_m = 0;
+	u8 sec_ai_exp = 0;
+
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
+	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
+	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
+	*val = sec_ai_val_m | 0x00010000;
+	if (142 - ((int)sec_ai_exp) <= 0) {
+		*val2 = 1;
+		*val = *val << (((int)sec_ai_exp) - 142);
+	} else {
+		*val2 = 2 << (142 - sec_ai_exp);
+	}
+}
+
+void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
+	struct spi_device *spi = ai_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 sec_ai_val_l = 0;
+	u32 sec_ai_val_h = 0;
+	u32 sec_ai_val_m = 0;
+	u8 sec_ai_exp = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
+	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
+	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
+	*val = sec_ai_val_m | 0x00010000;
+	if (142 - ((int)sec_ai_exp) <= 0) {
+		*val2 = 1;
+		*val = *val << (((int)sec_ai_exp) - 142);
+	} else {
+		*val2 = 2 << (142 - sec_ai_exp);
+	}
+}
+
+void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
+{
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
+	struct spi_device *spi = ao_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 sec_true_val;
+	if (val > 10000) val = 10000;
+	sec_true_val = (val * 2) / 5;
+	regmap_write(n_spi->reg_map, n_spi->regstart_table->sec_ao_val_reg + ao_data->index, sec_true_val);
+}
+
+/*
+ * NOTE: This function uses 64-bit fixed-point arithmetic,
+ * which necessitates using the do_div macro to avoid unnecessary long/long division.
+ */
+void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ai_data = iio_priv(iio_dev);
+	struct spi_device *spi = ai_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 stm_ai_val = 0;
+	u32 stm_v_int_ref = 0;
+	u32 stm_v_inp_ref = 0;
+	u32 stm_v_err = 0;
+	u32 stm_v_off = 0;
+	u64 stm_true_val = 0;
+	u64 stm_true_ref = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_val_reg, &stm_ai_val);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_vol_err, &stm_v_err);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_vol_off, &stm_v_off);
+	stm_true_ref = ((u64)stm_v_int_ref) * 99000;
+	stm_v_inp_ref = stm_v_inp_ref * 10000;
+	stm_true_val = stm_true_ref * ((u64)(stm_ai_val * 1000));
+	do_div(stm_true_val, stm_v_inp_ref);
+	do_div(stm_true_val, 4096);
+	stm_true_val *= (10000 + stm_v_err);
+	stm_true_val += stm_v_off;
+	do_div(stm_true_val, 10000);
+	*val = stm_true_val;
+}
+
+void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
+	struct spi_device *spi = ai_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 stm_ai_val = 0;
+	u32 stm_v_int_ref = 0;
+	u32 stm_v_inp_ref = 0;
+	u32 stm_i_err = 0;
+	u32 stm_i_off = 0;
+	u64 stm_true_val = 0;
+	u64 stm_true_ref = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_val_reg, &stm_ai_val);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_curr_err, &stm_i_err);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ai_curr_off, &stm_i_off);
+	stm_true_ref = ((u64)stm_v_int_ref) * 330000;
+	stm_v_inp_ref = stm_v_inp_ref * 10000;
+	stm_true_val = stm_true_ref * ((u64)(stm_ai_val * 1000));
+	do_div(stm_true_val, stm_v_inp_ref);
+	do_div(stm_true_val, 4096);
+	stm_true_val *= (10000 + stm_i_err);
+	stm_true_val += stm_i_off;
+	do_div(stm_true_val, 10000);
+	*val = stm_true_val;
+	*val2 = 1000;
+}
+
+void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
+	struct spi_device *spi = ao_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 stm_aio_val = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_aio_val_reg, &stm_aio_val);
+	*val = stm_aio_val;
+	*val2 = 10;
+}
+
+
+void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
+{
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
+	struct spi_device *spi = ao_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 stm_v_int_ref = 0;
+	u32 stm_v_inp_ref = 0;
+	u32 stm_v_err = 0;
+	u32 stm_v_off = 0;
+	u64 stm_true_val = val;
+	u64 stm_true_val_fraction = val2 / 100;
+	u64 stm_true_ref = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_vol_err, &stm_v_err);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_vol_off, &stm_v_off);
+	stm_true_ref = ((u64)stm_v_int_ref) * (99000 + stm_v_err) * 1000;
+	stm_v_inp_ref = stm_v_inp_ref * 10000;
+	stm_true_val = ((stm_true_val * 10000) + (stm_true_val_fraction) - stm_v_off) * 4095;
+	do_div(stm_true_ref, stm_v_inp_ref);
+	stm_v_inp_ref = stm_true_ref;
+	do_div(stm_true_val, stm_v_inp_ref);
+	do_div(stm_true_val, 10000);
+	if (stm_true_val > 4095) stm_true_val = 4095;
+	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg, (unsigned int) stm_true_val);
+}
+
+void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
+{
+	struct neuronspi_analog_data *ao_data = iio_priv(indio_dev);
+	struct spi_device *spi = ao_data->parent;
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+	u32 stm_v_int_ref = 0;
+	u32 stm_v_inp_ref = 0;
+	u32 stm_i_err = 0;
+	u32 stm_i_off = 0;
+	u64 stm_true_val = val;
+	u64 stm_true_val_fraction = val2 / 100;
+	u64 stm_true_ref = 0;
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_int, &stm_v_int_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->vref_inp, &stm_v_inp_ref);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_curr_err, &stm_i_err);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->stm_ao_curr_off, &stm_i_off);
+	stm_true_ref = ((u64)stm_v_int_ref) * (330000 + stm_i_err) * 100;
+	stm_v_inp_ref = stm_v_inp_ref * 1000;
+	stm_true_val = (((stm_true_val * 10000) + (stm_true_val_fraction)) - stm_i_off) * 4095;
+	do_div(stm_true_ref, stm_v_inp_ref);
+	stm_v_inp_ref = stm_true_ref;
+	do_div(stm_true_val, stm_v_inp_ref);
+	do_div(stm_true_val, 10);
+	if (stm_true_val > 4095) stm_true_val = 4095;
+	regmap_write(n_spi->reg_map, n_spi->regstart_table->stm_ao_val_reg, (unsigned int)stm_true_val);
+}
 
 int neuronspi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask) {
 	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);

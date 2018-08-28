@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+cd tmp
+. versions
+
+
+KERNEL_VER=`ls -1 h/lib/modules | grep '\-v7'`
+echo $KERNEL_VER
+cp h/usr/src/linux-headers-${KERNEL_VER}/.config linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+cp h/usr/src/linux-headers-${KERNEL_VER}/Module.symvers linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+cd linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+make modules_prepare CROSS_COMPILE=arm-linux-gnueabi- ARCH=arm
+cd ../..
+make all CCPREFIX=arm-linux-gnueabi- ARCH=arm LINUX_DIR_PATH=tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}

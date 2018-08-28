@@ -58,16 +58,18 @@
 #define NEURONSPI_BUFFER_MAX			1152
 #define NEURONSPI_HEADER_LENGTH 		10
 #define NEURONSPI_FIRST_MESSAGE_LENGTH	6
+#define NEURONSPI_FIRST_MESSAGE_ALLOC	8
 #define NEURONSPI_EDGE_DELAY			10
 #define NEURONSPI_B_PER_WORD 			8
 #define NEURONSPI_DEFAULT_FREQ			600000
 #define NEURONSPI_COMMON_FREQ			12000000
 #define NEURONSPI_SLOWER_FREQ			7500000
-#define NEURONSPI_MAX_TX				62
+//#define NEURONSPI_MAX_TX				62
+#define NEURONSPI_MAX_TX				256
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		0
+#define NEURONSPI_DETAILED_DEBUG		1
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 
 #define NEURON_DEVICE_NAME 				"unipispi"
@@ -113,6 +115,13 @@ struct neuronspi_devtype
 	s32	nr_uart;
 };
 
+
+struct neuronspi_op_buffer
+{
+    u8  first_message[8];
+    u8  *second_message;
+};
+
 struct neuronspi_port
 {
 	struct uart_port			port;
@@ -126,9 +135,10 @@ struct neuronspi_port
 	struct neuronspi_uart_data 	*parent;
 	u8							dev_index;
 	u8							dev_port;
-	u8							parmrk_enabled;
-	u64							parmrk_frame_delay;
+//	u8							parmrk_enabled;
+//	u64							parmrk_frame_delay;
 	s32							baud;
+    unsigned int                one_char_usec;
 };
 
 struct neuronspi_uart_data
@@ -178,10 +188,10 @@ struct neuronspi_driver_data
 	char platform_name[sizeof("io_group0")];
 	u32 probe_always_succeeds;
 	u32 always_create_uart;
-	u8 *send_buf;
-	u8 *recv_buf;
+	//u8 *send_buf;
+	//u8 *recv_buf;
 	u8 *first_probe_reply;
-	u8 *second_probe_reply;
+	//u8 *second_probe_reply;
 	u8 reserved_device;
 	u8 uart_count;
 	u8 uart_read;
@@ -260,9 +270,13 @@ struct neuronspi_file_data
 {
 	struct spi_device** spi_device;
 	struct mutex 		lock;
-	u8 					*send_buf;
-	u8 					*recv_buf;
-	u32			message_len;
+	//u8 					*send_buf;
+	//u8 					*recv_buf;
+    struct neuronspi_op_buffer send_buf;
+    struct neuronspi_op_buffer recv_buf;
+	u32			        message_len;
+	u8					device_index;
+	u8					has_first_message;
 };
 
 struct neuronspi_direct_acc
@@ -282,5 +296,7 @@ extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 extern struct task_struct *neuronspi_invalidate_thread;
 
 extern int neuronspi_model_id;
+
+#define NEURON_FIRMWARE_VERSION(neuronspi_driver_data) (*(uint16_t*) (neuronspi_driver_data->first_probe_reply+4))
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */

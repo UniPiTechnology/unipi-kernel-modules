@@ -23,6 +23,23 @@
  * Non-static Functions *
  ************************/
 
+void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brightness brightness, int id)
+{
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
+        u16 coil;
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: SPI LED Set, Dev-CS:%d, led id:%d\n", spi_dev->chip_select, id);
+#endif
+
+	if (d_data->features != NULL) {
+		coil = d_data->features->di_count + d_data->features->do_count + d_data->features->ro_count + id;
+	} else {
+		coil = 8 + id;
+	}
+    unipispi_modbus_write_coil(spi_dev, coil, brightness > 0);
+}
+
+
 void neuronspi_led_proc(struct kthread_work *ws)
 {
 	struct neuronspi_led_driver *led = to_led_driver(ws, led_work);

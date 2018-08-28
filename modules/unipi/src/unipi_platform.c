@@ -1735,12 +1735,20 @@ void neuronspi_regmap_invalidate_device(struct regmap *reg_map, struct neuronspi
 int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *val)
 {
 	struct spi_device *spi = context;
+
+    u16 value;
+    if (unipispi_modbus_read_register(spi, reg, &value) == 0) {
+        *val = value;
+    } else {
+        *val = 0;
+    }
+/*    
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
 	u8 *outp_buf;
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_read(reg, &inp_buf, &outp_buf);
-	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
+	if (neuronspi___spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
 		}
@@ -1748,24 +1756,32 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
 	memcpy(val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 	kfree(inp_buf);
 	kfree(outp_buf);
+*/ 
 	return 0;
 }
 
 int neuronspi_regmap_hw_write(void *context, const void *data, size_t count)
 {
-	BUG_ON(count < 1);
-	return neuronspi_regmap_hw_gather_write(context, data, 1, data + 1, count - 1);
+	BUG_ON(count < 2);
+	//return neuronspi_regmap_hw_gather_write(context, data, 1, data + 1, count - 1);
+	return neuronspi_regmap_hw_gather_write(context, data, sizeof(u16), data + sizeof(u16), count - sizeof(u16));
 }
 
 int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val)
 {
 	struct spi_device *spi = context;
+
+    if (unipispi_modbus_write_register(spi, reg, val) == 0) {
+        return 0;
+    }
+    return 0; // ???
+/*    
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
 	u8 *outp_buf;
 	int write_length, i;
 	write_length = neuronspi_spi_compose_single_register_write(reg, &inp_buf, &outp_buf, (val >> 8));
-	if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
+	if (neuronspi___spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 25, 1, 0)) {
 		memcpy(&val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 		for (i = 0; i < write_length; i++) {
 			outp_buf[i] = 0;
@@ -1774,29 +1790,42 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	kfree(inp_buf);
 	kfree(outp_buf);
 	return 0;
+*/ 
 }
 
 int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size, const void *val, size_t val_size)
 {
 	u16 *mb_reg_buf = (u16*)reg;
-	u32 *mb_val_buf = (u32*)val;
+	//u16 *mb_val_buf = (u16*)val;
 	struct spi_device *spi = context;
+
+	printk(KERN_INFO "UNIPISPI: Regmap_hw_gather_write reg[%d](%d) val(%d):%8ph\n", *mb_reg_buf, reg_size, val_size, val);
+    
+	if (reg_size == sizeof(u16)) {
+		return unipispi_modbus_write_register(spi, mb_reg_buf[0], *((u16*)val));
+	}
+	if (reg_size == sizeof(u32)) {
+		return unipispi_modbus_write_u32(spi, mb_reg_buf[0], *((u32*)val));
+	}
+    
+    if (val_size & 1) return 0; // val_size must be even (u16)
+    return unipispi_modbus_write_many(spi, mb_reg_buf[0], (u16*)val, val_size / sizeof(u16));
+
+/*
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
 	u8 *outp_buf;
 	int i, write_length;
 	int block_counter = 0;
-	if (reg_size == 1) {
-		neuronspi_regmap_hw_reg_write(context,mb_reg_buf[0],mb_val_buf[0]);
-	} else {
+ {
 		for (i = 0; i < reg_size; i++) {
 			// Swap endianness
-			cpu_to_be16s((u16*)&(mb_val_buf[i]));
+			//cpu_to_be16s((u16*)&(mb_val_buf[i]));
 			// Check for continuity and read the largest possible continuous block
 			if (block_counter == (reg_size - 1) || ((mb_reg_buf[i] + 1) != mb_reg_buf[i + 1]))  {
 				write_length = neuronspi_spi_compose_multiple_register_write(block_counter, mb_reg_buf[i - block_counter], &inp_buf, &outp_buf,
 						                                                     (u8*)(&mb_val_buf[i - block_counter]));
-				neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0);
+				neuronspi___spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0);
 				block_counter = 0;
 				kfree(inp_buf);
 				kfree(outp_buf);
@@ -1805,7 +1834,7 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 			}
 		}
 	}
-	return 0;
+	return 0;*/
 }
 
 int neuronspi_create_reg_starts(struct neuronspi_board_regstart_table *out_table, struct neuronspi_board_combination *board) {
@@ -1897,18 +1926,31 @@ s32 neuronspi_find_reg_start(struct neuronspi_board_combination *board, u16 regf
 
 int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size, void *val_buf, size_t val_size) {
 	const u16 *mb_reg_buf = reg_buf;
-	u16 *mb_val_buf = val_buf;
-	struct spi_device *spi;
+	//u16 *mb_val_buf = val_buf;
+	struct spi_device *spi = context;
+	if (context == NULL) {
+		return 0;
+	}
+	printk(KERN_INFO "UNIPISPI: Regmap_hw_read reg[%d](%dB) val(%dB):%8ph\n", *mb_reg_buf, reg_size, val_size, val_buf);
+
+    if (val_size == sizeof(u16)) {
+        return unipispi_modbus_read_register(spi, *mb_reg_buf, (u16*) val_buf);
+    }
+    if (val_size == sizeof(u32)) {
+        return unipispi_modbus_read_u32(spi, *mb_reg_buf, (u32*) val_buf);
+    }
+
+    if (val_size & 1) return 0; // val_size must be even (u16)
+    
+    return unipispi_modbus_read_many(spi, *mb_reg_buf, (u16*) val_buf, val_size / (sizeof(u16)));
+
+/*
 	struct neuronspi_driver_data *n_spi;
 	u8 *inp_buf;
 	u8 *outp_buf;
 	int i, j, write_length;
 	int block_counter = 0;
-	if (context == NULL) {
-		return 0;
-	}
-	spi = context;
-	n_spi = spi_get_drvdata(spi);
+    n_spi = spi_get_drvdata(spi);
 	if (n_spi == NULL) {
 		return 0;
 	}
@@ -1916,7 +1958,7 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
 		// Check for continuity and read the largest possible continuous block
 		if (block_counter == ((reg_size / 2) - 1) || ((mb_reg_buf[i] + 1) != mb_reg_buf[i + 1])) {
 			write_length = neuronspi_spi_compose_multiple_register_read(block_counter + 1, mb_reg_buf[i - block_counter], &inp_buf, &outp_buf);
-			if (neuronspi_spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0)) {
+			if (neuronspi___spi_send_message(spi, inp_buf, outp_buf, write_length, n_spi->ideal_frequency, 125, 1, 0)) {
 				for (j = 0; j < write_length; j++) {
 					outp_buf[j] = 0;
 				}
@@ -1929,7 +1971,7 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
 			block_counter++;
 		}
 	}
-	return 0;
+	return 0; */
 }
 
 s32 neuronspi_find_model_id(u32 probe_count)
