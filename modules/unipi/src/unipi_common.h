@@ -51,10 +51,10 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.15:2018:08:14"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.15:2018:09:03 (devel)"
 
 #define NEURONSPI_MAX_DEVS				3
-#define NEURONSPI_MAX_UART				128
+#define NEURONSPI_MAX_UART				16
 #define NEURONSPI_BUFFER_MAX			1152
 #define NEURONSPI_HEADER_LENGTH 		10
 #define NEURONSPI_FIRST_MESSAGE_LENGTH	6
@@ -69,8 +69,9 @@
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		1
+#define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
+#define MAX_RX_QUEUE_LEN                16
 
 #define NEURON_DEVICE_NAME 				"unipispi"
 #define NEURON_DEVICE_CLASS 			"modbus_spi"
@@ -125,20 +126,30 @@ struct neuronspi_op_buffer
 struct neuronspi_port
 {
 	struct uart_port			port;
-	u8							line;
+	u8							dev_index;  // index into global array neuronspi_s_dev 
+	u8							dev_port;   // index of port on neuronspi device
+    
+    spinlock_t                  rx_queue_lock;
+    u8*                         rx_queue_primary;
+    int                         rx_qlen_primary;
+    u8*                         rx_queue_secondary;
+    int                         rx_qlen_secondary;
+    u8                          rx_remain;
+    
 	struct kthread_work			tx_work;
 	struct kthread_work			rx_work;
-	struct kthread_work			irq_work;
-	u32							flags;
-	u8							ier_clear;
-	u8							buf[NEURONSPI_FIFO_SIZE];
-	struct neuronspi_uart_data 	*parent;
-	u8							dev_index;
-	u8							dev_port;
-//	u8							parmrk_enabled;
-//	u64							parmrk_frame_delay;
+	struct kthread_work			irq_work;  // move it to neuronspi device
+	//u32							flags;
+	//u8							ier_clear;
+	//u8							tx_buf[NEURONSPI_FIFO_SIZE];
+
+    u16                         tx_fifo_reg;  // register in neuronspi device modbus map to read internal tx fifo length
+                                              // 0 if undefined
+    u16                         tx_fifo_len;  // estimates char count in neuron internal tx fifo
+	struct hrtimer				tx_timer;
+
 	s32							baud;
-    unsigned int                one_char_usec;
+    s64                         one_char_nsec;
 };
 
 struct neuronspi_uart_data
@@ -146,7 +157,7 @@ struct neuronspi_uart_data
 	const struct neuronspi_devtype	*devtype;
 	struct kthread_worker			kworker;
 	struct task_struct				*kworker_task;
-	struct neuronspi_port			*p;
+	struct neuronspi_port			*p;             // array p[p_count]
 	u8								p_count;
 };
 
@@ -166,8 +177,8 @@ struct neuronspi_driver_data
 {
 	struct spi_driver *spi_driver;
 	struct neuronspi_char_driver *char_driver;
-	struct uart_driver *serial_driver;
-	struct neuronspi_uart_data *uart_data;
+	//struct uart_driver *serial_driver; -- this is global variable neuronspi_uart_driver_global
+	//struct neuronspi_uart_data *uart_data; -- this global var neuronspi_uar_data_global
 	struct neuronspi_led_driver *led_driver;
 	struct neuronspi_di_driver **di_driver;
 	struct neuronspi_do_driver **do_driver;
@@ -188,15 +199,14 @@ struct neuronspi_driver_data
 	char platform_name[sizeof("io_group0")];
 	u32 probe_always_succeeds;
 	u32 always_create_uart;
-	//u8 *send_buf;
-	//u8 *recv_buf;
+
 	u8 *first_probe_reply;
-	//u8 *second_probe_reply;
 	u8 reserved_device;
-	u8 uart_count;
-	u8 uart_read;
-	u8 *uart_buf;
-	u8 slower_model;
+	int uart_count;
+	int uart_pindex;
+	//u8 uart_read;
+	//u8 *uart_buf;
+	//u8 slower_model;
 	u8 no_irq;
 	u8 lower_board_id;
 	u8 upper_board_id;
@@ -206,6 +216,7 @@ struct neuronspi_driver_data
 	u16 sysfs_register_target;
 	u16 sysfs_counter_target;
 	u32 ideal_frequency;
+	u8 uart_count_to_probe;
 };
 
 struct neuronspi_di_driver {
@@ -270,8 +281,6 @@ struct neuronspi_file_data
 {
 	struct spi_device** spi_device;
 	struct mutex 		lock;
-	//u8 					*send_buf;
-	//u8 					*recv_buf;
     struct neuronspi_op_buffer send_buf;
     struct neuronspi_op_buffer recv_buf;
 	u32			        message_len;
