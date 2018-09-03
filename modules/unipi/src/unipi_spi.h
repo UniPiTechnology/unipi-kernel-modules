@@ -45,7 +45,7 @@ static const u8 NEURONSPI_PROBE_MESSAGE[NEURONSPI_PROBE_MESSAGE_LEN] = {
 
 #define UNIPISPI_PROBE_MESSAGE_LEN						16
 static u8 _probe_message_second[UNIPISPI_PROBE_MESSAGE_LEN] = 
-                   {0x04, 0x00, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x16};
+          {0x04, 0x00, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x16};
 static const struct neuronspi_op_buffer UNIPISPI_PROBE_MESSAGE = {
     first_message: {0x04, 0x0e, 0xe8, 0x03, 0xa0, 0xdd},
     second_message: _probe_message_second,
@@ -220,18 +220,7 @@ int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, 
 int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
 
 void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
-/*
-void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brightness brightness, int id);
-void neuronspi_spi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_stm_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_stm_ao_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_stm_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
-void neuronspi_spi_iio_stm_ao_set_current(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
-void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
-void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
- */ 
+
 int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
