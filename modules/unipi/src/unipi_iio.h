@@ -31,4 +31,9 @@ int neuronspi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_sp
 int neuronspi_iio_sec_ai_read_raw(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask);
 int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask);
 
+struct iio_dev* neuronspi_stm_ai_probe(int io_count, int neuron_index, struct platform_device *board_device);
+struct iio_dev* neuronspi_stm_ao_probe(int io_count, int neuron_index, struct platform_device *board_device);
+struct iio_dev** neuronspi_sec_ai_probe(int io_count, int neuron_index, struct platform_device *board_device);
+struct iio_dev** neuronspi_sec_ao_probe(int io_count, int neuron_index, struct platform_device *board_device);
+
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_IIO_H_ */

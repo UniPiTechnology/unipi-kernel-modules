@@ -217,7 +217,7 @@ struct neuronspi_driver_data
 	u8 uart_count_to_probe;
 };
 
-/*
+
 struct neuronspi_gpio_port {
 	struct spi_device* spi;
 	struct gpio_chip gpio_c;
@@ -227,16 +227,16 @@ struct neuronspi_gpio_port {
 
 struct neuronspi_gpio_driver {
     int count;
-    struct neuronspi_gpio_port* ports;
-}
- */
+    struct neuronspi_gpio_port ports[1];
+};
+/*
 struct neuronspi_gpio_driver {
 	struct spi_device* spi;
 	struct gpio_chip gpio_c;
 	struct platform_device *plat_dev;
 	u8 io_index;
 };
-
+*/
 /*struct neuronspi_do_driver
 {
 	struct spi_device* spi;
