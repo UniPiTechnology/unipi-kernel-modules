@@ -2008,3 +2008,26 @@ s32 neuronspi_find_model_id(u32 probe_count)
 }
 
 
+struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_data *n_spi)
+{
+    char buf[20];
+    struct platform_device * board_device;
+    scnprintf(buf, 20, "io_group%d", n_spi->neuron_index+1);
+
+	//strcpy(n_spi->platform_name, "io_group0");
+	//n_spi->platform_name[8] = n_spi->neuron_index + '1';
+
+	board_device = platform_device_alloc(buf, -1);
+	board_device->dev.parent = &(neuron_plc_dev->dev);
+
+	if (n_spi->combination_id != 0xFF) {
+		board_device->dev.groups = neuron_board_attr_groups;
+	}
+
+	board_device->dev.driver = &neuronspi_spi_driver.driver;
+	platform_device_add(board_device);
+	platform_set_drvdata(board_device, n_spi);
+
+    return board_device;
+}
+

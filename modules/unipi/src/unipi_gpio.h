@@ -35,4 +35,8 @@ int neuronspi_gpio_ro_direction_input(struct gpio_chip *chip, unsigned offset);
 int neuronspi_gpio_ro_direction_output(struct gpio_chip *chip, unsigned offset, int value);
 void neuronspi_gpio_ro_set(struct gpio_chip *chip, unsigned offset, int value);
 
+struct neuronspi_gpio_driver * neuronspi_di_probe(int di_count, int neuron_index, struct platform_device *board_device);
+struct neuronspi_gpio_driver * neuronspi_ro_probe(int ro_count, int neuron_index, struct platform_device *board_device);
+struct neuronspi_gpio_driver * neuronspi_do_probe(int do_count, int neuron_index, struct platform_device *board_device);
+
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_GPIO_H_ */

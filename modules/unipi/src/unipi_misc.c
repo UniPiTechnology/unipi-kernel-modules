@@ -56,3 +56,32 @@ void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness
 	kthread_queue_work(&n_spi->primary_worker, &led->led_work);
 	spin_unlock_irqrestore(&led->lock, flags);
 }
+
+
+struct neuronspi_led_driver * neuronspi_led_probe(int led_count, int neuron_index, struct platform_device *board_device)
+{
+	struct neuronspi_led_driver * led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * led_count, GFP_ATOMIC);
+	int i;
+	
+	for (i = 0; i < led_count; i++) {
+		scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:uled-x%x", i);
+        /*strcpy(led_driver[i].name, "unipi:green:uled-x1");
+		if (i < 9) {
+			led_driver[i].name[18] = i + '1';
+		} else {
+			led_driver[i].name[18] = i - 9 + 'a';
+		}*/
+		// Initialise the rest of the structure
+		led_driver[i].id = i;
+		led_driver[i].brightness = LED_OFF;
+		led_driver[i].spi = neuronspi_s_dev[neuron_index];
+
+		spin_lock_init(&led_driver[i].lock);
+		led_driver[i].ldev.name = led_driver[i].name;
+		led_driver[i].ldev.brightness = led_driver[i].brightness;
+		led_driver[i].ldev.brightness_set = neuronspi_led_set_brightness;
+		led_classdev_register(&(board_device->dev), &(led_driver[i].ldev));
+		kthread_init_work(&(led_driver[i].led_work), neuronspi_led_proc);
+	}
+	return led_driver;
+}

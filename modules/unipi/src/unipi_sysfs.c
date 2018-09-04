@@ -341,7 +341,7 @@ static ssize_t neuronspi_spi_gpio_show_pwm_presc(struct device *dev, struct devi
 {
 	ssize_t ret = 0;
 	u32 val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -357,7 +357,7 @@ static ssize_t neuronspi_spi_gpio_store_pwm_presc(struct device *dev, struct dev
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -375,7 +375,7 @@ static ssize_t neuronspi_spi_gpio_show_pwm_freq(struct device *dev, struct devic
 {
 	ssize_t ret = 0;
 	u32 val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -391,7 +391,7 @@ static ssize_t neuronspi_spi_gpio_store_pwm_freq(struct device *dev, struct devi
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -409,13 +409,13 @@ static ssize_t neuronspi_spi_gpio_show_pwm_cycle(struct device *dev, struct devi
 {
 	ssize_t ret = 0;
 	u32 val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_do->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_pwm_reg + n_do->do_index, &val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_pwm_reg + n_do->io_index, &val);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -425,7 +425,7 @@ static ssize_t neuronspi_spi_gpio_store_pwm_cycle(struct device *dev, struct dev
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -433,7 +433,7 @@ static ssize_t neuronspi_spi_gpio_store_pwm_cycle(struct device *dev, struct dev
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->do_pwm_reg + n_do->do_index, val);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->do_pwm_reg + n_do->io_index, val);
 	}
 err_end:
 	return count;
@@ -444,14 +444,14 @@ static ssize_t neuronspi_spi_gpio_di_show_counter(struct device *dev, struct dev
 	ssize_t ret = 0;
 	u32 val = 0;
 	u32 val_upper = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->di_index), &val);
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->di_index), &val_upper);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->io_index), &val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->io_index), &val_upper);
 		val |= val_upper << 16;
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
@@ -462,7 +462,7 @@ static ssize_t neuronspi_spi_gpio_di_store_counter(struct device *dev, struct de
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
@@ -470,8 +470,8 @@ static ssize_t neuronspi_spi_gpio_di_store_counter(struct device *dev, struct de
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->di_index), val & 0xFFFF);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->di_index), val >> 16);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + (2 * n_di->io_index), val & 0xFFFF);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_counter_reg + 1 + (2 * n_di->io_index), val >> 16);
 	}
 err_end:
 	return count;
@@ -481,13 +481,13 @@ static ssize_t neuronspi_spi_gpio_di_show_debounce(struct device *dev, struct de
 {
 	ssize_t ret = 0;
 	u32 val = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->features && n_spi->features->di_count > n_di->di_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_deboun_reg + n_di->di_index, &val);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->features && n_spi->features->di_count > n_di->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_deboun_reg + n_di->io_index, &val);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -497,15 +497,15 @@ static ssize_t neuronspi_spi_gpio_di_store_debounce(struct device *dev, struct d
 {
 	ssize_t err = 0;
 	unsigned int val = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	err = kstrtouint(buf, 0, &val);
 	if (err < 0) goto err_end;
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->features && n_spi->features->di_count > n_di->di_index) {
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_deboun_reg + n_di->di_index, val);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->features && n_spi->features->di_count > n_di->io_index) {
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_deboun_reg + n_di->io_index, val);
 	}
 err_end:
 	return count;
@@ -515,15 +515,15 @@ static ssize_t neuronspi_spi_gpio_di_show_value(struct device *dev, struct devic
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->di_count > n_di->di_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_val_reg + (n_di->di_index / 16), &val);
-		val &= 0x1 << (n_di->di_index % 15);
-		val = val >> (n_di->di_index % 15);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->di_count > n_di->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_val_reg + (n_di->io_index / 16), &val);
+		val &= 0x1 << (n_di->io_index % 15);
+		val = val >> (n_di->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -533,15 +533,15 @@ static ssize_t neuronspi_spi_gpio_do_show_value(struct device *dev, struct devic
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_do->spi);
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->do_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->do_index / 16), &val);
-		val &= 0x1 << (n_do->do_index % 15);
-		val = val >> (n_do->do_index % 15);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), &val);
+		val &= 0x1 << (n_do->io_index % 15);
+		val = val >> (n_do->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -552,7 +552,7 @@ static ssize_t neuronspi_spi_gpio_do_store_value(struct device *dev, struct devi
 	ssize_t err = 0;
 	int inp = 0;
 	unsigned int val;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
@@ -562,11 +562,11 @@ static ssize_t neuronspi_spi_gpio_do_store_value(struct device *dev, struct devi
 	if (inp > 1 || inp < 0) {
 		goto err_end;
 	}
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->do_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->do_index / 16), &val);
-		val &= ~(0x1 << (n_do->do_index % 15));
-		val |= inp << (n_do->do_index % 15);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->do_index / 16), val);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), &val);
+		val &= ~(0x1 << (n_do->io_index % 15));
+		val |= inp << (n_do->io_index % 15);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), val);
 	}
 err_end:
 	return count;
@@ -576,15 +576,15 @@ static ssize_t neuronspi_spi_gpio_ro_show_value(struct device *dev, struct devic
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_ro_driver *n_ro;
+	struct neuronspi_gpio_driver *n_ro;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_ro = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_ro->spi);
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->ro_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->ro_index / 16), &val);
-		val &= 0x1 << (n_ro->ro_index % 15);
-		val = val >> (n_ro->ro_index % 15);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), &val);
+		val &= 0x1 << (n_ro->io_index % 15);
+		val = val >> (n_ro->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -595,7 +595,7 @@ static ssize_t neuronspi_spi_gpio_ro_store_value(struct device *dev, struct devi
 	ssize_t err = 0;
 	int inp = 0;
 	unsigned int val;
-	struct neuronspi_ro_driver *n_ro;
+	struct neuronspi_gpio_driver *n_ro;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_ro = platform_get_drvdata(plat);
@@ -605,11 +605,11 @@ static ssize_t neuronspi_spi_gpio_ro_store_value(struct device *dev, struct devi
 	if (inp > 1 || inp < 0) {
 		goto err_end;
 	}
-	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->ro_index) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->ro_index / 16), &val);
-		val &= ~(0x1 << (n_ro->ro_index % 15));
-		val |= inp << (n_ro->ro_index % 15);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->ro_index / 16), val);
+	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->io_index) {
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), &val);
+		val &= ~(0x1 << (n_ro->io_index % 15));
+		val |= inp << (n_ro->io_index % 15);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), val);
 	}
 err_end:
 	return count;
@@ -620,15 +620,15 @@ static ssize_t neuronspi_spi_gpio_show_ds_enable(struct device *dev, struct devi
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->di_index / 16), &val);
-		val &= 0x1 << (n_di->di_index % 15);
-		val = val >> (n_di->di_index % 15);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), &val);
+		val &= 0x1 << (n_di->io_index % 15);
+		val = val >> (n_di->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -638,15 +638,15 @@ static ssize_t neuronspi_spi_gpio_show_ds_toggle(struct device *dev, struct devi
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->di_index / 16), &val);
-		val &= 0x1 << (n_di->di_index % 15);
-		val = val >> (n_di->di_index % 15);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), &val);
+		val &= 0x1 << (n_di->io_index % 15);
+		val = val >> (n_di->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -656,15 +656,15 @@ static ssize_t neuronspi_spi_gpio_show_ds_polarity(struct device *dev, struct de
 {
 	ssize_t ret = 0;
 	int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != -1 && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->di_index / 16), &val);
-		val &= 0x1 << (n_di->di_index % 15);
-		val = val >> (n_di->di_index % 15);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), &val);
+		val &= 0x1 << (n_di->io_index % 15);
+		val = val >> (n_di->io_index % 15);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -675,7 +675,7 @@ static ssize_t neuronspi_spi_gpio_store_ds_enable(struct device *dev, struct dev
 	ssize_t err = 0;
 	int inp = 0;
 	unsigned int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
@@ -686,10 +686,10 @@ static ssize_t neuronspi_spi_gpio_store_ds_enable(struct device *dev, struct dev
 		goto err_end;
 	}
 	if (n_spi && n_spi->combination_id != -1 && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->di_index / 16), &val);
-		val &= ~(0x1 << (n_di->di_index % 15));
-		val |= inp << (n_di->di_index % 15);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->di_index / 16), val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), &val);
+		val &= ~(0x1 << (n_di->io_index % 15));
+		val |= inp << (n_di->io_index % 15);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), val);
 	}
 err_end:
 	return count;
@@ -700,7 +700,7 @@ static ssize_t neuronspi_spi_gpio_store_ds_toggle(struct device *dev, struct dev
 	ssize_t err = 0;
 	int inp = 0;
 	unsigned int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
@@ -711,10 +711,10 @@ static ssize_t neuronspi_spi_gpio_store_ds_toggle(struct device *dev, struct dev
 		goto err_end;
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->di_index / 16), &val);
-		val &= ~(0x1 << (n_di->di_index % 15));
-		val |= inp << (n_di->di_index % 15);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->di_index / 16), val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), &val);
+		val &= ~(0x1 << (n_di->io_index % 15));
+		val |= inp << (n_di->io_index % 15);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), val);
 	}
 err_end:
 	return count;
@@ -725,7 +725,7 @@ static ssize_t neuronspi_spi_gpio_store_ds_polarity(struct device *dev, struct d
 	ssize_t err = 0;
 	int inp = 0;
 	unsigned int val;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
@@ -736,10 +736,10 @@ static ssize_t neuronspi_spi_gpio_store_ds_polarity(struct device *dev, struct d
 		goto err_end;
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
-		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->di_index / 16), &val);
-		val &= ~(0x1 << (n_di->di_index % 15));
-		val |= inp << (n_di->di_index % 15);
-		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->di_index / 16), val);
+		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), &val);
+		val &= ~(0x1 << (n_di->io_index % 15));
+		val |= inp << (n_di->io_index % 15);
+		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), val);
 	}
 err_end:
 	return count;
@@ -923,13 +923,13 @@ static ssize_t neuronspi_spi_show_uboard_id(struct device *dev, struct device_at
 static ssize_t neuronspi_spi_gpio_show_do_prefix(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_do->spi);
 	if (n_spi->features && n_spi->features->do_count > 0 && n_spi->do_driver) {
-		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->do_driver[n_do->do_index]->gpio_c.label, n_spi->neuron_index + 1);
+		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->do_driver[n_do->io_index].gpio_c.label, n_spi->neuron_index + 1);
 	}
 	return ret;
 }
@@ -937,13 +937,13 @@ static ssize_t neuronspi_spi_gpio_show_do_prefix(struct device *dev, struct devi
 static ssize_t neuronspi_spi_gpio_show_di_prefix(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.label, n_spi->neuron_index + 1);
+		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->di_driver[n_di->io_index].gpio_c.label, n_spi->neuron_index + 1);
 	}
 	return ret;
 }
@@ -951,13 +951,13 @@ static ssize_t neuronspi_spi_gpio_show_di_prefix(struct device *dev, struct devi
 static ssize_t neuronspi_spi_gpio_show_ro_prefix(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_ro_driver *n_ro;
+	struct neuronspi_gpio_driver *n_ro;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_ro = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_ro->spi);
 	if (n_spi->features && n_spi->features->ro_count > 0 && n_spi->ro_driver) {
-		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->ro_driver[n_ro->ro_index]->gpio_c.label, n_spi->neuron_index + 1);
+		ret = scnprintf(buf, 255, "%s_%d\n", n_spi->ro_driver[n_ro->io_index].gpio_c.label, n_spi->neuron_index + 1);
 	}
 	return ret;
 }
@@ -965,13 +965,13 @@ static ssize_t neuronspi_spi_gpio_show_ro_prefix(struct device *dev, struct devi
 static ssize_t neuronspi_spi_gpio_show_do_base(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_do->spi);
 	if (n_spi->features && n_spi->features->do_count > 0 && n_spi->do_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->do_driver[n_do->do_index]->gpio_c.base);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->do_driver[n_do->io_index].gpio_c.base);
 	}
 	return ret;
 }
@@ -979,13 +979,13 @@ static ssize_t neuronspi_spi_gpio_show_do_base(struct device *dev, struct device
 static ssize_t neuronspi_spi_gpio_show_di_base(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.base);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->io_index].gpio_c.base);
 	}
 	return ret;
 }
@@ -993,13 +993,13 @@ static ssize_t neuronspi_spi_gpio_show_di_base(struct device *dev, struct device
 static ssize_t neuronspi_spi_gpio_show_ro_base(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_ro_driver *n_ro;
+	struct neuronspi_gpio_driver *n_ro;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_ro = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_ro->spi);
 	if (n_spi->features && n_spi->features->ro_count > 0 && n_spi->ro_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->ro_driver[n_ro->ro_index]->gpio_c.base);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->ro_driver[n_ro->io_index].gpio_c.base);
 	}
 	return ret;
 }
@@ -1007,13 +1007,13 @@ static ssize_t neuronspi_spi_gpio_show_ro_base(struct device *dev, struct device
 static ssize_t neuronspi_spi_gpio_show_do_count(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_do_driver *n_do;
+	struct neuronspi_gpio_driver *n_do;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_do = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_do->spi);
 	if (n_spi->features && n_spi->features->do_count > 0 && n_spi->do_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->do_driver[n_do->do_index]->gpio_c.ngpio);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->do_driver[n_do->io_index].gpio_c.ngpio);
 	}
 	return ret;
 }
@@ -1021,13 +1021,13 @@ static ssize_t neuronspi_spi_gpio_show_do_count(struct device *dev, struct devic
 static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_di_driver *n_di;
+	struct neuronspi_gpio_driver *n_di;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_di = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi->features && n_spi->features->di_count > 0 && n_spi->di_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->di_index]->gpio_c.ngpio);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->di_driver[n_di->io_index].gpio_c.ngpio);
 	}
 	return ret;
 }
@@ -1035,13 +1035,13 @@ static ssize_t neuronspi_spi_gpio_show_di_count(struct device *dev, struct devic
 static ssize_t neuronspi_spi_gpio_show_ro_count(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
-	struct neuronspi_ro_driver *n_ro;
+	struct neuronspi_gpio_driver *n_ro;
 	struct neuronspi_driver_data *n_spi;
 	struct platform_device *plat = to_platform_device(dev);
 	n_ro = platform_get_drvdata(plat);
 	n_spi = spi_get_drvdata(n_ro->spi);
 	if (n_spi->features && n_spi->features->ro_count > 0 && n_spi->ro_driver) {
-		ret = scnprintf(buf, 255, "%d\n", n_spi->ro_driver[n_ro->ro_index]->gpio_c.ngpio);
+		ret = scnprintf(buf, 255, "%d\n", n_spi->ro_driver[n_ro->io_index].gpio_c.ngpio);
 	}
 	return ret;
 }

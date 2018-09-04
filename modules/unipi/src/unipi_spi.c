@@ -237,7 +237,6 @@ int _neuronspi_spi_send_op(struct spi_device* spi_dev, s32 trans_count, const st
                     if (opcode != 0x43) {
                         // read one incomming character from UART
                         neuronspi_rx_queue_add(port, recv_buf->first_message[3]);
-                        //neuronspi_uart_handle_rx(port, 1, 1);
                     }
                     // read queue length
                     port->rx_remain = recv_buf->first_message[2];
@@ -353,7 +352,7 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
 
     driver_data = spi_get_drvdata(spi_driver_data);
     if (driver_data == NULL) return -2;
-    if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
+    //if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
     if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) return -3; // Device not present
 
     mutex_lock(&(private_data->lock));
@@ -361,8 +360,8 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
     	mutex_unlock(&(private_data->lock));
     	return -10;
     }
-    unipi_spi_trace(KERN_INFO "UNIPISPI: CDEV Read %d, DEV:%s%d DRV:%s%d msglen=%d offset=%d\n", len, (spi_driver_data->dev.of_node->name),
-    		(spi_driver_data->chip_select), (driver_data->spi_driver->driver.name), (private_data->device_index),private_data->message_len, (int)*offset);
+    unipi_spi_trace(KERN_INFO "UNIPISPI: CDEV Read %d, DEV:%s%d DRV:%d msglen=%d offset=%d\n", len, (spi_driver_data->dev.of_node->name),
+    		(spi_driver_data->chip_select), (private_data->device_index),private_data->message_len, (int)*offset);
             
 	if (private_data->has_first_message & UNIPISPI_OP_MODE_SEND_HEADER) {
    		result = simple_read_from_buffer(buffer, len, &dummy_offset, private_data->recv_buf.first_message, NEURONSPI_FIRST_MESSAGE_LENGTH);
@@ -435,7 +434,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
 
     driver_data = spi_get_drvdata(spi_driver_data);
     if (driver_data == NULL) return -2;
-    if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
+    //if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
     if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) 
         return -3; // Device not present
 
@@ -763,164 +762,23 @@ int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value)
 void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to)
 {
     unipispi_modbus_write_register(spi_dev, 1007, to);
-	unipi_spi_trace(KERN_INFO "UNIPISPI: SPI IRQ Set, Dev-CS:%d, to:%d\n", spi_dev->chip_select, to);
+	unipi_spi_trace(KERN_INFO "UNIPISPI: SPI IRQ Set, CS%d, to:0x%x\n", spi_dev->chip_select, to);
 }
-
-
-
-/*
-int neuronspi_spi_send_message(struct spi_device* spi_dev, u8 *send_buf, u8 *recv_buf, s32 len, s32 freq, s32 delay, s32 send_header, u8 lock_val)
-{
-	s32 i = 0;
-	int ret_code = 0;
-	u16 recv_crc1 = 0;
-	u16 recv_crc2 = 0;
-	u16 packet_crc = 0;
-	s32 trans_count = (len<=0) ? 2 : ((len-1) / NEURONSPI_MAX_TX) + 3;	// number of transmissions
-	//struct spi_message *s_msg;
-	struct neuronspi_driver_data *d_data;
-    struct spi_transfer* s_trans;
-	mutex_lock(&neuronspi_master_mutex);
-	//if ((len % NEURONSPI_MAX_TX) == 0) trans_count--;
-    d_data = spi_get_drvdata(spi_dev);
-	if (d_data != NULL && d_data->reserved_device && lock_val != d_data->reserved_device) {
-		memset(&recv_buf, 0, len);
-	} else {
-		s_trans = kzalloc(sizeof(struct spi_transfer) * trans_count, GFP_ATOMIC);
-		unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI Master Write, len:%d,\n %100ph\n", len, send_buf);
-
-		if (!send_header) {
-			trans_count -= 1;	// one less transmission as the header is omitted
-		}
-		//s_msg = kmalloc(sizeof(struct spi_message), GFP_ATOMIC);
-		//spi_message_init(s_msg);
-		for (i = 0; i < trans_count; i++) {
-			memset(&(s_trans[i]), 0, sizeof(s_trans[i]));
-			s_trans[i].delay_usecs = 0;
-			s_trans[i].bits_per_word = 8;
-			s_trans[i].speed_hz = freq;
-			if (i == 0) {
-				s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
-			} else if (i == 1) {
-				s_trans[i].tx_buf = send_buf;
-				s_trans[i].rx_buf = recv_buf;
-				if (send_header) {
-					s_trans[i].delay_usecs = delay;
-					s_trans[i].len = NEURONSPI_FIRST_MESSAGE_LENGTH;
-				} else {
-					// If len is more than NEURONSPI_MAX_TX * i, then chunk len is NEURONSPI_MAX_TX, otherwise it's the remainder
-					s_trans[i].len = (len - (NEURONSPI_MAX_TX * i)) > 0 ? NEURONSPI_MAX_TX : len;
-				}
-			} else if (i == trans_count - 1) {
-				if (send_header) {
-					s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-					s_trans[i].len = (len - (NEURONSPI_MAX_TX * (i - 2)));
-					//s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
-				} else {
-					s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
-					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
-					s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
-				}
-				s_trans[i].delay_usecs = NEURONSPI_LAST_TRANSFER_DELAY;
-				// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
-				// otherwise it's the remainder
-			} else {
-				if (send_header) {
-					s_trans[i].tx_buf = &(send_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_FIRST_MESSAGE_LENGTH + (NEURONSPI_MAX_TX * (i - 2))]);
-					s_trans[i].len = NEURONSPI_MAX_TX;
-					//s_trans[i].len = ((NEURONSPI_MAX_TX * (i - 1)) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 2)));
-				} else {
-					s_trans[i].tx_buf = &(send_buf[NEURONSPI_MAX_TX * (i - 1)]);
-					s_trans[i].rx_buf = &(recv_buf[NEURONSPI_MAX_TX * (i - 1)]);
-					s_trans[i].len = ((NEURONSPI_MAX_TX * i) - len) < 0 ? NEURONSPI_MAX_TX : (len - (NEURONSPI_MAX_TX * (i - 1)));
-				}
-				// If len is more than NEURONSPI_MAX_TX * i (+ optionally header), then chunk len is NEURONSPI_MAX_TX (+ optionally header),
-				// otherwise it's the remainder
-			}
-			//spi_message_add_tail(&(s_trans[i]), s_msg);
-		}
-		//spi_sync(spi_dev, s_msg);
-		spi_sync_transfer(spi_dev, s_trans, trans_count);
-		//for (i = 0; i < trans_count; i++) {
-		//	spi_transfer_del(&(s_trans[i]));
-		//}
-	    kfree(s_trans);
-	    //kfree(s_msg);
-		unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI Master Read - %d:\n\t%100ph\n\t%100ph\n\t%100ph\n\t%100ph\n", len,recv_buf, &recv_buf[64],
-				&recv_buf[128], &recv_buf[192]);
-
-	}
-    if (d_data == NULL || (d_data != NULL && !d_data->reserved_device)) {
-		recv_crc1 = neuronspi_spi_crc(recv_buf, 4, 0);
-		memcpy(&packet_crc, &recv_buf[4], 2);
-		unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI CRC1: %x\t COMPUTED CRC1:%x\n", packet_crc, recv_crc1);
-
-		if (recv_crc1 == packet_crc) {
-		// Signal the UART to issue character reads
-            unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI CRC1 Correct");
-
-			if (d_data && ((recv_buf[0] & 0xfd) == 0x41)) {
-				unipi_spi_trace(KERN_INFO "UNIPISPI: Reading UART data for device %d\n", d_data->neuron_index);
-
-			    if (recv_buf[0] == 0x41) {
-					d_data->uart_buf[0] = recv_buf[3];
-					for (i = 0; i < d_data->uart_data->p_count; i++) {
-						if (d_data->uart_data->p[i].dev_index == d_data->neuron_index) {
-							neuronspi_uart_handle_rx(&d_data->uart_data->p[i], 1, 1);
-						}
-					}
-				}
-				if (!(d_data->uart_read) && (d_data->uart_count)) {
-					d_data->uart_read = recv_buf[2];
-					for (i = 0; i < d_data->uart_data->p_count; i++) {
-                        unipi_spi_trace(KERN_INFO "UNIPISPI: UART Buffer:%d, UART Local Port Count:%d, UART Global Port Count:%d\n", d_data->uart_read,
-							d_data->uart_count,  d_data->uart_data->p_count);
-
-						if (d_data->uart_data->p[i].dev_index == d_data->neuron_index && !d_data->reserved_device) {
-							kthread_queue_work(&d_data->uart_data->kworker, &d_data->uart_data->p[i].rx_work);
-						}
-					}
-				}
-			}
-		} else {
-			unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC1 Not Correct");
-		}
-		recv_crc2 = neuronspi_spi_crc(&recv_buf[6], len - 8, recv_crc1);
-		memcpy(&packet_crc, &recv_buf[len - 2], 2);
-		unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI CRC2: %x\t COMPUTED CRC2:%x\n", packet_crc, recv_crc2);
-		if (recv_crc2 != packet_crc) {
-			unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct");
-
-			recv_buf[0] = 0;
-			ret_code = 1;
-		}
-    }
-    mutex_unlock(&neuronspi_master_mutex);
-    return ret_code;
-}
-*/
 
 
 irqreturn_t neuronspi_spi_irq(s32 irq, void *dev_id)
 {
-	s32 i;
-	struct spi_device *spi;
-	struct neuronspi_driver_data *d_data;
-	//struct neuronspi_uart_data *u_data;
-	spi = (struct spi_device *)dev_id;
-	d_data = spi_get_drvdata(spi);
+	struct spi_device *spi = (struct spi_device *)dev_id;
+	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
+	struct neuronspi_port *port;
+
 	unipi_spi_trace(KERN_INFO "UNIPISPI: SPI IRQ\n");
 
 	if (d_data->uart_count) {
-		for (i = 0; i < neuronspi_uart_data_global->p_count; i++) {
-			if (neuronspi_uart_data_global->p[i].dev_index == d_data->neuron_index) {
-				kthread_queue_work(&neuronspi_uart_data_global->kworker, &neuronspi_uart_data_global->p[i].irq_work);
-			}
-
+		// it is enough to call one port of spi board
+		port = neuronspi_uart_data_global->p + d_data->uart_pindex;
+		kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->irq_work);
 		}
-	}
 	return IRQ_HANDLED;
 }
 
@@ -959,14 +817,8 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	n_spi->neuron_index = spi->chip_select - 1;
 	n_spi->reserved_device = 0;
 
-	if (neuron_plc_dev == NULL) {
-		neuron_plc_dev = platform_device_alloc("unipi_plc", -1);
-		neuron_plc_dev->dev.groups = neuron_plc_attr_groups;
-		platform_device_add(neuron_plc_dev);
-	}
 
-
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CS: %d, Chip Max Hz-%d %d\n", spi->chip_select, spi->master->max_speed_hz, spi->max_speed_hz);
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CS%d, Chip Max Hz-%d %d\n", spi->chip_select, spi->master->max_speed_hz, spi->max_speed_hz);
 	if (spi->dev.of_node) {
 		const struct of_device_id *of_id =
 			of_match_device(neuronspi_id_match, &spi->dev);
@@ -985,12 +837,13 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		devtype = (struct neuronspi_devtype *)id_entry->driver_data;
 	}
 
-
+    // Prepare worker for interrupt, LEDs, 
 	kthread_init_worker(&n_spi->primary_worker);
 
 	n_spi->primary_worker_task = kthread_run(kthread_worker_fn, &n_spi->primary_worker, "neuronspi");
 	if (IS_ERR(n_spi->primary_worker_task )) {
 		ret = PTR_ERR(n_spi->primary_worker_task);
+        kfree(n_spi);
 		return ret;
 	}
 	sched_setscheduler(n_spi->primary_worker_task, SCHED_FIFO, &neuronspi_sched_param);
@@ -998,7 +851,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	// We perform an initial probe of registers 1000-1004 to identify the device, using a premade message
 	n_spi->first_probe_reply = kzalloc(UNIPISPI_PROBE_MESSAGE_LEN, GFP_ATOMIC);	// allocate space for initial probe
 	n_spi->lower_board_id = n_spi->upper_board_id = n_spi->combination_id = 0xFF;
-	n_spi->spi_driver = &neuronspi_spi_driver;
 
 	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_op, 0, NEURONSPI_DEFAULT_FREQ, 25);
 	// Throw away the first message - the associated SPI Master is sometimes not properly initialised at this point
@@ -1026,17 +878,19 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 				}
 			}
 		}
+
 	} else if (!n_spi->probe_always_succeeds) {
 		ret = -ENODEV;
 		kfree(n_spi);
-		printk(KERN_INFO "UNIPISPI: Probe did not detect a valid UniPi device on CS %d\n", spi->chip_select);
+		printk(KERN_INFO "UNIPISPI: Probe did not detect a valid UniPi device at CS%d\n", spi->chip_select);
 		return ret;
+
 	} else if (n_spi->always_create_uart) {
 		uart_count = 1;
 	}
 
 	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
-		n_spi->features = kzalloc(sizeof(struct neuronspi_board_features), GFP_ATOMIC);
+		//n_spi->features = kzalloc(sizeof(struct neuronspi_board_features), GFP_ATOMIC);
 		n_spi->features = &(NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->features);
 	} else {
 		n_spi->features = NULL;
@@ -1045,28 +899,24 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	n_spi->ideal_frequency = NEURONSPI_COMMON_FREQ;
 	for (i = 0; i < NEURONSPI_SLOWER_MODELS_LEN; i++) {
 		if (NEURONSPI_SLOWER_MODELS[i] == (n_spi->first_probe_reply[19-6] << 8 | n_spi->first_probe_reply[18-6])) {
-			//n_spi->slower_model = 1;
 			n_spi->ideal_frequency = NEURONSPI_SLOWER_FREQ;
 		}
 	}
 	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board %s (L:%x U:%x C:%x) Index: %d Fw: v%d.%d on CS %d, \
-Uart count: %d - reg1000: %x, reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
+		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board %s (L:%x U:%x C:%x) Fw: v%d.%d at CS%d (id=%d)\n\t\tUarts:%d, reg1000-4: %10ph\n",
 				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
-				n_spi->lower_board_id, n_spi->upper_board_id, n_spi->combination_id,  n_spi->neuron_index,
-				n_spi->first_probe_reply[11-6],  n_spi->first_probe_reply[10-6], spi->chip_select, uart_count,
-				n_spi->first_probe_reply[11-6] << 8 | n_spi->first_probe_reply[10-6],
-				n_spi->first_probe_reply[13-6] << 8 | n_spi->first_probe_reply[12-6], n_spi->first_probe_reply[15-6] << 8 | n_spi->first_probe_reply[14-6],
-				n_spi->first_probe_reply[17-6] << 8 | n_spi->first_probe_reply[16-6], n_spi->first_probe_reply[19-6] << 8 | n_spi->first_probe_reply[18-6]);
+				n_spi->lower_board_id, n_spi->upper_board_id, n_spi->combination_id, 
+				n_spi->first_probe_reply[5],  n_spi->first_probe_reply[4], 
+				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->first_probe_reply +4) ;
 	} else if (n_spi->lower_board_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board L:%x C:??? Index: %d Fw: v%d.%d on CS %d, Uart count: %d - reg1000: %x, \
+		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board L:%x C:??? Index: %d Fw: v%d.%d at CS%d, Uart count: %d - reg1000: %x, \
 reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->lower_board_id, n_spi->neuron_index, n_spi->first_probe_reply[11-6],  n_spi->first_probe_reply[10-6],
 				spi->chip_select, uart_count, n_spi->first_probe_reply[11-6] << 8 | n_spi->first_probe_reply[10-6],
 				n_spi->first_probe_reply[13-6] << 8 | n_spi->first_probe_reply[12-6], n_spi->first_probe_reply[15-6] << 8 | n_spi->first_probe_reply[14-6],
 				n_spi->first_probe_reply[17-6] << 8 | n_spi->first_probe_reply[16-6], n_spi->first_probe_reply[19-6] << 8 | n_spi->first_probe_reply[18-6]);
 	} else {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board L:??? C:??? Index: %d Fw: v%d.%d on CS %d, Uart count: %d - reg1000: %x, \
+		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board L:??? C:??? Index: %d Fw: v%d.%d on CS%d, Uart count: %d - reg1000: %x, \
 reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->neuron_index, n_spi->first_probe_reply[11-6],  n_spi->first_probe_reply[10-6], spi->chip_select, uart_count,
 				n_spi->first_probe_reply[11-6] << 8 | n_spi->first_probe_reply[10-6], n_spi->first_probe_reply[13-6] << 8 | n_spi->first_probe_reply[12-6],
@@ -1074,10 +924,11 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 				n_spi->first_probe_reply[19-6] << 8 | n_spi->first_probe_reply[18-6]);
 	}
 	if (n_spi->combination_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: UniPi device %s on CS %d uses SPI communication freq. %d Hz\n",
+		printk(KERN_INFO "UNIPISPI: UniPi device %s at CS%d uses SPI communication freq. %d Hz\n",
 				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
 				spi->chip_select, n_spi->ideal_frequency);
 	}
+
 	n_spi->reg_map = regmap_init(&(spi->dev), &neuronspi_regmap_bus, spi, &neuronspi_regmap_config_default);
 	spin_lock_init(&n_spi->sysfs_regmap_lock);
 	if (n_spi->features) {
@@ -1087,26 +938,12 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		n_spi->regstart_table = NULL;
 	}
 
-
-	// Check for user-configurable LED devices
-	if (n_spi->features && n_spi->features->led_count > 0) {
-		printk(KERN_INFO "UNIPISPI: LED model %s with %d LEDs detected at CS: %d\n",
-				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
-				n_spi->features->led_count, spi->chip_select);
-		n_spi->led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * n_spi->features->led_count, GFP_ATOMIC);
-		for (i = 0; i < n_spi->features->led_count; i++) {
-			kthread_init_work(&(n_spi->led_driver[i].led_work), neuronspi_led_proc);
-		}
-	}
-
-	n_spi->char_driver = &neuronspi_cdrv;
-
-
+	//n_spi->char_driver = &neuronspi_cdrv;
 	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
+
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
 	spi_set_drvdata(spi, n_spi);
-    
-	//spi_set_drvdata(neuronspi_s_dev[n_spi->neuron_index], n_spi);
+
 	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {
 		neuronspi_model_id = neuronspi_find_model_id(neuronspi_probe_count);
 	}
@@ -1115,8 +952,17 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 		printk(KERN_INFO "UNIPISPI: Detected UniPi board combination corresponding to %s\n", NEURONSPI_MODELTABLE[neuronspi_model_id].model_name);
 	}
 
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: SPI IRQ: %d", spi->irq);
-	strcpy(n_spi->platform_name, "io_group0");
+    /* Platform LED, GPIO, IIO sysfs subsystem init */
+	if (neuron_plc_dev == NULL) {
+        // global platform root
+		neuron_plc_dev = platform_device_alloc("unipi_plc", -1);
+		neuron_plc_dev->dev.groups = neuron_plc_attr_groups;
+		platform_device_add(neuron_plc_dev);
+	}
+    
+    n_spi->board_device = neuronspi_board_device_probe(n_spi);
+
+	/*strcpy(n_spi->platform_name, "io_group0");
 	n_spi->platform_name[8] = n_spi->neuron_index + '1';
 	n_spi->board_device = platform_device_alloc(n_spi->platform_name, -1);
 	n_spi->board_device->dev.parent = &(neuron_plc_dev->dev);
@@ -1125,118 +971,23 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 	}
 	n_spi->board_device->dev.driver = &neuronspi_spi_driver.driver;
 	platform_device_add(n_spi->board_device);
-	platform_set_drvdata(n_spi->board_device, n_spi);
-
-	if (!(neuronspi_cdrv.major_number)) { // Register character device if it doesn't exist
-		ret = char_register_driver();
-		if (ret) {
-			printk(KERN_ERR "UNIPISPI: Failed to register the neuronspi character driver, ERR:%d\n", ret);
-		}
-	}
+	platform_set_drvdata(n_spi->board_device, n_spi);*/
 
 	if (n_spi->features) {
 		if (n_spi->features->led_count) {
-			for (i = 0; i < n_spi->features->led_count; i++) {
-				strcpy(n_spi->led_driver[i].name, "unipi:green:uled-x1");
-				if (i < 9) {
-					n_spi->led_driver[i].name[18] = i + '1';
-				} else {
-					n_spi->led_driver[i].name[18] = i - 9 + 'a';
-				}
-				// Initialise the rest of the structure
-				n_spi->led_driver[i].id = i;
-				n_spi->led_driver[i].brightness = LED_OFF;
-				n_spi->led_driver[i].spi = spi;
-				spin_lock_init(&n_spi->led_driver[i].lock);
-				n_spi->led_driver[i].ldev.name = n_spi->led_driver[i].name;
-				n_spi->led_driver[i].ldev.brightness = n_spi->led_driver[i].brightness;
-				n_spi->led_driver[i].ldev.brightness_set = neuronspi_led_set_brightness;
-				led_classdev_register(&(n_spi->board_device->dev), &(n_spi->led_driver[i].ldev));
-			}
+			printk(KERN_INFO "UNIPISPI: LED: %d User leds detected at CS%d\n", n_spi->features->led_count, spi->chip_select);
+			n_spi->led_driver = neuronspi_led_probe(n_spi->features->led_count, n_spi->neuron_index, n_spi->board_device);
 		}
 #ifdef CONFIG_GPIOLIB
 		if (n_spi->features->di_count) {
-			n_spi->di_driver = kzalloc(sizeof(struct neuronspi_di_driver*) * n_spi->features->di_count, GFP_ATOMIC);
-			for (i = 0; i < n_spi->features->di_count; i++) {
-				n_spi->di_driver[i] = kzalloc(sizeof(struct neuronspi_di_driver), GFP_ATOMIC);
-				strcpy(n_spi->di_driver[i]->name, "di_0_00");
-				n_spi->di_driver[i]->name[3] = n_spi->neuron_index + '1';
-				n_spi->di_driver[i]->name[5] = ((i + 1) / 10) + '0';
-				n_spi->di_driver[i]->name[6] = ((i + 1) % 10) + '0';
-				n_spi->di_driver[i]->di_index = i;
-				n_spi->di_driver[i]->spi = spi;
-				n_spi->di_driver[i]->plat_dev = platform_device_alloc(n_spi->di_driver[i]->name, -1);
-				n_spi->di_driver[i]->plat_dev->dev.parent = &(n_spi->board_device->dev);
-				n_spi->di_driver[i]->plat_dev->dev.groups = neuron_gpio_di_attr_groups;
-				n_spi->di_driver[i]->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
-				platform_device_add(n_spi->di_driver[i]->plat_dev);
-				platform_set_drvdata(n_spi->di_driver[i]->plat_dev, n_spi->di_driver[i]);
-				n_spi->di_driver[i]->gpio_c.owner = THIS_MODULE;
-				n_spi->di_driver[i]->gpio_c.parent = &(n_spi->di_driver[i]->plat_dev->dev);
-				n_spi->di_driver[i]->gpio_c.label = "neuron_di";
-				n_spi->di_driver[i]->gpio_c.can_sleep = 1;
-				n_spi->di_driver[i]->gpio_c.ngpio = 1;
-				n_spi->di_driver[i]->gpio_c.base = -1;
-				n_spi->di_driver[i]->gpio_c.direction_input = neuronspi_gpio_di_direction_input;
-				n_spi->di_driver[i]->gpio_c.get = neuronspi_gpio_di_get;
-				gpiochip_add_data(&n_spi->di_driver[i]->gpio_c, n_spi->di_driver[i]);
-			}
+			n_spi->di_driver = neuronspi_di_probe(n_spi->features->di_count, n_spi->neuron_index, n_spi->board_device);
 		}
-
 		if (n_spi->features->do_count) {
-			n_spi->do_driver = kzalloc(sizeof(struct neuronspi_do_driver*) * n_spi->features->do_count, GFP_ATOMIC);
-			for (i = 0; i < n_spi->features->do_count; i++) {
-				n_spi->do_driver[i] = kzalloc(sizeof(struct neuronspi_do_driver), GFP_ATOMIC);
-				strcpy(n_spi->do_driver[i]->name, "do_0_00");
-				n_spi->do_driver[i]->name[3] = n_spi->neuron_index + '1';
-				n_spi->do_driver[i]->name[5] = ((i + 1) / 10) + '0';
-				n_spi->do_driver[i]->name[6] = ((i + 1) % 10) + '0';
-				n_spi->do_driver[i]->do_index = i;
-				n_spi->do_driver[i]->spi = spi;
-				n_spi->do_driver[i]->plat_dev = platform_device_alloc(n_spi->do_driver[i]->name, -1);
-				n_spi->do_driver[i]->plat_dev->dev.parent = &(n_spi->board_device->dev);
-				n_spi->do_driver[i]->plat_dev->dev.groups = neuron_gpio_do_attr_groups;
-				n_spi->do_driver[i]->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
-				platform_device_add(n_spi->do_driver[i]->plat_dev);
-				platform_set_drvdata(n_spi->do_driver[i]->plat_dev, n_spi->do_driver[i]);
-				n_spi->do_driver[i]->gpio_c.owner = THIS_MODULE;
-				n_spi->do_driver[i]->gpio_c.parent = &(n_spi->do_driver[i]->plat_dev->dev);
-				n_spi->do_driver[i]->gpio_c.label = "neuron_do";
-				n_spi->do_driver[i]->gpio_c.can_sleep = 1;
-				n_spi->do_driver[i]->gpio_c.ngpio = 1;
-				n_spi->do_driver[i]->gpio_c.base = -1;
-				n_spi->do_driver[i]->gpio_c.direction_output = neuronspi_gpio_do_direction_output;
-				n_spi->do_driver[i]->gpio_c.set = neuronspi_gpio_do_set;
-				gpiochip_add_data(&n_spi->do_driver[i]->gpio_c, n_spi->do_driver[i]);
-			}
+			n_spi->do_driver = neuronspi_do_probe(n_spi->features->do_count, n_spi->neuron_index, n_spi->board_device);
 		}
 
 		if (n_spi->features->ro_count) {
-			n_spi->ro_driver = kzalloc(sizeof(struct neuronspi_ro_driver*) * n_spi->features->ro_count, GFP_ATOMIC);
-			for (i = 0; i < n_spi->features->ro_count; i++) {
-				n_spi->ro_driver[i] = kzalloc(sizeof(struct neuronspi_ro_driver), GFP_ATOMIC);
-				strcpy(n_spi->ro_driver[i]->name, "ro_0_00");
-				n_spi->ro_driver[i]->name[3] = n_spi->neuron_index + '1';
-				n_spi->ro_driver[i]->name[5] = ((i + 1) / 10) + '0';
-				n_spi->ro_driver[i]->name[6] = ((i + 1) % 10) + '0';
-				n_spi->ro_driver[i]->ro_index = i;
-				n_spi->ro_driver[i]->spi = spi;
-				n_spi->ro_driver[i]->plat_dev = platform_device_alloc(n_spi->ro_driver[i]->name, -1);
-				n_spi->ro_driver[i]->plat_dev->dev.parent = &(n_spi->board_device->dev);
-				n_spi->ro_driver[i]->plat_dev->dev.groups = neuron_gpio_ro_attr_groups;
-				n_spi->ro_driver[i]->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
-				platform_device_add(n_spi->ro_driver[i]->plat_dev);
-				platform_set_drvdata(n_spi->ro_driver[i]->plat_dev, n_spi->ro_driver[i]);
-				n_spi->ro_driver[i]->gpio_c.owner = THIS_MODULE;
-				n_spi->ro_driver[i]->gpio_c.parent = &(n_spi->ro_driver[i]->plat_dev->dev);
-				n_spi->ro_driver[i]->gpio_c.label = "neuron_ro";
-				n_spi->ro_driver[i]->gpio_c.can_sleep = 1;
-				n_spi->ro_driver[i]->gpio_c.ngpio = 1;
-				n_spi->ro_driver[i]->gpio_c.base = -1;
-				n_spi->ro_driver[i]->gpio_c.direction_output = neuronspi_gpio_ro_direction_output;
-				n_spi->ro_driver[i]->gpio_c.set = neuronspi_gpio_ro_set;
-				gpiochip_add_data(&n_spi->ro_driver[i]->gpio_c, n_spi->ro_driver[i]);
-			}
+			n_spi->ro_driver = neuronspi_ro_probe(n_spi->features->ro_count, n_spi->neuron_index, n_spi->board_device);
 		}
 #endif
 		if (n_spi->features->stm_ai_count) {
@@ -1305,16 +1056,13 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 
     n_spi->uart_count_to_probe = uart_count;
 	if (uart_count) {
-        //n_spi->uart_buf = kzalloc(NEURONSPI_FIFO_SIZE, GFP_ATOMIC);
         if (neuronspi_uart_driver_global != NULL) {	
-            // Normalne se registrace portu udela az po inicializaci unipispi driveru. (Na konci __init__)
-            // Opravit proceduru probe !!! 
+            // Normally is port registration done after unipispi driver probe. (in the end of __init__)
             unipi_spi_trace(KERN_DEBUG "UNIPISPI: UART registration\n");
-
             neuronspi_uart_probe(spi, n_spi);
-            //n_spi->uart_count = uart_count;
+
         } else {
-            unipi_spi_trace(KERN_DEBUG "UNIPISPI: Neuronspi uart driver not registered yet. Uart port add later.\n");
+            unipi_spi_trace(KERN_DEBUG "UNIPISPI: Uart driver not registered yet. Uart port add later.\n");
         }
 	}
 
@@ -1322,6 +1070,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 	for (i = 0; i < NEURONSPI_NO_INTERRUPT_MODELS_LEN; i++) {
 		if (NEURONSPI_NO_INTERRUPT_MODELS[i] == (n_spi->first_probe_reply[17-6] << 8 | n_spi->first_probe_reply[16-6])) {
 			no_irq = 1;
+			break;
 		}
 	}
 
@@ -1329,7 +1078,7 @@ reg1001: %x, reg1002: %x, reg1003: %x, reg1004: %x\n",
 	if (!no_irq) {
 		n_spi->no_irq = 0;
 		ret = devm_request_irq(&(spi->dev), spi->irq, neuronspi_spi_irq, 0x81, dev_name(&(spi->dev)), spi);
-		unipi_spi_trace(KERN_DEBUG "UNIPISPI: IRQ registration, ret:%d\n", ret);
+		unipi_spi_trace(KERN_DEBUG "UNIPISPI: SPI IRQ %d registration: ret=%d\n", spi->irq, ret);
 	} else {
 		n_spi->no_irq = 1;
 		unipi_spi_trace(KERN_DEBUG "UNIPISPI: NO IRQ ON THIS MODEL !!\n");
@@ -1354,28 +1103,25 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
 		printk(KERN_INFO "UNIPISPI: LED DRIVER UNREGISTERED\n");
 		if (n_spi->di_driver) {
 			for (i = 0; i < n_spi->features->di_count; i++) {
-				gpiochip_remove(&n_spi->di_driver[i]->gpio_c);
-				platform_set_drvdata(n_spi->di_driver[i]->plat_dev, 0);
-				platform_device_unregister(n_spi->di_driver[i]->plat_dev);
-				kfree(n_spi->di_driver[i]);
+				gpiochip_remove(&n_spi->di_driver[i].gpio_c);
+				platform_set_drvdata(n_spi->di_driver[i].plat_dev, 0);
+				platform_device_unregister(n_spi->di_driver[i].plat_dev);
 			}
 			kfree(n_spi->di_driver);
 		}
 		if (n_spi->do_driver) {
 			for (i = 0; i < n_spi->features->do_count; i++) {
-				gpiochip_remove(&n_spi->do_driver[i]->gpio_c);
-				platform_set_drvdata(n_spi->do_driver[i]->plat_dev, 0);
-				platform_device_unregister(n_spi->do_driver[i]->plat_dev);
-				kfree(n_spi->do_driver[i]);
+				gpiochip_remove(&n_spi->do_driver[i].gpio_c);
+				platform_set_drvdata(n_spi->do_driver[i].plat_dev, 0);
+				platform_device_unregister(n_spi->do_driver[i].plat_dev);
 			}
 			kfree(n_spi->do_driver);
 		}
 		if (n_spi->ro_driver) {
 			for (i = 0; i < n_spi->features->ro_count; i++) {
-				gpiochip_remove(&n_spi->ro_driver[i]->gpio_c);
-				platform_set_drvdata(n_spi->ro_driver[i]->plat_dev, 0);
-				platform_device_unregister(n_spi->ro_driver[i]->plat_dev);
-				kfree(n_spi->ro_driver[i]);
+				gpiochip_remove(&n_spi->ro_driver[i].gpio_c);
+				platform_set_drvdata(n_spi->ro_driver[i].plat_dev, 0);
+				platform_device_unregister(n_spi->ro_driver[i].plat_dev);
 			}
 			kfree(n_spi->ro_driver);
 		}
@@ -1401,10 +1147,6 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
 			n_spi->sec_ao_driver = NULL;
 		}
 		printk(KERN_INFO "UNIPISPI: IIO DRIVER UNREGISTERED\n");
-		//if (n_spi->uart_buf) {
-		//	kfree(n_spi->uart_buf);
-		//	n_spi->uart_buf = NULL;
-		//}
 		printk(KERN_INFO "UNIPISPI: SPI/UART DRIVER UNREGISTERED\n");
 		if (n_spi->board_device) {
 			platform_set_drvdata(n_spi->board_device, 0);
@@ -1471,15 +1213,15 @@ static s32 __init neuronspi_init(void)
 {
 	s32 ret = 0;
 
-    //neuronspi_uart_driver_init();
-
 	neuronspi_probe_spinlock = kzalloc(sizeof(struct spinlock), GFP_ATOMIC);
 	spin_lock_init(neuronspi_probe_spinlock);
 	mutex_init(&neuronspi_master_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
+
     // clear global neuron spi devices list
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
 	ret = spi_register_driver(&neuronspi_spi_driver);
+
 	if (ret < 0) {
 		printk(KERN_ERR "UNIPISPI: Failed to init neuronspi spi --> %d\n", ret);
 		return ret;
@@ -1490,9 +1232,17 @@ static s32 __init neuronspi_init(void)
 		printk(KERN_INFO "UNIPISPI: SPI Driver Registered\n");
 #endif
 	}
+
 	neuronspi_invalidate_thread = kthread_create(neuronspi_regmap_invalidate, NULL, "unipispi_inv");
 	if (neuronspi_invalidate_thread != NULL) {
 		wake_up_process(neuronspi_invalidate_thread);
+	}
+
+	if (!(neuronspi_cdrv.major_number)) { // Register character device if it doesn't exist
+		ret = char_register_driver();
+		if (ret) {
+			printk(KERN_ERR "UNIPISPI: Failed to register the neuronspi character driver, ERR:%d\n", ret);
+		}
 	}
 
     neuronspi_uart_driver_init();
