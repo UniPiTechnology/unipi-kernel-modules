@@ -78,7 +78,7 @@ int neuronspi_gpio_di_direction_output(struct gpio_chip *chip, unsigned offset, 
 }
 
 int neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset) {
-	struct neuronspi_gpio_driver *n_di = gpiochip_get_data(chip);
+	struct neuronspi_gpio_port *n_di = gpiochip_get_data(chip);
 	struct spi_device *spi = n_di->spi;
 	return neuronspi_spi_gpio_di_get(spi, n_di->io_index);
 }
@@ -88,7 +88,7 @@ int neuronspi_gpio_do_direction_output(struct gpio_chip *chip, unsigned offset, 
 }
 
 void neuronspi_gpio_do_set(struct gpio_chip *chip, unsigned offset, int value) {
-	struct neuronspi_gpio_driver *n_do = gpiochip_get_data(chip);
+	struct neuronspi_gpio_port *n_do = gpiochip_get_data(chip);
 	struct spi_device *spi = n_do->spi;
 	neuronspi_spi_gpio_do_set(spi, n_do->io_index, value);
 }
@@ -98,29 +98,25 @@ int neuronspi_gpio_ro_direction_output(struct gpio_chip *chip, unsigned offset, 
 }
 
 void neuronspi_gpio_ro_set(struct gpio_chip *chip, unsigned offset, int value) {
-	struct neuronspi_gpio_driver *n_ro = gpiochip_get_data(chip);
+	struct neuronspi_gpio_port *n_ro = gpiochip_get_data(chip);
 	struct spi_device *spi = n_ro->spi;
 	neuronspi_spi_gpio_ro_set(spi, n_ro->io_index, value);
 }
 
 
-struct neuronspi_gpio_driver * neuronspi_di_probe(int di_count, int neuron_index, struct platform_device *board_device)
+struct neuronspi_gpio_driver * neuronspi_di_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
-	struct neuronspi_gpio_driver* di_driver_arr;
-	struct neuronspi_gpio_driver* pdi_driver;
+	struct neuronspi_gpio_driver* di_driver;
+	struct neuronspi_gpio_port* pdi_driver;
 	int i;
     char buf[20];
 
-	if (di_count <= 0) return NULL;
+	if (io_count <= 0) return NULL;
 
-	di_driver_arr = kzalloc(sizeof(struct neuronspi_gpio_driver) * di_count, GFP_ATOMIC);
-	for (i = 0; i < di_count; i++) {
-		pdi_driver = di_driver_arr + i;
+	di_driver = kzalloc(sizeof(struct neuronspi_gpio_driver) + (sizeof(struct neuronspi_gpio_port)) * (io_count-1), GFP_ATOMIC);
+	for (i = 0; i < io_count; i++) {
+		pdi_driver = di_driver->ports + i;
         scnprintf(buf, 20, "di_%d_%02d", neuron_index+1, i+1);
-		/*strcpy(pdi_driver->name, "di_0_00");
-		pdi_driver->name[3] = neuron_index + '1';
-		pdi_driver->name[5] = ((i + 1) / 10) + '0';
-		pdi_driver->name[6] = ((i + 1) % 10) + '0';*/
 		pdi_driver->io_index = i;
 		pdi_driver->spi = neuronspi_s_dev[neuron_index];
 				
@@ -141,27 +137,24 @@ struct neuronspi_gpio_driver * neuronspi_di_probe(int di_count, int neuron_index
 		pdi_driver->gpio_c.get = neuronspi_gpio_di_get;
 		gpiochip_add_data(&pdi_driver->gpio_c, pdi_driver);
 	}  
-	return di_driver_arr;
+    di_driver->count = io_count;
+	return di_driver;
 }
 
-struct neuronspi_gpio_driver * neuronspi_ro_probe(int ro_count, int neuron_index, struct platform_device *board_device)
+struct neuronspi_gpio_driver * neuronspi_ro_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
-	struct neuronspi_gpio_driver* ro_driver_arr;
-	struct neuronspi_gpio_driver* pro_driver;
+	struct neuronspi_gpio_driver* ro_driver;
+	struct neuronspi_gpio_port* pro_driver;
 	int i;
     char buf[20];
 
-	if (ro_count <= 0) return NULL;
+	if (io_count <= 0) return NULL;
 
-	ro_driver_arr = kzalloc(sizeof(struct neuronspi_gpio_driver) * ro_count, GFP_ATOMIC);
-	for (i = 0; i < ro_count; i++) {
-		pro_driver = ro_driver_arr + i;
+	ro_driver = kzalloc(sizeof(struct neuronspi_gpio_driver) + (sizeof(struct neuronspi_gpio_port)) * (io_count-1), GFP_ATOMIC);
+	for (i = 0; i < io_count; i++) {
+		pro_driver = ro_driver->ports + i;
 
         scnprintf(buf, 20, "ro_%d_%02d", neuron_index+1, i+1);
-		/*strcpy(pro_driver->name, "ro_0_00");
-		pro_driver->name[3] = neuron_index + '1';
-		pro_driver->name[5] = ((i + 1) / 10) + '0';
-		pro_driver->name[6] = ((i + 1) % 10) + '0';*/
 		pro_driver->io_index = i;
 		pro_driver->spi = neuronspi_s_dev[neuron_index];
 				
@@ -183,27 +176,24 @@ struct neuronspi_gpio_driver * neuronspi_ro_probe(int ro_count, int neuron_index
 		gpiochip_add_data(&pro_driver->gpio_c, pro_driver);
 
 	}
-	return ro_driver_arr;
+    ro_driver->count = io_count;
+	return ro_driver;
 }
 
-struct neuronspi_gpio_driver * neuronspi_do_probe(int do_count, int neuron_index, struct platform_device *board_device)
+struct neuronspi_gpio_driver * neuronspi_do_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
-	struct neuronspi_gpio_driver* do_driver_arr;
-	struct neuronspi_gpio_driver* pdo_driver;
+	struct neuronspi_gpio_driver* do_driver;
+	struct neuronspi_gpio_port* pdo_driver;
 	int i;
     char buf[20];
 
-	if (do_count <= 0) return NULL;
+	if (io_count <= 0) return NULL;
 
-	do_driver_arr = kzalloc(sizeof(struct neuronspi_gpio_driver) * do_count, GFP_ATOMIC);
-	for (i = 0; i < do_count; i++) {
-		pdo_driver = do_driver_arr + i;
+	do_driver = kzalloc(sizeof(struct neuronspi_gpio_driver) + (sizeof(struct neuronspi_gpio_port)) * (io_count-1), GFP_ATOMIC);
+	for (i = 0; i < io_count; i++) {
+		pdo_driver = do_driver->ports + i;
 
         scnprintf(buf, 20, "do_%d_%02d", neuron_index+1, i+1);
-		/*strcpy(pdo_driver->name, "do_0_00");
-		pdo_driver->name[3] = neuron_index + '1';
-		pdo_driver->name[5] = ((i + 1) / 10) + '0';
-		pdo_driver->name[6] = ((i + 1) % 10) + '0';*/
 		pdo_driver->io_index = i;
 		pdo_driver->spi = neuronspi_s_dev[neuron_index];
 				
@@ -225,6 +215,18 @@ struct neuronspi_gpio_driver * neuronspi_do_probe(int do_count, int neuron_index
 		gpiochip_add_data(&pdo_driver->gpio_c, pdo_driver);
 
 	}
-	return do_driver_arr;
+    do_driver->count = io_count;
+	return do_driver;
 }
 
+void neuronspi_gpio_remove(struct neuronspi_gpio_driver * gpio_driver)
+{
+    int i;
+	for (i = 0; i < gpio_driver->count; i++) {
+        gpiochip_remove(&gpio_driver->ports[i].gpio_c);
+		platform_set_drvdata(gpio_driver->ports[i].plat_dev, 0);
+		platform_device_unregister(gpio_driver->ports[i].plat_dev);
+    }
+	kfree(gpio_driver);
+    
+}

@@ -392,3 +392,90 @@ int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_sp
 		return -EINVAL;
 	}
 }
+
+
+struct iio_dev* neuronspi_stm_ai_probe(int io_count, int neuron_index, struct platform_device *board_device)
+{
+    struct spi_device *spi = neuronspi_s_dev[neuron_index];
+    struct iio_dev *iio_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+
+	((struct neuronspi_analog_data*)iio_priv(iio_driver))->parent = spi;
+	((struct neuronspi_analog_data*)iio_priv(iio_driver))->index = 0;
+	iio_driver->modes = INDIO_DIRECT_MODE;
+	iio_driver->currentmode = INDIO_DIRECT_MODE;
+	iio_driver->name = "ai_type_a";
+	iio_driver->dev.parent = &(board_device->dev);
+	dev_set_name(&iio_driver->dev, "ai_%d_1", neuron_index + 1);
+	iio_driver->num_channels = 2;
+	iio_driver->channels = neuronspi_stm_ai_chan_spec;
+	iio_driver->info = &neuronspi_stm_ai_info;
+	iio_device_register(iio_driver);
+
+    return iio_driver;
+}
+
+struct iio_dev* neuronspi_stm_ao_probe(int io_count, int neuron_index, struct platform_device *board_device)
+{
+    struct spi_device *spi = neuronspi_s_dev[neuron_index];
+    struct iio_dev *iio_driver = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+
+	((struct neuronspi_analog_data*)iio_priv(iio_driver))->parent = spi;
+	((struct neuronspi_analog_data*)iio_priv(iio_driver))->index = 0;
+	iio_driver->modes = INDIO_DIRECT_MODE;
+	iio_driver->currentmode = INDIO_DIRECT_MODE;
+	iio_driver->name = "ao_type_a";
+	iio_driver->dev.parent = &(board_device->dev);
+	dev_set_name(&iio_driver->dev, "ao_%d_1", neuron_index + 1);
+	iio_driver->num_channels = 3;
+	iio_driver->channels = neuronspi_stm_ao_chan_spec;
+	iio_driver->info = &neuronspi_stm_ao_info;
+	iio_device_register(iio_driver);
+
+    return iio_driver;
+}
+
+struct iio_dev** neuronspi_sec_ai_probe(int io_count, int neuron_index, struct platform_device *board_device)
+{
+    struct iio_dev **iio_driver_arr = kzalloc(sizeof(struct neuronspi_analog_data*) * io_count, GFP_ATOMIC);
+    struct spi_device *spi = neuronspi_s_dev[neuron_index];
+    int i;
+
+	for (i = 0; i < io_count; i++) {
+        iio_driver_arr[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+        ((struct neuronspi_analog_data*)iio_priv(iio_driver_arr[i]))->parent = spi;
+		((struct neuronspi_analog_data*)iio_priv(iio_driver_arr[i]))->index = i;
+		iio_driver_arr[i]->modes = INDIO_DIRECT_MODE;
+        iio_driver_arr[i]->currentmode = INDIO_DIRECT_MODE;
+		iio_driver_arr[i]->name = "ai_type_b";
+		iio_driver_arr[i]->dev.parent = &(board_device->dev);
+		dev_set_name(&iio_driver_arr[i]->dev, "ai_%d_%d", neuron_index + 1,  i + 1);
+		iio_driver_arr[i]->num_channels = 3;
+		iio_driver_arr[i]->channels = neuronspi_sec_ai_chan_spec;
+		iio_driver_arr[i]->info = &neuronspi_sec_ai_info;
+		iio_device_register(iio_driver_arr[i]);
+    }
+    return iio_driver_arr;
+}
+
+struct iio_dev** neuronspi_sec_ao_probe(int io_count, int neuron_index, struct platform_device *board_device)
+{
+    struct iio_dev **iio_driver_arr = kzalloc(sizeof(struct neuronspi_analog_data*) * io_count, GFP_ATOMIC);
+    struct spi_device *spi = neuronspi_s_dev[neuron_index];
+    int i;
+
+	for (i = 0; i < io_count; i++) {
+        iio_driver_arr[i] = devm_iio_device_alloc(&(spi->dev), sizeof(struct neuronspi_analog_data));
+        ((struct neuronspi_analog_data*)iio_priv(iio_driver_arr[i]))->parent = spi;
+		((struct neuronspi_analog_data*)iio_priv(iio_driver_arr[i]))->index = i;
+		iio_driver_arr[i]->modes = INDIO_DIRECT_MODE;
+        iio_driver_arr[i]->currentmode = INDIO_DIRECT_MODE;
+		iio_driver_arr[i]->name = "ao_type_b";
+		iio_driver_arr[i]->dev.parent = &(board_device->dev);
+		dev_set_name(&iio_driver_arr[i]->dev, "ao_%d_%d", neuron_index + 1,  i + 1);
+		iio_driver_arr[i]->num_channels = 1;
+		iio_driver_arr[i]->channels = neuronspi_sec_ao_chan_spec;
+		iio_driver_arr[i]->info = &neuronspi_sec_ao_info;
+		iio_device_register(iio_driver_arr[i]);
+    }
+    return iio_driver_arr;
+}
