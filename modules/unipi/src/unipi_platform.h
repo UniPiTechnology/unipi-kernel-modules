@@ -357,4 +357,6 @@ int neuronspi_create_reg_starts(struct neuronspi_board_regstart_table *out_table
 s32 neuronspi_find_reg_start(struct neuronspi_board_combination *board, u16 regfun);
 s32 neuronspi_find_model_id(u32 probe_count);
 
+struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_data *n_spi);
+
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_PLATFORM_H_ */

@@ -310,37 +310,6 @@ int static neuronspi_uart_read_tx_fifo_len(struct neuronspi_port *port)
 	return ret;
 }
 
-/*
-void neuronspi_uart_fifo_write(struct neuronspi_port *n_port, u8 to_send)
-{
-	int in_queue, need;
-
-	unipi_uart_trace("FIFO Write to_send:%d %16ph\n", to_send, n_port->tx_buf);
-	//unipi_uart_trace_2(KERN_INFO "FIFO Write to_send:%d %16ph\n", to_send, n_port->tx_buf);
-
-    do {
-        in_queue = neuronspi_uart_get_charcount(n_port);
-        need = (int)to_send - (NEURONSPI_FIFO_SIZE - in_queue);
-        if (need <= 0)  break;
-        usleep_range(need * n_port->one_char_usec, (need + NEURONSPI_FIFO_SIZE/4) * n_port->one_char_usec);
-    } while(1);
-    neuronspi_spi_uart_write(neuronspi_s_dev[n_port->dev_index], n_port->tx_buf, to_send, n_port->dev_port);
-}
-*/
-
-/*
-s32 neuronspi_uart_alloc_line(void)
-{
-	s32 i;
-	BUILD_BUG_ON(NEURONSPI_MAX_DEVS > BITS_PER_LONG);
-
-	for (i = 0; i < NEURONSPI_MAX_DEVS; i++)
-		if (!test_and_set_bit(i, &neuronspi_lines))
-			break;
-
-	return i;
-}
-*/
 
 void neuronspi_rx_queue_clear(struct neuronspi_port *port, u8 data)
 {
@@ -439,7 +408,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
             ret = neuronspi_uart_read_tx_fifo_len(port);
             if (ret || port->tx_fifo_len) {
                 // set timer to check tx_empty
-                unipi_uart_trace("ttyNS%d Handle TX. Start timer=%llu", port->port.line, port->tx_fifo_len * port->one_char_nsec);
+                unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, port->tx_fifo_len * port->one_char_nsec);
                 start_tx_timer(port, port->tx_fifo_len, 2);
                 //hrtimer_start_range_ns(&port->tx_timer, port->tx_fifo_len * port->one_char_nsec, 2*port->one_char_nsec, HRTIMER_MODE_REL);
             }
@@ -505,7 +474,7 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 			kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
 		} else {
             // set timer to check tx_empty
-            unipi_uart_trace("ttyNS%d Handle TX. Start timer=%llu", port->port.line, to_send_packet * port->one_char_nsec);
+            unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, to_send_packet * port->one_char_nsec);
             start_tx_timer(port, to_send_packet, 2);
             //hrtimer_start_range_ns(&port->tx_timer, to_send_packet * port->one_char_nsec, 2*port->one_char_nsec, HRTIMER_MODE_REL);
         }
@@ -797,7 +766,7 @@ int neuronspi_uart_probe_all(void)
         }
 
         ret = neuronspi_uart_probe(spi, n_spi);
-        if (ret)  break;
+        if (ret)  break; // max number of uarts reached
 	}
 	return ret;
 }
