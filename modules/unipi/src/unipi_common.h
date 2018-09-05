@@ -69,7 +69,7 @@
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		2
+#define NEURONSPI_DETAILED_DEBUG		1
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 #define MAX_RX_QUEUE_LEN                16
 
@@ -138,10 +138,6 @@ struct neuronspi_port
     
 	struct kthread_work			tx_work;
 	struct kthread_work			rx_work;
-	struct kthread_work			irq_work;  // move it to neuronspi device
-	//u32							flags;
-	//u8							ier_clear;
-	//u8							tx_buf[NEURONSPI_FIFO_SIZE];
 
     u16                         tx_fifo_reg;  // register in neuronspi device modbus map to read internal tx fifo length
                                               // 0 if undefined
@@ -188,17 +184,22 @@ struct neuronspi_driver_data
 	struct iio_dev *stm_ao_driver;
 	struct iio_dev **sec_ai_driver;
 	struct iio_dev **sec_ao_driver;
-	struct kthread_worker primary_worker;
-	struct task_struct *primary_worker_task;
+
+	struct kthread_worker   primary_worker;
+	struct task_struct      *primary_worker_task;
+	struct kthread_work		irq_work;
+    struct hrtimer			poll_timer;
+    int                     poll_enabled;
+
 	struct regmap *reg_map;
-	struct task_struct *poll_thread;
+	//struct task_struct *poll_thread;
 	struct mutex device_lock;
 	struct neuronspi_board_features *features;
 	struct neuronspi_board_regstart_table *regstart_table;
 	struct spinlock sysfs_regmap_lock;
 	//char platform_name[sizeof("io_group0")];
-	u32 probe_always_succeeds;
-	u32 always_create_uart;
+	//u32 probe_always_succeeds;
+	//u32 always_create_uart;
 
 	u8 *first_probe_reply;
 	u8 reserved_device;
@@ -229,32 +230,6 @@ struct neuronspi_gpio_driver {
     int count;
     struct neuronspi_gpio_port ports[1];
 };
-/*
-struct neuronspi_gpio_driver {
-	struct spi_device* spi;
-	struct gpio_chip gpio_c;
-	struct platform_device *plat_dev;
-	u8 io_index;
-};
-*/
-/*struct neuronspi_do_driver
-{
-	struct spi_device* spi;
-	struct gpio_chip gpio_c;
-	struct platform_device *plat_dev;
-	u8 do_index;
-	char name[sizeof("do_0_00")];
-};
-
-struct neuronspi_ro_driver
-{
-	struct spi_device* spi;
-	struct gpio_chip gpio_c;
-	struct platform_device *plat_dev;
-	u8 ro_index;
-	char name[sizeof("ro_0_00")];
-};
-*/
 
 struct neuronspi_sec_ai_driver
 {
