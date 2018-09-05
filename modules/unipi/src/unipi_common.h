@@ -69,7 +69,7 @@
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		1
+#define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 #define MAX_RX_QUEUE_LEN                16
 
@@ -171,6 +171,8 @@ struct neuronspi_char_driver
 // Instantiated once per SPI device
 struct neuronspi_driver_data
 {
+	s32 neuron_index;
+	u8 reserved_device;
 	//struct spi_driver *spi_driver;
 	//struct neuronspi_char_driver *char_driver;
 	//struct uart_driver *serial_driver; -- this is global variable neuronspi_uart_driver_global
@@ -192,30 +194,22 @@ struct neuronspi_driver_data
     int                     poll_enabled;
 
 	struct regmap *reg_map;
-	//struct task_struct *poll_thread;
 	struct mutex device_lock;
 	struct neuronspi_board_features *features;
 	struct neuronspi_board_regstart_table *regstart_table;
 	struct spinlock sysfs_regmap_lock;
-	//char platform_name[sizeof("io_group0")];
-	//u32 probe_always_succeeds;
-	//u32 always_create_uart;
 
-	u8 *first_probe_reply;
-	u8 reserved_device;
+	u8  combination_id;
+	u16 firmware_version;
+	u8  no_irq;
+	u32 ideal_frequency;
+	u8 uart_count_to_probe;
 	int uart_count;
 	int uart_pindex;
 
-	u8 no_irq;
-	u8 lower_board_id;
-	u8 upper_board_id;
-	u8 combination_id;
-	s32 neuron_index;
 	u16 sysfs_regmap_target;
 	u16 sysfs_register_target;
 	u16 sysfs_counter_target;
-	u32 ideal_frequency;
-	u8 uart_count_to_probe;
 };
 
 
@@ -279,6 +273,6 @@ extern struct task_struct *neuronspi_invalidate_thread;
 
 extern int neuronspi_model_id;
 
-#define NEURON_FIRMWARE_VERSION(neuronspi_driver_data) (*(uint16_t*) (neuronspi_driver_data->first_probe_reply+4))
+//#define NEURON_FIRMWARE_VERSION(neuronspi_driver_data) (*(uint16_t*) (neuronspi_driver_data->firmware_version))
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */
