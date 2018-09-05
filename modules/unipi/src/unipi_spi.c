@@ -1142,33 +1142,33 @@ s32 char_register_driver(void)
 	s32 ret = 0;
 
 	// Character device registration
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: Initialising Character Device\n");
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Initialising Character Device\n");
 
 	neuronspi_cdrv.major_number = register_chrdev(0, NEURON_DEVICE_NAME, &file_ops);
 	if (neuronspi_cdrv.major_number < 0){
-	   printk(KERN_ALERT "NEURONSPI: failed to register a major number\n");
+	   printk(KERN_ALERT "NEURONSPI: CDEV Failed to register chrdev\n");
 	   return neuronspi_cdrv.major_number;
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: registered correctly with major number %d\n", neuronspi_cdrv.major_number);
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV major number %d\n", neuronspi_cdrv.major_number);
 
 	// Character class registration
 	neuronspi_cdrv.driver_class = class_create(THIS_MODULE, NEURON_DEVICE_CLASS);
 	if (IS_ERR(neuronspi_cdrv.driver_class)) {
 		unregister_chrdev(neuronspi_cdrv.major_number, NEURON_DEVICE_NAME);
-		printk(KERN_ALERT "NEURONSPI: Failed to register device class\n");
+		printk(KERN_ALERT "NEURONSPI: CDEV Failed to register device class\n");
 		return PTR_ERR(neuronspi_cdrv.driver_class);
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: device class registered correctly\n");
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Device class registered\n");
 
 	// Device driver registration
 	neuronspi_cdrv.dev = device_create_with_groups(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), MKDEV(neuronspi_cdrv.major_number, 0), NULL, neuron_plc_attr_groups, NEURON_DEVICE_NAME);
 	if (IS_ERR(neuronspi_cdrv.dev)) {
 		class_destroy(neuronspi_cdrv.driver_class);
         unregister_chrdev(neuronspi_cdrv.major_number, NEURON_DEVICE_NAME);
-        printk(KERN_ALERT "NEURONSPI: Failed to create the device\n");
+        printk(KERN_ALERT "NEURONSPI: CDEV Failed to create the device\n");
         return PTR_ERR(neuronspi_cdrv.dev);
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: device class created correctly\n");
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Device class created\n");
 
 	return ret;
 }
@@ -1179,7 +1179,7 @@ s32 char_unregister_driver(void)
 	class_unregister(neuronspi_cdrv.driver_class);                          				// Unregister the class
 	class_destroy(neuronspi_cdrv.driver_class);                             				// Destroy the class
 	unregister_chrdev(neuronspi_cdrv.major_number, NEURON_DEVICE_NAME);             			// Unregister the major number
-	printk(KERN_INFO "UNIPISPI: Device unloaded successfully\n");
+	printk(KERN_INFO "UNIPISPI: CDEV unloaded\n");
 	return 0;
 }
 
@@ -1216,11 +1216,10 @@ static s32 __init neuronspi_init(void)
 	ret = spi_register_driver(&neuronspi_spi_driver);
 
 	if (ret < 0) {
-		printk(KERN_ERR "UNIPISPI: Failed to init neuronspi spi --> %d\n", ret);
+		printk(KERN_ERR "UNIPISPI: Failed to init spi driver --> %d\n", ret);
 		return ret;
-	} else {
-		printk(KERN_INFO "UNIPISPI: SPI Driver Registered, Major Version: %s\n", NEURONSPI_MAJOR_VERSIONSTRING);
 	}
+	printk(KERN_INFO "UNIPISPI: SPI Driver Registered, Major Version: %s\n", NEURONSPI_MAJOR_VERSIONSTRING);
 
 	neuronspi_invalidate_thread = kthread_create(neuronspi_regmap_invalidate, NULL, "unipispi_inv");
 	if (neuronspi_invalidate_thread != NULL) {
