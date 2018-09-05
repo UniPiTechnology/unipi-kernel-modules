@@ -133,6 +133,7 @@ struct neuronspi_model_definition
 	const char*							model_name;
 	u32									combination_count;
 	struct neuronspi_board_combination 	*combinations;
+    u32                                 first_cs;
 };
 
 /***************

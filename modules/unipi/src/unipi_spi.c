@@ -906,10 +906,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     n_spi->combination_id = 0xff;
 	if (first_probe[0] != 0) {
         // Board found, try to find model in table
-        n_spi->firmware_version = REG1000(first_probe,1000);
+        n_spi->firmware_version = REG1000   (first_probe,1000);
 		uart_count              = REG1000_lo(first_probe,1002) & 0xf;
         hardware_model          = REG1000_hi(first_probe,1003);
-        lower_board             = REG1000(first_probe,1004);
+        lower_board             = REG1000   (first_probe,1004) & 0xfff0;
 		for (i = 0; i < NEURONSPI_BOARDTABLE_LEN; i++) {
 			if (hardware_model == NEURONSPI_BOARDTABLE[i].index) {
                 //if ((lower_board>>8) != NEURONSPI_BOARDTABLE[i].lower_board_id) { // strange combination  //break;
@@ -920,8 +920,8 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
                 break;
 			}
 		}
-        n_spi->ideal_frequency = (neuronspi_is_noirq_model((lower_board & 0xfff0))) ? NEURONSPI_SLOWER_FREQ : NEURONSPI_COMMON_FREQ; 
-        no_irq = neuronspi_is_noirq_model((lower_board & 0xfff0));
+        n_spi->ideal_frequency = (neuronspi_is_noirq_model(lower_board) ? NEURONSPI_SLOWER_FREQ : NEURONSPI_COMMON_FREQ; 
+        no_irq = neuronspi_is_noirq_model(lower_board);
 
         printk(KERN_INFO "UNIPISPI: Detected UniPi Board %s (L:%x U:%x C:%x) at CS%d (nspi%d)\n\t\t\tFw: v%d.%d Uarts:%d, reg1001-4: %04x %04x %04x %04x\n",
 				board_name, hi(lower_board), upper_board, hardware_model, spi->chip_select, n_spi->neuron_index,
@@ -930,7 +930,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 
 	} else if (probe_always_succeeds) {
         // dummy board
-        lower_board = 0xff;
         if (always_create_uart) uart_count = 1;
         n_spi->ideal_frequency = NEURONSPI_SLOWER_FREQ;
 		no_irq = 1;
