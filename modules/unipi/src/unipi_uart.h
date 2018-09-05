@@ -47,6 +47,5 @@ int neuronspi_uart_probe_all(void);
 
 extern struct neuronspi_uart_data* neuronspi_uart_data_global;
 extern struct uart_driver* neuronspi_uart_driver_global;
-//extern unsigned long neuronspi_lines;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_UART_H_ */
