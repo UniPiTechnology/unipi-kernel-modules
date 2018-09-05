@@ -116,22 +116,6 @@ static const struct of_device_id neuronspi_id_match[] = {
  * Function Declarations *
  *************************/
 
-int neuronspi_open (struct inode *, struct file *);
-int neuronspi_release (struct inode *, struct file *);
-ssize_t neuronspi_read (struct file *, char *, size_t, loff_t *);
-ssize_t neuronspi_write (struct file *, const char *, size_t, loff_t *);
-s32 char_register_driver(void);
-s32 char_unregister_driver(void);
-irqreturn_t neuronspi_spi_irq(s32 irq, void *dev_id);
-s32 neuronspi_spi_probe(struct spi_device *spi);
-s32 neuronspi_spi_remove(struct spi_device *spi);
-
-int neuronspi_spi_send_const_op(struct spi_device* spi_dev, const struct neuronspi_op_buffer* send_buf,
-                            struct neuronspi_op_buffer* recv_buf, s32 len, 
-                            s32 freq, s32 delay);
-int neuronspi_spi_send_op(struct spi_device* spi_dev, struct neuronspi_op_buffer* send_buf, 
-                            struct neuronspi_op_buffer* recv_buf, s32 len, 
-                            s32 freq, s32 delay, s32 send_header, u8 lock_val);
 s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, int length, u8 uart_index);
 void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *recv_buf, s32 len, u8 uart_index);
 int unipispi_modbus_read_register(struct spi_device* spi_dev, u16 reg, u16* value);
@@ -142,13 +126,6 @@ int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value);
 int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
 int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
 
-/*void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
-
-int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
-int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
-int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
-int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
-*/
 void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
 
 
@@ -158,7 +135,6 @@ void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
 
 // Host driver struct
 extern struct spi_driver neuronspi_spi_driver;
-extern struct file_operations file_ops;
 
 extern struct mutex unipi_inv_speed_mutex;
 
