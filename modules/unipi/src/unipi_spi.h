@@ -142,12 +142,15 @@ int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value);
 int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
 int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
 
-void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
+/*void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to);
 
 int neuronspi_spi_gpio_do_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_ro_set(struct spi_device* spi_dev, u32 id, int value);
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id);
+*/
+void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
+
 
 /***********************
  * Function structures *

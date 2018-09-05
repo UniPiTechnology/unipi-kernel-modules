@@ -1,5 +1,11 @@
 *.o
+*.o.cmd
 *.ko
+*.ko.cmd
 *.rc
 */*/bin/*
 !*/*/bin/.dummy
+modules/unipi/tmp*
+modules/unipi/.tmp_versions
+modules/unipi/unipi.mod.c
+modules/unipi/modules.order

@@ -498,14 +498,6 @@ static enum hrtimer_restart neuronspi_uart_timer_func(struct hrtimer *timer)
 }
 
 
-void neuronspi_uart_handle_irq(struct neuronspi_uart_data *uart_data, u32 portno)
-{
-	struct neuronspi_port *n_port = &neuronspi_uart_data_global->p[portno];
-	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-    struct neuronspi_op_buffer recv_buf;
-	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_buf, 0, NEURONSPI_DEFAULT_FREQ, 25);
-}
-
 void neuronspi_uart_tx_proc(struct kthread_work *ws)
 {
 	struct neuronspi_port *port = to_neuronspi_port(ws, tx_work);
@@ -560,45 +552,14 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 	kfree(recv_buf);
 }
 
-void neuronspi_uart_ist(struct kthread_work *ws)
-{
-	struct neuronspi_port *port = to_neuronspi_port(ws, irq_work);
-	neuronspi_uart_handle_irq(neuronspi_uart_data_global, port->port.line);
-}
-
-
-s32 neuronspi_uart_poll(void *data)
-{
-	struct neuronspi_driver_data *d_data = (struct neuronspi_driver_data*) data;
-	//struct neuronspi_uart_data *u_data;
-	s32 i;
-	while (!kthread_should_stop()) {
-		usleep_range(2000,8000);
-		if (d_data->uart_count) {
-			//u_data = d_data->uart_data;
-			for (i = 0; i < neuronspi_uart_data_global->p_count; i++) {
-				if (neuronspi_uart_data_global->p[i].dev_index == d_data->neuron_index) {
-					kthread_queue_work(&neuronspi_uart_data_global->kworker, &neuronspi_uart_data_global->p[i].irq_work);
-				}
-			}
-		}
-	}
-	return 0;
-}
 
 // Initialise the driver - called once on open
 s32 neuronspi_uart_startup(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
-	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
-	neuronspi_spi_set_irqs(spi, 0x5);
-	if (d_data->poll_thread != NULL) {
-		wake_up_process(d_data->poll_thread);
-	} else if (d_data->no_irq) {
-		d_data->poll_thread = kthread_create(neuronspi_uart_poll, (void *)d_data, "UART_poll_thread");
-		wake_up_process(d_data->poll_thread);
-	}
+	//struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
+	//struct neuronspi_driver_data *d_data = spi_get_drvdata(spi);
+	neuronspi_enable_uart_interrupt(n_port);
 	neuronspi_uart_power(port, 1);
 	// TODO: /* Reset FIFOs*/
     unipi_uart_trace("ttyNS%d Startup\n", port->line);
@@ -624,9 +585,9 @@ s32 neuronspi_uart_remove(struct neuronspi_uart_data *u_data)
 		if (!(neuronspi_s_dev[i] == NULL)) {
 			spi = neuronspi_s_dev[i];
 			d_data = spi_get_drvdata(spi);
-			if (d_data->poll_thread != NULL) {
-				kthread_stop(d_data->poll_thread);
-			}
+			//if (d_data->poll_thread != NULL) {
+			//	kthread_stop(d_data->poll_thread);
+			//}
 		}
 	}
 	for (i = 0; i < u_data->p_count; i++) {
@@ -709,7 +670,6 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
             
             kthread_init_work(&(port->tx_work), neuronspi_uart_tx_proc);
             kthread_init_work(&(port->rx_work), neuronspi_uart_rx_proc);
-            kthread_init_work(&(port->irq_work), neuronspi_uart_ist);
             uart_add_one_port(neuronspi_uart_driver_global, &port->port);
             //uart_add_one_port(driver_data->serial_driver, &uart_data->p[i].port);
             printk(KERN_INFO "UNIPIUART: Add port ttyNS%d on UniPi Board spi%d:%d\n", neuronspi_uart_data_global->p_count, port->dev_index, port->dev_port);
