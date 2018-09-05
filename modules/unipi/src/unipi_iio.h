@@ -21,6 +21,87 @@
 
 #include "unipi_common.h"
 
+
+/********************
+ * Data Definitions *
+ ********************/
+ 
+static const struct iio_chan_spec neuronspi_stm_ai_chan_spec[] = {
+	{
+			.type = IIO_VOLTAGE,
+			.indexed = 1,
+			.channel = 0,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	},
+	{
+			.type = IIO_CURRENT,
+			.indexed = 1,
+			.channel = 1,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	}
+};
+
+static const struct iio_chan_spec neuronspi_stm_ao_chan_spec[] = {
+	{
+			.type = IIO_VOLTAGE,
+			.indexed = 1,
+			.channel = 0,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 1
+	},
+	{
+			.type = IIO_CURRENT,
+			.indexed = 1,
+			.channel = 1,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 1
+	},
+	{
+			.type = IIO_RESISTANCE,
+			.indexed = 1,
+			.channel = 2,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	}
+};
+
+static const struct iio_chan_spec neuronspi_sec_ai_chan_spec[] = {
+	{
+			.type = IIO_VOLTAGE,
+			.indexed = 1,
+			.channel = 0,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	},
+	{
+			.type = IIO_CURRENT,
+			.indexed = 1,
+			.channel = 1,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	},
+	{
+			.type = IIO_RESISTANCE,
+			.indexed = 1,
+			.channel = 2,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 0
+	}
+};
+
+static const struct iio_chan_spec neuronspi_sec_ao_chan_spec[] = {
+	{
+			.type = IIO_VOLTAGE,
+			.indexed = 1,
+			.channel = 0,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.output = 1
+	}
+};
+
+
 /*************************
  * Function Declarations *
  *************************/
@@ -35,5 +116,7 @@ struct iio_dev* neuronspi_stm_ai_probe(int io_count, int neuron_index, struct pl
 struct iio_dev* neuronspi_stm_ao_probe(int io_count, int neuron_index, struct platform_device *board_device);
 struct iio_dev** neuronspi_sec_ai_probe(int io_count, int neuron_index, struct platform_device *board_device);
 struct iio_dev** neuronspi_sec_ao_probe(int io_count, int neuron_index, struct platform_device *board_device);
+
+
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_IIO_H_ */
