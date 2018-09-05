@@ -165,6 +165,7 @@ static const struct regmap_config neuronspi_regmap_config_default =
 		.can_multi_write		= 1,
 };
 
+/*
 static const struct iio_chan_spec neuronspi_stm_ai_chan_spec[] = {
 	{
 			.type = IIO_VOLTAGE,
@@ -264,7 +265,7 @@ static const struct iio_info neuronspi_sec_ao_info = {
 	.driver_module = THIS_MODULE,
 	//.attrs = &neuron_sec_ao_group,
 };
-
+*/
 // These defines need to be at the end
 #define to_neuronspi_uart_data(p,e)  ((container_of((p), struct neuronspi_uart_data, e)))
 #define to_neuronspi_port(p,e)	((container_of((p), struct neuronspi_port, e)))

@@ -263,18 +263,6 @@ struct neuronspi_led_driver
 	spinlock_t			lock;
 };
 
-/*
-struct neuronspi_file_data
-{
-	struct spi_device** spi_device;
-	struct mutex 		lock;
-    struct neuronspi_op_buffer send_buf;
-    struct neuronspi_op_buffer recv_buf;
-	u32			        message_len;
-	u8					device_index;
-	u8					has_first_message;
-};
-*/
 
 struct neuronspi_direct_acc
 {

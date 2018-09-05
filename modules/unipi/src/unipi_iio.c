@@ -393,6 +393,35 @@ int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_sp
 	}
 }
 
+/*****************************************************************
+ * Probe data and functions 
+ * 
+ *****************************************************************/ 
+static const struct iio_info neuronspi_stm_ai_info = {
+	.read_raw = neuronspi_iio_stm_ai_read_raw,
+	.driver_module = THIS_MODULE,
+	.attrs = &neuron_stm_ai_group,
+};
+
+static const struct iio_info neuronspi_stm_ao_info = {
+	.read_raw = neuronspi_iio_stm_ao_read_raw,
+	.write_raw = neuronspi_iio_stm_ao_write_raw,
+	.driver_module = THIS_MODULE,
+	.attrs = &neuron_stm_ao_group,
+};
+
+static const struct iio_info neuronspi_sec_ai_info = {
+	.read_raw = neuronspi_iio_sec_ai_read_raw,
+	.driver_module = THIS_MODULE,
+	.attrs = &neuron_sec_ai_group,
+};
+
+static const struct iio_info neuronspi_sec_ao_info = {
+	.write_raw = neuronspi_iio_sec_ao_write_raw,
+	.driver_module = THIS_MODULE,
+	//.attrs = &neuron_sec_ao_group,
+};
+
 
 struct iio_dev* neuronspi_stm_ai_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
