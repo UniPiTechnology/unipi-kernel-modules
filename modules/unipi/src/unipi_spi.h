@@ -187,5 +187,22 @@ static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 in
     return result;
 }
 
+static __always_inline int neuronspi_is_slower_model(u16 model)
+{
+    int i;
+    for (i = 0; i < NEURONSPI_SLOWER_MODELS_LEN; i++) {
+        if (NEURONSPI_SLOWER_MODELS[i] == model) return 1;
+    }
+    return 0;
+}
+
+static __always_inline int neuronspi_is_noirq_model(u16 model)
+{
+    int i;
+    for (i = 0; i < NEURONSPI_NO_INTERRUPT_MODELS_LEN; i++) {
+        if (NEURONSPI_NO_INTERRUPT_MODELS[i] == model) return 1;
+    }
+    return 0;
+}
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_SPI_H_ */

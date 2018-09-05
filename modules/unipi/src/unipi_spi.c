@@ -823,13 +823,24 @@ void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port)
     }
 }
 
+#define REG1000(first_probe,reg)    ((u16)(first_probe[4+2*(reg-1000)] | (first_probe[5+2*(reg-1000)] << 8)))
+#define REG1000_lo(first_probe,reg) (first_probe[4+2*(reg-1000)])
+#define REG1000_hi(first_probe,reg) (first_probe[5+2*(reg-1000)])
+#define lo(x) (x & 0xff)
+#define hi(x) (x >> 8)
+const char name_unknown[] = "UNKNOWN\0";
+
 s32 neuronspi_spi_probe(struct spi_device *spi)
 {
 	const struct neuronspi_devtype *devtype;
 	struct neuronspi_driver_data *n_spi;
     struct neuronspi_op_buffer recv_op;
+    u8  first_probe[UNIPISPI_PROBE_MESSAGE_LEN];
 	s32 ret, i, no_irq = 0;
 	u8 uart_count = 0;
+    u16 hardware_model, lower_board;
+    u8  upper_board = 0;
+    const char *board_name = name_unknown;
     u32 probe_always_succeeds;
 	u32 always_create_uart;
 
@@ -882,59 +893,55 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 
 
 	// We perform an initial probe of registers 1000-1004 to identify the device, using a premade message
-	n_spi->first_probe_reply = kzalloc(UNIPISPI_PROBE_MESSAGE_LEN, GFP_ATOMIC);	// allocate space for initial probe
-	n_spi->lower_board_id = n_spi->upper_board_id = n_spi->combination_id = 0xFF;
-
 	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_op, 0, NEURONSPI_DEFAULT_FREQ, 25);
 	// Throw away the first message - the associated SPI Master is sometimes not properly initialised at this point
 
-    recv_op.second_message = n_spi->first_probe_reply;
-	i = 0;
-	do {
-        neuronspi_spi_send_const_op(spi, &UNIPISPI_PROBE_MESSAGE, &recv_op, UNIPISPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25);
-		i++;
-	} while (n_spi->first_probe_reply[0] == 0 && i < 5);
+    recv_op.second_message = first_probe;
 
-	if (n_spi->first_probe_reply[0] != 0) { 	// CRC error sets the first byte to 0
-		uart_count = n_spi->first_probe_reply[8] & 0x0f;
-        //lower_board_id = n_spi->first_probe_reply[13];
-        
+	for (i=0; i< 5; i++) {
+        neuronspi_spi_send_const_op(spi, &UNIPISPI_PROBE_MESSAGE, &recv_op, UNIPISPI_PROBE_MESSAGE_LEN, NEURONSPI_DEFAULT_FREQ, 25);
+		if (first_probe[0] != 0) break;
+	}
+
+    n_spi->combination_id = 0xff;
+	if (first_probe[0] != 0) {
+        // Board found, try to find model in table
+        n_spi->firmware_version = REG1000(first_probe,1000);
+		uart_count              = REG1000_lo(first_probe,1002) & 0xf;
+        hardware_model          = REG1000_hi(first_probe,1003);
+        lower_board             = REG1000(first_probe,1004);
 		for (i = 0; i < NEURONSPI_BOARDTABLE_LEN; i++) {
-			if (n_spi->first_probe_reply[13] == NEURONSPI_BOARDTABLE[i].lower_board_id) {
-				if (n_spi->combination_id == 0xFF && NEURONSPI_BOARDTABLE[i].upper_board_id == 0) {
-					n_spi->combination_id = NEURONSPI_BOARDTABLE[i].index;
-				}
-				if (n_spi->lower_board_id == 0xFF) {
-					n_spi->lower_board_id = n_spi->first_probe_reply[11];
-				}
-				if (n_spi->first_probe_reply[11] == NEURONSPI_BOARDTABLE[i].index) {
-					n_spi->combination_id = n_spi->first_probe_reply[11];
-					n_spi->upper_board_id = NEURONSPI_BOARDTABLE[i].upper_board_id;
-				}
+			if (hardware_model == NEURONSPI_BOARDTABLE[i].index) {
+                //if ((lower_board>>8) != NEURONSPI_BOARDTABLE[i].lower_board_id) { // strange combination  //break;
+                n_spi->combination_id = i;
+                upper_board = NEURONSPI_BOARDTABLE[i].upper_board_id;
+                n_spi->features = &(NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->features);
+                board_name = NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name;
+                break;
 			}
 		}
+        n_spi->ideal_frequency = (neuronspi_is_noirq_model((lower_board & 0xfff0))) ? NEURONSPI_SLOWER_FREQ : NEURONSPI_COMMON_FREQ; 
+        no_irq = neuronspi_is_noirq_model((lower_board & 0xfff0));
 
-	} else if (!probe_always_succeeds) {
+        printk(KERN_INFO "UNIPISPI: Detected UniPi Board %s (L:%x U:%x C:%x) at CS%d (nspi%d)\n\t\t\tFw: v%d.%d Uarts:%d, reg1001-4: %04x %04x %04x %04x\n",
+				board_name, hi(lower_board), upper_board, hardware_model, spi->chip_select, n_spi->neuron_index,
+                hi(n_spi->firmware_version), lo(n_spi->firmware_version), uart_count, 
+                REG1000(first_probe,1001), REG1000(first_probe,1002), REG1000(first_probe,1003), REG1000(first_probe,1004));
+
+	} else if (probe_always_succeeds) {
+        // dummy board
+        lower_board = 0xff;
+        if (always_create_uart) uart_count = 1;
+        n_spi->ideal_frequency = NEURONSPI_SLOWER_FREQ;
+		no_irq = 1;
+		printk(KERN_INFO "UNIPISPI: Probe assigned DUMMY UniPi Board at CS%d (nspi%d) Uarts:%d, uses freq. %d Hz\n",
+				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->ideal_frequency);
+        
+    } else {
 		ret = -ENODEV;
 		kfree(n_spi);
 		printk(KERN_INFO "UNIPISPI: Probe did not detect a valid UniPi device at CS%d\n", spi->chip_select);
 		return ret;
-
-	} else if (always_create_uart) {
-		uart_count = 1;
-	}
-
-	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
-		n_spi->features = &(NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->features);
-	} else {
-		n_spi->features = NULL;
-	}
-
-	n_spi->ideal_frequency = NEURONSPI_COMMON_FREQ;
-	for (i = 0; i < NEURONSPI_SLOWER_MODELS_LEN; i++) {
-		if (NEURONSPI_SLOWER_MODELS[i] == (n_spi->first_probe_reply[13] << 8 | n_spi->first_probe_reply[12])) {
-			n_spi->ideal_frequency = NEURONSPI_SLOWER_FREQ;
-		}
 	}
 
     // Prepare worker for interrupt, LEDs, 
@@ -947,28 +954,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		return ret;
 	}
 	sched_setscheduler(n_spi->primary_worker_task, SCHED_FIFO, &neuronspi_sched_param);
-
-	if (n_spi->lower_board_id != 0xFF && n_spi->combination_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board %s (L:%x U:%x C:%x) Fw: v%d.%d at CS%d (id=%d)\n\t\tUarts:%d, reg1000-4: %10ph\n",
-				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
-				n_spi->lower_board_id, n_spi->upper_board_id, n_spi->combination_id, 
-				n_spi->first_probe_reply[5],  n_spi->first_probe_reply[4], 
-				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->first_probe_reply +4) ;
-	} else if (n_spi->lower_board_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board (L:%x C:???) Fw: v%d.%d at CS%d (id=%d)\n\t\tUarts:%d, reg1000-4: %10ph\n",
-				n_spi->lower_board_id, n_spi->first_probe_reply[5],  n_spi->first_probe_reply[4], 
-				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->first_probe_reply +4) ;
-	} else {
-		printk(KERN_INFO "UNIPISPI: Probe detected UniPi Board (L:??? C:???) Fw: v%d.%d at CS%d (id=%d)\n\t\tUarts:%d, reg1000-4: %10ph\n",
-				n_spi->first_probe_reply[5],  n_spi->first_probe_reply[4], 
-				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->first_probe_reply +4) ;
-	}
-	if (n_spi->combination_id != 0xFF) {
-		printk(KERN_INFO "UNIPISPI: UniPi device %s at CS%d uses SPI communication freq. %d Hz\n",
-				NEURONSPI_BOARDTABLE[n_spi->combination_id].definition->combination_name,
-				spi->chip_select, n_spi->ideal_frequency);
-	}
-
 
 	n_spi->reg_map = regmap_init(&(spi->dev), &neuronspi_regmap_bus, spi, &neuronspi_regmap_config_default);
 	spin_lock_init(&n_spi->sysfs_regmap_lock);
@@ -1047,12 +1032,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	}
 
 	neuronspi_spi_set_irqs(spi, 0x5);
-    for (i = 0; i < NEURONSPI_NO_INTERRUPT_MODELS_LEN; i++) {
-		if (NEURONSPI_NO_INTERRUPT_MODELS[i] == (n_spi->first_probe_reply[11] << 8 | n_spi->first_probe_reply[10])) {
-			no_irq = 1;
-			break;
-		}
-	}
 
     kthread_init_work(&(n_spi->irq_work), neuronspi_irq_proc); // prepare work function for interrupt status checking
 	//n_spi->poll_thread = NULL;
@@ -1149,7 +1128,7 @@ s32 char_register_driver(void)
 	   printk(KERN_ALERT "NEURONSPI: CDEV Failed to register chrdev\n");
 	   return neuronspi_cdrv.major_number;
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV major number %d\n", neuronspi_cdrv.major_number);
+	unipi_spi_trace_1(KERN_DEBUG "UNIPISPI: CDEV major number %d\n", neuronspi_cdrv.major_number);
 
 	// Character class registration
 	neuronspi_cdrv.driver_class = class_create(THIS_MODULE, NEURON_DEVICE_CLASS);
@@ -1158,7 +1137,7 @@ s32 char_register_driver(void)
 		printk(KERN_ALERT "NEURONSPI: CDEV Failed to register device class\n");
 		return PTR_ERR(neuronspi_cdrv.driver_class);
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Device class registered\n");
+	unipi_spi_trace_1(KERN_DEBUG "UNIPISPI: CDEV Device class registered\n");
 
 	// Device driver registration
 	neuronspi_cdrv.dev = device_create_with_groups(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), MKDEV(neuronspi_cdrv.major_number, 0), NULL, neuron_plc_attr_groups, NEURON_DEVICE_NAME);
@@ -1168,7 +1147,7 @@ s32 char_register_driver(void)
         printk(KERN_ALERT "NEURONSPI: CDEV Failed to create the device\n");
         return PTR_ERR(neuronspi_cdrv.dev);
 	}
-	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Device class created\n");
+	unipi_spi_trace(KERN_DEBUG "UNIPISPI: CDEV Device created. Major number %d\n", neuronspi_cdrv.major_number);
 
 	return ret;
 }
