@@ -47,33 +47,6 @@
  * Data Definitions *
  ********************/
 
-MODULE_DEVICE_TABLE(of, neuronspi_id_match);
-
-struct spi_driver neuronspi_spi_driver =
-{
-	.driver =
-	{
-		.name			= NEURON_DRIVER_NAME,
-		.of_match_table	= of_match_ptr(neuronspi_id_match)
-	},
-	.probe				= neuronspi_spi_probe,
-	.remove				= neuronspi_spi_remove,
-};
-
-struct file_operations file_ops =
-{
-	.open 				= neuronspi_open,
-	.read 				= neuronspi_read,
-	.write 				= neuronspi_write,
-	.release 			= neuronspi_release,
-	.owner				= THIS_MODULE
-};
-
-struct neuronspi_char_driver neuronspi_cdrv =
-{
-	.dev = NULL
-};
-
 struct mutex neuronspi_master_mutex;
 struct mutex unipi_inv_speed_mutex;
 int neuronspi_model_id = -1;
@@ -83,6 +56,22 @@ struct task_struct *neuronspi_invalidate_thread;
 static u8 neuronspi_probe_count = 0;
 static struct spinlock *neuronspi_probe_spinlock;
 static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+
+struct neuronspi_char_driver neuronspi_cdrv =
+{
+	.dev = NULL
+};
+
+struct neuronspi_file_data
+{
+	//struct spi_device** spi_device;
+	struct mutex 		lock;
+    struct neuronspi_op_buffer send_buf;
+    struct neuronspi_op_buffer recv_buf;
+	u32			        message_len;
+	u8					device_index;
+	u8					has_first_message;
+};
 
 /************************
  * Non-static Functions *
@@ -301,7 +290,7 @@ int neuronspi_open (struct inode *inode_p, struct file *file_p)
 	f_internal_data = kzalloc(sizeof(*f_internal_data), GFP_ATOMIC);
 	f_internal_data->recv_buf.second_message = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
 	f_internal_data->send_buf.second_message = kzalloc(NEURONSPI_BUFFER_MAX, GFP_ATOMIC);
-	f_internal_data->spi_device = neuronspi_s_dev;
+	//f_internal_data->spi_device = neuronspi_s_dev;
 	mutex_init(&f_internal_data->lock);
 	file_p->private_data = f_internal_data;
 	return 0;
@@ -314,7 +303,7 @@ int neuronspi_release (struct inode *inode_p, struct file *file_p)
 		return -1;
 	}
 	f_internal_data = (struct neuronspi_file_data*)file_p->private_data;
-	f_internal_data->spi_device = NULL;
+	//f_internal_data->spi_device = NULL;
 	kfree(f_internal_data->recv_buf.second_message);
 	f_internal_data->recv_buf.second_message = NULL;
 	kfree(f_internal_data->send_buf.second_message);
@@ -331,7 +320,7 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
 	s32 result = 0;
     loff_t dummy_offset = 0;
 	struct neuronspi_file_data* private_data;
-	struct spi_device* spi_driver_data;
+	struct spi_device* spi;
 	struct neuronspi_driver_data* driver_data;
 	// Sanity checking
 	if (neuronspi_cdrv.open_counter == 0) {
@@ -350,10 +339,10 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
     }
     private_data = (struct neuronspi_file_data*) file_p->private_data;
     if (private_data == NULL) return -4;
-    spi_driver_data = private_data->spi_device[private_data->device_index];	// Get private (driver) data from FP
-    if (spi_driver_data == NULL) return -2;
+    spi = neuronspi_s_dev[private_data->device_index];
+    if (spi == NULL) return -2;
 
-    driver_data = spi_get_drvdata(spi_driver_data);
+    driver_data = spi_get_drvdata(spi);
     if (driver_data == NULL) return -2;
     //if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
     //if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) return -3; // couldnt happen
@@ -363,8 +352,8 @@ ssize_t neuronspi_read (struct file *file_p, char *buffer, size_t len, loff_t *o
     	mutex_unlock(&(private_data->lock));
     	return -10;
     }
-    unipi_spi_trace(KERN_INFO "UNIPISPI: CDEV Read %d, DEV:%s%d DRV:%d msglen=%d offset=%d\n", len, (spi_driver_data->dev.of_node->name),
-    		(spi_driver_data->chip_select), (private_data->device_index),private_data->message_len, (int)*offset);
+    unipi_spi_trace(KERN_INFO "UNIPISPI: CDEV Read %d, nspi:%d msglen=%d offset=%d\n", len,
+                    (private_data->device_index), private_data->message_len, (int)*offset);
             
 	if (private_data->has_first_message & UNIPISPI_OP_MODE_SEND_HEADER) {
    		result = simple_read_from_buffer(buffer, len, &dummy_offset, private_data->recv_buf.first_message, NEURONSPI_FIRST_MESSAGE_LENGTH);
@@ -400,7 +389,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     size_t datalen;
 	//unsigned long flags;
 	struct neuronspi_file_data* private_data;
-	struct spi_device* spi_driver_data;
+	struct spi_device* spi;
 	struct neuronspi_driver_data* driver_data;
 	// Sanity checking
 	if (neuronspi_cdrv.open_counter == 0) {
@@ -432,10 +421,10 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
     
     if (device_index > NEURONSPI_MAX_DEVS - 1) return -2;
     private_data = (struct neuronspi_file_data*) file_p->private_data;
-    spi_driver_data = private_data->spi_device[device_index];	// Get private (driver) data from FP
-    if (spi_driver_data == NULL) return -2;
+    spi = neuronspi_s_dev[device_index];	
+    if (spi == NULL) return -2;
 
-    driver_data = spi_get_drvdata(spi_driver_data);
+    driver_data = spi_get_drvdata(spi);
     if (driver_data == NULL) return -2;
     //if (driver_data->spi_driver == NULL) return -2;	// Invalid private data
     //if ((driver_data->first_probe_reply[0] == 0) && !(driver_data->probe_always_succeeds) ) 
@@ -488,7 +477,7 @@ ssize_t neuronspi_write (struct file *file_p, const char *buffer, size_t len, lo
             return len;
         }
     }
-    neuronspi_spi_send_op(spi_driver_data, &private_data->send_buf, &private_data->recv_buf, private_data->message_len,
+    neuronspi_spi_send_op(spi, &private_data->send_buf, &private_data->recv_buf, private_data->message_len,
 								frequency, delay, send_header, reservation);
     mutex_unlock(&private_data->lock);
     return len;
@@ -829,8 +818,8 @@ void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port)
     if (n_spi->no_irq) {
         // start polling
         n_spi->poll_enabled = 1;
+        // invoke first probe -> which invokes hrtimer
         kthread_queue_work(&n_spi->primary_worker, &n_spi->irq_work);
-        //hrtimer_start_range_ns(&n_spi->poll_timer, 2000000, 4000000, HRTIMER_MODE_REL);
     }
 }
 
@@ -852,7 +841,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	spin_unlock_irqrestore(neuronspi_probe_spinlock, flags);
 	if (!n_spi)
 		return -ENOMEM;
-	unipi_spi_trace(KERN_INFO "UNIPISPI: Probe Started\n");
+	unipi_spi_trace(KERN_INFO "UNIPISPI: CS%d Probe Started\n", spi->chip_select);
 	if (spi == NULL) {
         kfree(n_spi);
 		return -8;
@@ -1137,6 +1126,17 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
+
+struct file_operations file_ops =
+{
+	.open 				= neuronspi_open,
+	.read 				= neuronspi_read,
+	.write 				= neuronspi_write,
+	.release 			= neuronspi_release,
+	.owner				= THIS_MODULE
+};
+
+
 s32 char_register_driver(void)
 {
 	s32 ret = 0;
@@ -1186,6 +1186,19 @@ s32 char_unregister_driver(void)
 /*********************
  * Final definitions *
  *********************/
+MODULE_DEVICE_TABLE(of, neuronspi_id_match);
+
+struct spi_driver neuronspi_spi_driver =
+{
+	.driver =
+	{
+		.name			= NEURON_DRIVER_NAME,
+		.of_match_table	= of_match_ptr(neuronspi_id_match)
+	},
+	.probe				= neuronspi_spi_probe,
+	.remove				= neuronspi_spi_remove,
+};
+
 
 MODULE_ALIAS("spi:unipispi");
 
@@ -1206,11 +1219,7 @@ static s32 __init neuronspi_init(void)
 		printk(KERN_ERR "UNIPISPI: Failed to init neuronspi spi --> %d\n", ret);
 		return ret;
 	} else {
-#ifdef NEURONSPI_MAJOR_VERSIONSTRING
 		printk(KERN_INFO "UNIPISPI: SPI Driver Registered, Major Version: %s\n", NEURONSPI_MAJOR_VERSIONSTRING);
-#else
-		printk(KERN_INFO "UNIPISPI: SPI Driver Registered\n");
-#endif
 	}
 
 	neuronspi_invalidate_thread = kthread_create(neuronspi_regmap_invalidate, NULL, "unipispi_inv");

@@ -263,6 +263,7 @@ struct neuronspi_led_driver
 	spinlock_t			lock;
 };
 
+/*
 struct neuronspi_file_data
 {
 	struct spi_device** spi_device;
@@ -273,6 +274,7 @@ struct neuronspi_file_data
 	u8					device_index;
 	u8					has_first_message;
 };
+*/
 
 struct neuronspi_direct_acc
 {
@@ -284,9 +286,6 @@ struct neuronspi_direct_acc
  * Data Declarations *
  *********************/
 
-extern struct mutex neuronspi_master_mutex;
-extern struct neuronspi_char_driver neuronspi_cdrv;
-extern struct spinlock* neuronspi_spi_w_spinlock;
 extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
 extern struct task_struct *neuronspi_invalidate_thread;
 
