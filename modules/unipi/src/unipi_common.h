@@ -129,6 +129,7 @@ struct neuronspi_port
 	struct uart_port			port;
 	u8							dev_index;  // index into global array neuronspi_s_dev 
 	u8							dev_port;   // index of port on neuronspi device
+    struct neuronspi_driver_data  *n_spi;     // shorthand to n_spi 
     
     spinlock_t                  rx_queue_lock;
     u8*                         rx_queue_primary;
@@ -151,9 +152,6 @@ struct neuronspi_port
 
 struct neuronspi_uart_data
 {
-	//const struct neuronspi_devtype	*devtype;
-	struct kthread_worker			kworker;
-	struct task_struct				*kworker_task;
 	struct neuronspi_port			*p;             // array p[p_count]
 	u8								p_count;
 };
@@ -177,8 +175,7 @@ struct neuronspi_driver_data
 	struct iio_dev **sec_ai_driver;
 	struct iio_dev **sec_ao_driver;
 
-	struct kthread_worker   primary_worker;
-	struct task_struct      *primary_worker_task;
+	struct kthread_worker   *primary_worker;
 	struct kthread_work		irq_work;
     struct hrtimer			poll_timer;
     int                     poll_enabled;

@@ -1647,7 +1647,7 @@ s32 neuronspi_regmap_invalidate(void *data)
 		for (i = 0; i < NEURONSPI_MAX_DEVS; i++) {
 			if (neuronspi_s_dev[i] != NULL) {
 				struct neuronspi_driver_data *d_data = spi_get_drvdata(neuronspi_s_dev[i]);
-				if (d_data->combination_id == 0xFF) {
+				if ((d_data->combination_id == 0xFF) || (d_data->reg_map == NULL)) {
 					continue;
 				}
 				neuronspi_regmap_invalidate_device(d_data->reg_map, NEURONSPI_BOARDTABLE[d_data->combination_id].definition, freq_cnt);

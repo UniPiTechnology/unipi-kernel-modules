@@ -53,7 +53,7 @@ void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness
 	unsigned long flags;
 	spin_lock_irqsave(&led->lock, flags);
 	led->brightness = brightness;
-	kthread_queue_work(&n_spi->primary_worker, &led->led_work);
+	kthread_queue_work(n_spi->primary_worker, &led->led_work);
 	spin_unlock_irqrestore(&led->lock, flags);
 }
 
