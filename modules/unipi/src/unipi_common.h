@@ -69,7 +69,7 @@
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		0
+#define NEURONSPI_DETAILED_DEBUG		1
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 #define MAX_RX_QUEUE_LEN                16
 
@@ -109,13 +109,14 @@ enum neuron_num_attribute_type {
 		NEURON_NATTR_CURRENT_VALUE
 };
 
-struct neuronspi_devtype
+/*
+ * struct neuronspi_devtype
 {
 	u8	name[10];
 	s32	nr_gpio;
 	s32	nr_uart;
 };
-
+*/
 
 struct neuronspi_op_buffer
 {
@@ -150,22 +151,11 @@ struct neuronspi_port
 
 struct neuronspi_uart_data
 {
-	const struct neuronspi_devtype	*devtype;
+	//const struct neuronspi_devtype	*devtype;
 	struct kthread_worker			kworker;
 	struct task_struct				*kworker_task;
 	struct neuronspi_port			*p;             // array p[p_count]
 	u8								p_count;
-};
-
-// Instantiated once
-struct neuronspi_char_driver
-{
-	s32 major_number;
-	u8 *message;
-	u16 message_size;
-	u32 open_counter;
-	struct class* driver_class;
-	struct device* dev;
 };
 
 // Instantiated once per SPI device
@@ -177,11 +167,11 @@ struct neuronspi_driver_data
 	//struct neuronspi_char_driver *char_driver;
 	//struct uart_driver *serial_driver; -- this is global variable neuronspi_uart_driver_global
 	//struct neuronspi_uart_data *uart_data; -- this global var neuronspi_uar_data_global
+	struct platform_device *board_device;
 	struct neuronspi_led_driver *led_driver;
 	struct neuronspi_gpio_driver *di_driver;
 	struct neuronspi_gpio_driver *do_driver;
 	struct neuronspi_gpio_driver *ro_driver;
-	struct platform_device *board_device;
 	struct iio_dev *stm_ai_driver;
 	struct iio_dev *stm_ao_driver;
 	struct iio_dev **sec_ai_driver;

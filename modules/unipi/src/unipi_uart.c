@@ -559,7 +559,7 @@ void neuronspi_uart_shutdown(struct uart_port *port)
 }
 
 
-s32 neuronspi_uart_remove(struct neuronspi_uart_data *u_data)
+s32 neuronspi_uart_remove(void)
 {
 	struct neuronspi_driver_data *d_data;
 	struct spi_device *spi;
@@ -570,18 +570,20 @@ s32 neuronspi_uart_remove(struct neuronspi_uart_data *u_data)
 		if (!(neuronspi_s_dev[i] == NULL)) {
 			spi = neuronspi_s_dev[i];
 			d_data = spi_get_drvdata(spi);
+            d_data->uart_count = 0;
 		}
 	}
-	for (i = 0; i < u_data->p_count; i++) {
-        port = u_data->p + i;
+    if (neuronspi_uart_data_global->kworker_task) {
+        kthread_destroy_worker(&neuronspi_uart_data_global->kworker);
+    }
+	for (i = 0; i < neuronspi_uart_data_global->p_count; i++) {
+        port = neuronspi_uart_data_global->p + i;
         hrtimer_cancel(&port->tx_timer);
 		uart_remove_one_port(neuronspi_uart_driver_global, &port->port);
 		neuronspi_uart_power(&port->port, 0);
         kfree(port->rx_queue_primary);
         kfree(port->rx_queue_secondary);
 	}
-
-	kthread_flush_worker(&u_data->kworker);
 	return 0;
 }
 
@@ -651,7 +653,7 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
             kthread_init_work(&(port->tx_work), neuronspi_uart_tx_proc);
             kthread_init_work(&(port->rx_work), neuronspi_uart_rx_proc);
             uart_add_one_port(neuronspi_uart_driver_global, &port->port);
-            printk(KERN_INFO "UNIPIUART: Add port ttyNS%d on UniPi Board nspi%d port:%d\n", neuronspi_uart_data_global->p_count, port->dev_index, port->dev_port);
+            printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d on UniPi Board nspi%d port:%d created\n", neuronspi_uart_data_global->p_count, port->dev_index, port->dev_port);
             unipi_uart_trace("Probe cflag:%08x\n", neuronspi_spi_uart_get_cflag(spi, i));
 
             n_spi->uart_count++;
@@ -741,8 +743,10 @@ int neuronspi_uart_driver_init(void)
 int neuronspi_uart_driver_exit(void)
 {
 	if (neuronspi_uart_driver_global) {
-		neuronspi_uart_remove(neuronspi_uart_data_global);
+		neuronspi_uart_remove();
 		uart_unregister_driver(neuronspi_uart_driver_global);
+        if (neuronspi_uart_data_global->p) 
+            kfree(neuronspi_uart_data_global->p);
 		kfree(neuronspi_uart_driver_global);
 		kfree(neuronspi_uart_data_global);
 	}

@@ -18,5 +18,6 @@
 #include "unipi_common.h"
 
 int unipi_tty_init(void);
+void unipi_tty_exit(void);
 
 #endif /* MODULES_UNIPI_SRC_UNIPI_TTY_H_ */
