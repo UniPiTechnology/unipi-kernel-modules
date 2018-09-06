@@ -985,3 +985,8 @@ int __init unipi_tty_init(void)
 	}
 	return 0;
 }
+
+void __exit unipi_tty_exit(void)
+{
+     tty_unregister_ldisc(N_PROFIBUS_FDL);
+}

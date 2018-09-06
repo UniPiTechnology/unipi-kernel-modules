@@ -1799,7 +1799,7 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 	//u16 *mb_val_buf = (u16*)val;
 	struct spi_device *spi = context;
 
-	printk(KERN_INFO "UNIPISPI: Regmap_hw_gather_write reg[%d](%d) val(%d):%8ph\n", *mb_reg_buf, reg_size, val_size, val);
+	printk(KERN_INFO "UNIPISPI: Regmap_hw_gather_write reg[%d](%zu) val(%zu):%8ph\n", *mb_reg_buf, reg_size, val_size, val);
     
 	if (reg_size == sizeof(u16)) {
 		return unipispi_modbus_write_register(spi, mb_reg_buf[0], *((u16*)val));
@@ -1931,7 +1931,7 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
 	if (context == NULL) {
 		return 0;
 	}
-	printk(KERN_INFO "UNIPISPI: Regmap_hw_read reg[%d](%dB) val(%dB):%8ph\n", *mb_reg_buf, reg_size, val_size, val_buf);
+	printk(KERN_INFO "UNIPISPI: Regmap_hw_read reg[%d](%zuB) val(%zuB):%8ph\n", *mb_reg_buf, reg_size, val_size, val_buf);
 
     if (val_size == sizeof(u16)) {
         return unipispi_modbus_read_register(spi, *mb_reg_buf, (u16*) val_buf);
