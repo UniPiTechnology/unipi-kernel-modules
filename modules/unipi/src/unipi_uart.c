@@ -45,7 +45,7 @@ struct neuronspi_uart_data* neuronspi_uart_data_global = NULL;
 struct uart_driver* neuronspi_uart_driver_global = NULL;
 //unsigned long neuronspi_lines;
 
-static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+//static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
 
 void neuronspi_uart_update_timeout(struct neuronspi_port *n_port, unsigned int cflag, unsigned int baud);
 
@@ -281,7 +281,8 @@ void neuronspi_uart_start_tx(struct uart_port *port)
 	struct neuronspi_port *n_port = to_neuronspi_port(port,port);
 	unipi_uart_trace("Start TX\n");
 
-	if (!kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work)) {
+	if (!kthread_queue_work(n_port->n_spi->primary_worker, &n_port->tx_work)) {
+	//if (!kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work)) {
 		//unipi_uart_trace("TX WORK OVERFLOW\n");
 	}
 }
@@ -393,7 +394,8 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		port->port.icount.tx++;
 		spin_unlock_irqrestore(&port->port.lock, flags);
 		port->port.x_char = 0;
-        kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
+        kthread_queue_work(port->n_spi->primary_worker, &port->tx_work);
+        //kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
 		return;
 	}
 
@@ -459,7 +461,8 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_unlock_irqrestore(&port->port.lock, flags);
         if (to_send) {
             // reschedule work
-			kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
+			kthread_queue_work(port->n_spi->primary_worker, &port->tx_work);
+			//kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
 		} else {
             // set timer to check tx_empty
             unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, to_send_packet * port->one_char_nsec);
@@ -480,7 +483,8 @@ static enum hrtimer_restart neuronspi_uart_timer_func(struct hrtimer *timer)
 {
     struct neuronspi_port* n_port = ((container_of((timer), struct neuronspi_port, tx_timer)));
 
-	kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work);
+	kthread_queue_work(n_port->n_spi->primary_worker, &n_port->tx_work);
+	//kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work);
 	return HRTIMER_NORESTART;
 }
 
@@ -534,7 +538,8 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
     }
 
     if (n_port->rx_remain > 0) {
-        kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->rx_work);
+		kthread_queue_work(n_port->n_spi->primary_worker, &n_port->rx_work);
+        //kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->rx_work);
     }
 	kfree(recv_buf);
 }
@@ -559,32 +564,27 @@ void neuronspi_uart_shutdown(struct uart_port *port)
 }
 
 
-s32 neuronspi_uart_remove(void)
+void neuronspi_uart_remove(struct spi_device* spi)
 {
-	struct neuronspi_driver_data *d_data;
-	struct spi_device *spi;
+    struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
     struct neuronspi_port *port; 
-	int i;
+	int i, uart_count;
+    
+    uart_count = n_spi->uart_count;
+    n_spi->uart_count = 0;
 
-	for (i = 0; i < NEURONSPI_MAX_DEVS; i++) {
-		if (!(neuronspi_s_dev[i] == NULL)) {
-			spi = neuronspi_s_dev[i];
-			d_data = spi_get_drvdata(spi);
-            d_data->uart_count = 0;
-		}
-	}
-    if (neuronspi_uart_data_global->kworker_task) {
-        kthread_destroy_worker(&neuronspi_uart_data_global->kworker);
-    }
-	for (i = 0; i < neuronspi_uart_data_global->p_count; i++) {
-        port = neuronspi_uart_data_global->p + i;
+	for (i = 0; i < uart_count; i++) {
+        port = neuronspi_uart_data_global->p + i + n_spi->uart_pindex;
         hrtimer_cancel(&port->tx_timer);
 		uart_remove_one_port(neuronspi_uart_driver_global, &port->port);
+        kthread_flush_work(&(port->rx_work));
+        kthread_flush_work(&(port->tx_work));
+
 		neuronspi_uart_power(&port->port, 0);
         kfree(port->rx_queue_primary);
         kfree(port->rx_queue_secondary);
+        printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d removed\n", i + n_spi->uart_pindex);
 	}
-	return 0;
 }
 
 
@@ -625,7 +625,8 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
 
             port->port.dev	= &(spi->dev);
             port->dev_index = n_spi->neuron_index;
-            port->dev_port  = i; //neuronspi_uart_data_global->p_count;
+            port->dev_port  = i; 
+            port->n_spi     = n_spi; // shorthand to n_spi
 
             port->port.line	= neuronspi_uart_data_global->p_count;
             port->port.irq	= spi->irq;
@@ -691,6 +692,7 @@ int neuronspi_uart_probe_all(void)
             unipi_uart_trace("Allocated port structure for %d ttyNS devices", NEURONSPI_MAX_UART);
         }
         
+        /*
         if (neuronspi_uart_data_global->kworker_task == NULL) {
 
             kthread_init_worker(&neuronspi_uart_data_global->kworker);
@@ -703,7 +705,7 @@ int neuronspi_uart_probe_all(void)
             sched_setscheduler(neuronspi_uart_data_global->kworker_task, SCHED_FIFO, &neuronspi_sched_param);
             unipi_uart_trace("KWorker unipiuart started\n");
         }
-
+        */
         ret = neuronspi_uart_probe(spi, n_spi);
         if (ret)  break; // max number of uarts reached
 	}
@@ -742,8 +744,13 @@ int neuronspi_uart_driver_init(void)
 
 int neuronspi_uart_driver_exit(void)
 {
+    int i;
 	if (neuronspi_uart_driver_global) {
-		neuronspi_uart_remove();
+        for (i = 0; i < NEURONSPI_MAX_DEVS; i++) {
+            if (neuronspi_s_dev[i] != NULL) {
+                neuronspi_uart_remove(neuronspi_s_dev[i]);
+            }
+        }
 		uart_unregister_driver(neuronspi_uart_driver_global);
         if (neuronspi_uart_data_global->p) 
             kfree(neuronspi_uart_data_global->p);

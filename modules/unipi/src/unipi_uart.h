@@ -39,6 +39,7 @@ void neuronspi_rx_queue_swap(struct neuronspi_port *port);
 int neuronspi_uart_driver_init(void);
 int neuronspi_uart_driver_exit(void);
 int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n_spi);
+void neuronspi_uart_remove(struct spi_device* spi);
 int neuronspi_uart_probe_all(void);
 
 /*********************
