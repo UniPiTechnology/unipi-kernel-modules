@@ -27,8 +27,6 @@
  ***************/
 
 
-#define NEURONSPI_MAX_TX_WORK	4
-
 /*************************
  * Function Declarations *
  *************************/
@@ -46,7 +44,7 @@ int neuronspi_uart_probe_all(void);
  * Data Declarations *
  *********************/
 
-extern struct neuronspi_uart_data* neuronspi_uart_data_global;
-extern struct uart_driver* neuronspi_uart_driver_global;
+extern struct neuronspi_uart_data   *neuronspi_uart_data_global;
+extern struct uart_driver           *neuronspi_uart_driver_global;
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_UART_H_ */

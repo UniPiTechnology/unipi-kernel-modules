@@ -20,6 +20,9 @@
  ************/
 
 #include "unipi_common.h"
+#include "unipi_gpio.h"
+#include "unipi_misc.h"
+#include "unipi_iio.h"
 
 /*******************
  * Data Structures *
@@ -134,6 +137,18 @@ struct neuronspi_model_definition
 	u32									combination_count;
 	struct neuronspi_board_combination 	*combinations;
     u32                                 first_cs;
+};
+
+struct neuronspi_board_device_data {
+    struct neuronspi_driver_data *n_spi;
+    struct neuronspi_led_driver *led_driver;
+	struct neuronspi_gpio_driver *di_driver;
+	struct neuronspi_gpio_driver *do_driver;
+	struct neuronspi_gpio_driver *ro_driver;
+	struct iio_dev *stm_ai_driver;
+	struct iio_dev *stm_ao_driver;
+	struct iio_dev **sec_ai_driver;
+	struct iio_dev **sec_ao_driver;
 };
 
 /***************
@@ -359,5 +374,6 @@ s32 neuronspi_find_reg_start(struct neuronspi_board_combination *board, u16 regf
 s32 neuronspi_find_model_id(u32 probe_count);
 
 struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_data *n_spi);
+void neuronspi_board_device_remove(struct platform_device * board_device);
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_PLATFORM_H_ */

@@ -21,6 +21,20 @@
 
 #include "unipi_common.h"
 
+// Instantiated once per LED
+struct neuronspi_led_driver
+{
+	struct led_classdev	ldev;
+	struct spi_device	*spi;
+	struct kthread_work	led_work;
+    int                 id;
+    u16                 coil;
+	int					brightness;
+	char				name[sizeof("unipi:green:uled-x1")];
+	spinlock_t			lock;
+};
+
+
 /*************************
  * Function Declarations *
  *************************/

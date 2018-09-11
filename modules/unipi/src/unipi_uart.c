@@ -41,23 +41,21 @@
  * Data Definitions *
  ********************/
 
-struct neuronspi_uart_data* neuronspi_uart_data_global = NULL;
-struct uart_driver* neuronspi_uart_driver_global = NULL;
-//unsigned long neuronspi_lines;
+struct neuronspi_uart_data  *neuronspi_uart_data_global = NULL;
+struct uart_driver          *neuronspi_uart_driver_global = NULL;
 
-//static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
-
-void neuronspi_uart_update_timeout(struct neuronspi_port *n_port, unsigned int cflag, unsigned int baud);
 
 /********************
  * Static Functions *
  ********************/
 
+void neuronspi_uart_update_timeout(struct neuronspi_port *n_port, unsigned int cflag, unsigned int baud);
+
 #define NEURONSPI_UART_CFLAGS_REGISTER 	500
 #define NEURONSPI_UART_IFLAGS_REGISTER 	502
 #define NEURONSPI_UART_LDISC_REGISTER 	503
 #define NEURONSPI_UART_TIMEOUT_REGISTER 504
-//#define NEURONSPI_UART_FIFO_REGISTER    505
+#define NEURONSPI_UART_FIFO_REGISTER    505
 
 static inline int port_to_uartregs(u8 port, u16 reg)
 {
@@ -170,7 +168,6 @@ int	neuronspi_uart_ioctl (struct uart_port *port, unsigned int ioctl_code, unsig
     u32 value;
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
 	struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-	//struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 
 	switch (ioctl_code) {
 	case TIOCSETD: {
@@ -282,7 +279,6 @@ void neuronspi_uart_start_tx(struct uart_port *port)
 	unipi_uart_trace("Start TX\n");
 
 	if (!kthread_queue_work(n_port->n_spi->primary_worker, &n_port->tx_work)) {
-	//if (!kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work)) {
 		//unipi_uart_trace("TX WORK OVERFLOW\n");
 	}
 }
@@ -395,7 +391,6 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
 		spin_unlock_irqrestore(&port->port.lock, flags);
 		port->port.x_char = 0;
         kthread_queue_work(port->n_spi->primary_worker, &port->tx_work);
-        //kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
 		return;
 	}
 
@@ -462,20 +457,12 @@ void neuronspi_uart_handle_tx(struct neuronspi_port *port)
         if (to_send) {
             // reschedule work
 			kthread_queue_work(port->n_spi->primary_worker, &port->tx_work);
-			//kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->tx_work);
 		} else {
             // set timer to check tx_empty
             unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, to_send_packet * port->one_char_nsec);
             start_tx_timer(port, to_send_packet, 2);
         }
 	}
-/*
-	spin_lock_irqsave(&port->port.lock, flags);
-	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
-		uart_write_wakeup(&port->port);
-	}
-	spin_unlock_irqrestore(&port->port.lock, flags);
-*/
 }
 
 // callback of tx_timer. Schedule port->tx_work
@@ -484,7 +471,6 @@ static enum hrtimer_restart neuronspi_uart_timer_func(struct hrtimer *timer)
     struct neuronspi_port* n_port = ((container_of((timer), struct neuronspi_port, tx_timer)));
 
 	kthread_queue_work(n_port->n_spi->primary_worker, &n_port->tx_work);
-	//kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->tx_work);
 	return HRTIMER_NORESTART;
 }
 
@@ -539,7 +525,6 @@ void neuronspi_uart_rx_proc(struct kthread_work *ws)
 
     if (n_port->rx_remain > 0) {
 		kthread_queue_work(n_port->n_spi->primary_worker, &n_port->rx_work);
-        //kthread_queue_work(&neuronspi_uart_data_global->kworker, &n_port->rx_work);
     }
 	kfree(recv_buf);
 }
@@ -644,7 +629,9 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
             port->rx_queue_secondary = kzalloc(MAX_RX_QUEUE_LEN, GFP_ATOMIC); 
 
             port->tx_fifo_len = 0x7fff; //set it to big number; invoke reading current value from Neuron
-            if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_queue_reg) {
+            if (n_spi && (n_spi->firmware_version >= 0x0519) ) {
+                port->tx_fifo_reg = port_to_uartregs(i,NEURONSPI_UART_FIFO_REGISTER);        // define modbus register
+            } else if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_queue_reg) {
                 port->tx_fifo_reg = n_spi->regstart_table->uart_queue_reg;      // define modbus register
             }
 
@@ -692,20 +679,6 @@ int neuronspi_uart_probe_all(void)
             unipi_uart_trace("Allocated port structure for %d ttyNS devices", NEURONSPI_MAX_UART);
         }
         
-        /*
-        if (neuronspi_uart_data_global->kworker_task == NULL) {
-
-            kthread_init_worker(&neuronspi_uart_data_global->kworker);
-
-            neuronspi_uart_data_global->kworker_task = kthread_run(kthread_worker_fn, &neuronspi_uart_data_global->kworker,
-						  "unipiuart");
-            if (IS_ERR(neuronspi_uart_data_global->kworker_task)) {
-                ret = PTR_ERR(neuronspi_uart_data_global->kworker_task);
-            }
-            sched_setscheduler(neuronspi_uart_data_global->kworker_task, SCHED_FIFO, &neuronspi_sched_param);
-            unipi_uart_trace("KWorker unipiuart started\n");
-        }
-        */
         ret = neuronspi_uart_probe(spi, n_spi);
         if (ret)  break; // max number of uarts reached
 	}

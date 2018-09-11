@@ -19,6 +19,9 @@
 #include "unipi_spi.h"
 #include "unipi_common.h"
 #include "unipi_sysfs.h"
+#include "unipi_misc.h"
+#include "unipi_gpio.h"
+#include "unipi_iio.h"
 
 /***************************
  * Static Data Definitions *
@@ -1798,9 +1801,9 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 	u16 *mb_reg_buf = (u16*)reg;
 	//u16 *mb_val_buf = (u16*)val;
 	struct spi_device *spi = context;
-
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "UNIPISPI: Regmap_hw_gather_write reg[%d](%zu) val(%zu):%8ph\n", *mb_reg_buf, reg_size, val_size, val);
-    
+#endif    
 	if (reg_size == sizeof(u16)) {
 		return unipispi_modbus_write_register(spi, mb_reg_buf[0], *((u16*)val));
 	}
@@ -1931,7 +1934,10 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
 	if (context == NULL) {
 		return 0;
 	}
+
+#if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "UNIPISPI: Regmap_hw_read reg[%d](%zuB) val(%zuB):%8ph\n", *mb_reg_buf, reg_size, val_size, val_buf);
+#endif
 
     if (val_size == sizeof(u16)) {
         return unipispi_modbus_read_register(spi, *mb_reg_buf, (u16*) val_buf);
@@ -2019,14 +2025,62 @@ s32 neuronspi_find_model_id(u32 probe_count)
 }
 
 
+
+void neuronspi_board_device_remove(struct platform_device * board_device)
+{
+    struct neuronspi_board_device_data *board_data = platform_get_drvdata(board_device);
+    struct neuronspi_driver_data *n_spi = board_data->n_spi;
+    int i;
+    
+    if (board_data->led_driver) {
+        for (i = 0; i < n_spi->features->led_count; i++) {
+            led_classdev_unregister(&(board_data->led_driver[i].ldev));
+            kthread_flush_work(&(board_data->led_driver[i].led_work));
+        }
+        kfree(board_data->led_driver);
+        board_data->led_driver = NULL;
+        //unipi_spi_trace(KERN_INFO "UNIPISPI: LED Driver unregistered\n");
+    }
+    if (board_data->di_driver) { neuronspi_gpio_remove(board_data->di_driver); }
+    if (board_data->do_driver) { neuronspi_gpio_remove(board_data->do_driver); }
+    if (board_data->ro_driver) { neuronspi_gpio_remove(board_data->ro_driver); }
+    //unipi_spi_trace(KERN_INFO "UNIPISPI: GPIO Driver unregistered\n");
+        
+    if (board_data->stm_ai_driver) { iio_device_unregister(board_data->stm_ai_driver); }
+    if (board_data->stm_ao_driver) {	iio_device_unregister(board_data->stm_ao_driver); }
+    if (board_data->sec_ai_driver) {
+        for (i = 0; i < n_spi->features->sec_ai_count; i++) {
+            iio_device_unregister(board_data->sec_ai_driver[i]);
+        }
+        kfree(board_data->sec_ai_driver);
+        board_data->sec_ai_driver = NULL;
+    }
+    if (board_data->sec_ao_driver) {
+        for (i = 0; i < n_spi->features->sec_ao_count; i++) {
+            iio_device_unregister(board_data->sec_ao_driver[i]);
+        }
+        kfree(board_data->sec_ao_driver);
+        board_data->sec_ao_driver = NULL;
+    }
+    //unipi_spi_trace(KERN_INFO "UNIPISPI: IIO Driver unregistered\n");
+
+		
+    platform_set_drvdata(board_device, 0);
+    kfree(board_data);
+    platform_device_unregister(board_device);
+
+}
+
+
 struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_data *n_spi)
 {
     char buf[20];
     struct platform_device * board_device;
-    scnprintf(buf, 20, "io_group%d", n_spi->neuron_index+1);
+    struct neuronspi_board_device_data *board_data;
 
-	//strcpy(n_spi->platform_name, "io_group0");
-	//n_spi->platform_name[8] = n_spi->neuron_index + '1';
+    scnprintf(buf, 20, "io_group%d", n_spi->neuron_index+1);
+    board_data = kzalloc(sizeof(struct neuronspi_board_device_data), GFP_ATOMIC);
+
 
 	board_device = platform_device_alloc(buf, -1);
 	board_device->dev.parent = &(neuron_plc_dev->dev);
@@ -2036,9 +2090,41 @@ struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_da
 	}
 
 	board_device->dev.driver = &neuronspi_spi_driver.driver;
-	platform_device_add(board_device);
-	platform_set_drvdata(board_device, n_spi);
 
+    board_data->n_spi = n_spi;
+	platform_device_add(board_device);
+	platform_set_drvdata(board_device, board_data);
+
+	if (n_spi->features) {
+		if (n_spi->features->led_count) {
+			printk(KERN_INFO "UNIPISPI: %d User LEDs detected at nspi%d\n", n_spi->features->led_count, n_spi->neuron_index);
+			board_data->led_driver = neuronspi_led_probe(n_spi->features->led_count, n_spi->neuron_index, board_device);
+		}
+#ifdef CONFIG_GPIOLIB
+		if (n_spi->features->di_count) {
+			board_data->di_driver = neuronspi_di_probe(n_spi->features->di_count, n_spi->neuron_index, board_device);
+		}
+		if (n_spi->features->do_count) {
+			board_data->do_driver = neuronspi_do_probe(n_spi->features->do_count, n_spi->neuron_index, board_device);
+		}
+
+		if (n_spi->features->ro_count) {
+			board_data->ro_driver = neuronspi_ro_probe(n_spi->features->ro_count, n_spi->neuron_index, board_device);
+		}
+#endif
+		if (n_spi->features->stm_ai_count) {
+			board_data->stm_ai_driver = neuronspi_stm_ai_probe(n_spi->features->stm_ai_count, n_spi->neuron_index, board_device);
+		}
+		if (n_spi->features->stm_ao_count) {
+			board_data->stm_ao_driver = neuronspi_stm_ao_probe(n_spi->features->stm_ao_count, n_spi->neuron_index, board_device);
+		}
+		if (n_spi->features->sec_ai_count) {
+			board_data->sec_ai_driver = neuronspi_sec_ai_probe(n_spi->features->sec_ai_count, n_spi->neuron_index, board_device);
+		}
+		if (n_spi->features->sec_ao_count) {
+			board_data->sec_ao_driver = neuronspi_sec_ao_probe(n_spi->features->sec_ao_count, n_spi->neuron_index, board_device);
+		}
+	}
     return board_device;
 }
 

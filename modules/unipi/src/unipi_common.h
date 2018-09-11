@@ -51,7 +51,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.15:2018:09:03 (devel)"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.15:2018:09:07 (devel)"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				16
@@ -69,7 +69,7 @@
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
 #define NEURONSPI_FIFO_MIN_CONTINUOUS	50
-#define NEURONSPI_DETAILED_DEBUG		1
+#define NEURONSPI_DETAILED_DEBUG		0
 #define NEURONSPI_LAST_TRANSFER_DELAY	40
 #define MAX_RX_QUEUE_LEN                16
 
@@ -95,28 +95,6 @@ static const u16 NEURONSPI_NO_INTERRUPT_MODELS[NEURONSPI_NO_INTERRUPT_MODELS_LEN
 /*******************
  * Data Structures *
  *******************/
-
-enum neuron_str_attribute_type {
-		NEURON_SATTR_MODEL,
-		NEURON_SATTR_EEPROM,
-		NEURON_SATTR_BOARD_NAME,
-		NEURON_SATTR_GPIO_GROUP_NAME
-};
-
-enum neuron_num_attribute_type {
-		NEURON_NATTR_BOARDCOUNT,
-		NEURON_NATTR_MODE,
-		NEURON_NATTR_CURRENT_VALUE
-};
-
-/*
- * struct neuronspi_devtype
-{
-	u8	name[10];
-	s32	nr_gpio;
-	s32	nr_uart;
-};
-*/
 
 struct neuronspi_op_buffer
 {
@@ -161,24 +139,13 @@ struct neuronspi_driver_data
 {
 	s32 neuron_index;
 	u8 reserved_device;
-	//struct spi_driver *spi_driver;
-	//struct neuronspi_char_driver *char_driver;
-	//struct uart_driver *serial_driver; -- this is global variable neuronspi_uart_driver_global
-	//struct neuronspi_uart_data *uart_data; -- this global var neuronspi_uar_data_global
-	struct platform_device *board_device;
-	struct neuronspi_led_driver *led_driver;
-	struct neuronspi_gpio_driver *di_driver;
-	struct neuronspi_gpio_driver *do_driver;
-	struct neuronspi_gpio_driver *ro_driver;
-	struct iio_dev *stm_ai_driver;
-	struct iio_dev *stm_ao_driver;
-	struct iio_dev **sec_ai_driver;
-	struct iio_dev **sec_ao_driver;
 
 	struct kthread_worker   *primary_worker;
 	struct kthread_work		irq_work;
     struct hrtimer			poll_timer;
     int                     poll_enabled;
+
+	struct platform_device *board_device;
 
 	struct regmap *reg_map;
 	struct mutex device_lock;
@@ -200,66 +167,22 @@ struct neuronspi_driver_data
 };
 
 
-struct neuronspi_gpio_port {
-	struct spi_device* spi;
-	struct gpio_chip gpio_c;
-	struct platform_device *plat_dev;
-	u8 io_index;
-};
-
-struct neuronspi_gpio_driver {
-    int count;
-    struct neuronspi_gpio_port ports[1];
-};
-
-struct neuronspi_sec_ai_driver
-{
-	struct iio *devices;
-	u16 dev_count;
-};
-
-struct neuronspi_sec_ao_driver
-{
-	struct iio *devices;
-	u16 dev_count;
-};
-
-struct neuronspi_analog_data
-{
-	u32 index;
-	u32 mode;
-	struct spi_device *parent;
-};
-
-
-// Instantiated once per LED
-struct neuronspi_led_driver
-{
-	struct led_classdev	ldev;
-	struct spi_device	*spi;
-	struct kthread_work	led_work;
-	int					id;
-	int					brightness;
-	char				name[sizeof("unipi:green:uled-x1")];
-	spinlock_t			lock;
-};
-
-
+/*
 struct neuronspi_direct_acc
 {
 	void __iomem		*vaddr;
 	u32					size;
 };
+*/
 
 /*********************
  * Data Declarations *
  *********************/
 
-extern struct spi_device* neuronspi_s_dev[NEURONSPI_MAX_DEVS];
-extern struct task_struct *neuronspi_invalidate_thread;
+extern struct spi_device    *neuronspi_s_dev[NEURONSPI_MAX_DEVS];
+extern struct task_struct   *neuronspi_invalidate_thread;
 
-extern int neuronspi_model_id;
+extern int                  neuronspi_model_id;
 
-//#define NEURON_FIRMWARE_VERSION(neuronspi_driver_data) (*(uint16_t*) (neuronspi_driver_data->firmware_version))
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_COMMON_H_ */
