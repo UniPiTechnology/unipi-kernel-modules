@@ -21,19 +21,23 @@
 
 #include "unipi_common.h"
 
+
+struct neuronspi_gpio_port {
+	struct spi_device* spi;
+	struct gpio_chip gpio_c;
+	struct platform_device *plat_dev;
+	u8 io_index;
+};
+
+struct neuronspi_gpio_driver {
+    int count;
+    struct neuronspi_gpio_port ports[1];
+};
+
+
 /*************************
  * Function Declarations *
  *************************/
-
-int neuronspi_gpio_di_direction_input(struct gpio_chip *chip, unsigned offset);
-int neuronspi_gpio_di_direction_output(struct gpio_chip *chip, unsigned offset, int value);
-int	neuronspi_gpio_di_get(struct gpio_chip *chip, unsigned offset);
-int neuronspi_gpio_do_direction_input(struct gpio_chip *chip, unsigned offset);
-int neuronspi_gpio_do_direction_output(struct gpio_chip *chip, unsigned offset, int value);
-void neuronspi_gpio_do_set(struct gpio_chip *chip, unsigned offset, int value);
-int neuronspi_gpio_ro_direction_input(struct gpio_chip *chip, unsigned offset);
-int neuronspi_gpio_ro_direction_output(struct gpio_chip *chip, unsigned offset, int value);
-void neuronspi_gpio_ro_set(struct gpio_chip *chip, unsigned offset, int value);
 
 struct neuronspi_gpio_driver * neuronspi_di_probe(int di_count, int neuron_index, struct platform_device *board_device);
 struct neuronspi_gpio_driver * neuronspi_ro_probe(int ro_count, int neuron_index, struct platform_device *board_device);

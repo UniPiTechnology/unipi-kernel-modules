@@ -1,7 +1,9 @@
 /*
  * Implements line discpline for using with Neuron/Axon.
+ * 
+ * Author: Miroslav Ondra <ondra@faster.cz>
  *
- * Derivated from n_tty.c --- implements the N_TTY line discipline.
+ * Derivated from n_tty.c --- implements the N_PROFIBUS line discipline.
  *
  * This code used to be in tty_io.c, but things are getting hairy
  * enough that it made sense to split things off.  (The N_TTY

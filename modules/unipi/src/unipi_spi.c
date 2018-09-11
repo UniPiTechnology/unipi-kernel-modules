@@ -941,7 +941,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	sched_setscheduler(worker->task, SCHED_FIFO, &neuronspi_sched_param);
     n_spi->primary_worker = worker;
     
-/*
+    // Prepare Register map
 	n_spi->reg_map = regmap_init(&(spi->dev), &neuronspi_regmap_bus, spi, &neuronspi_regmap_config_default);
 	spin_lock_init(&n_spi->sysfs_regmap_lock);
 	if (n_spi->features) {
@@ -950,8 +950,8 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	} else {
 		n_spi->regstart_table = NULL;
 	}
-*/
-    // save device into global array
+
+    // Save spi device into global array
 	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
 	spi_set_drvdata(spi, n_spi);
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
@@ -972,40 +972,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		neuron_plc_dev->dev.groups = neuron_plc_attr_groups;
 		platform_device_add(neuron_plc_dev);
 	}
-/*    
+    // Add platform iogroup_x and LEDs, GPIOs, IIOs
     n_spi->board_device = neuronspi_board_device_probe(n_spi);
 
-	if (n_spi->features) {
-		if (n_spi->features->led_count) {
-			printk(KERN_INFO "UNIPISPI: LED: %d User leds detected at CS%d\n", n_spi->features->led_count, spi->chip_select);
-			n_spi->led_driver = neuronspi_led_probe(n_spi->features->led_count, n_spi->neuron_index, n_spi->board_device);
-		}
-#ifdef CONFIG_GPIOLIB
-		if (n_spi->features->di_count) {
-			n_spi->di_driver = neuronspi_di_probe(n_spi->features->di_count, n_spi->neuron_index, n_spi->board_device);
-		}
-		if (n_spi->features->do_count) {
-			n_spi->do_driver = neuronspi_do_probe(n_spi->features->do_count, n_spi->neuron_index, n_spi->board_device);
-		}
-
-		if (n_spi->features->ro_count) {
-			n_spi->ro_driver = neuronspi_ro_probe(n_spi->features->ro_count, n_spi->neuron_index, n_spi->board_device);
-		}
-#endif
-		if (n_spi->features->stm_ai_count) {
-			n_spi->stm_ai_driver = neuronspi_stm_ai_probe(n_spi->features->stm_ai_count, n_spi->neuron_index, n_spi->board_device);
-		}
-		if (n_spi->features->stm_ao_count) {
-			n_spi->stm_ao_driver = neuronspi_stm_ao_probe(n_spi->features->stm_ao_count, n_spi->neuron_index, n_spi->board_device);
-		}
-		if (n_spi->features->sec_ai_count) {
-			n_spi->sec_ai_driver = neuronspi_sec_ai_probe(n_spi->features->sec_ai_count, n_spi->neuron_index, n_spi->board_device);
-		}
-		if (n_spi->features->sec_ao_count) {
-			n_spi->sec_ao_driver = neuronspi_sec_ao_probe(n_spi->features->sec_ao_count, n_spi->neuron_index, n_spi->board_device);
-		}
-	}
-*/
+ 
     n_spi->uart_count_to_probe = uart_count;
 	if (uart_count) {
         if (neuronspi_uart_driver_global != NULL) {	
@@ -1040,10 +1010,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 
 s32 neuronspi_spi_remove(struct spi_device *spi)
 {
-	int i;
     int neuron_index;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	if (n_spi) {
+
+    if (n_spi) {
         neuron_index = n_spi->neuron_index; 
 		if (n_spi->no_irq) {
             hrtimer_cancel(&n_spi->poll_timer);
@@ -1051,48 +1021,17 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
             devm_free_irq(&(spi->dev), spi->irq, spi);             
         }
         neuronspi_uart_remove(spi);
-/*
-		if (n_spi->led_driver) {
-			for (i = 0; i < n_spi->features->led_count; i++) {
-				led_classdev_unregister(&(n_spi->led_driver[i].ldev));
-                kthread_flush_work(&(n_spi->led_driver[i].led_work));
-			}
-			kfree(n_spi->led_driver);
-			n_spi->led_driver = NULL;
-            unipi_spi_trace(KERN_INFO "UNIPISPI: LED Driver unregistered\n");
-		}
-        
-		if (n_spi->di_driver) { neuronspi_gpio_remove(n_spi->di_driver); }
-		if (n_spi->do_driver) { neuronspi_gpio_remove(n_spi->do_driver); }
-		if (n_spi->ro_driver) { neuronspi_gpio_remove(n_spi->ro_driver); }
-		unipi_spi_trace(KERN_INFO "UNIPISPI: GPIO Driver unregistered\n");
-        
-		if (n_spi->stm_ai_driver) { iio_device_unregister(n_spi->stm_ai_driver); }
-		if (n_spi->stm_ao_driver) {	iio_device_unregister(n_spi->stm_ao_driver); }
-		if (n_spi->sec_ai_driver) {
-			for (i = 0; i < n_spi->features->sec_ai_count; i++) {
-				iio_device_unregister(n_spi->sec_ai_driver[i]);
-			}
-			kfree(n_spi->sec_ai_driver);
-			n_spi->sec_ai_driver = NULL;
-		}
-		if (n_spi->sec_ao_driver) {
-			for (i = 0; i < n_spi->features->sec_ao_count; i++) {
-				iio_device_unregister(n_spi->sec_ao_driver[i]);
-			}
-			kfree(n_spi->sec_ao_driver);
-			n_spi->sec_ao_driver = NULL;
-		}
-		unipi_spi_trace(KERN_INFO "UNIPISPI: IIO Driver unregistered\n");
-*/
+
 		if (n_spi->board_device) {
-			platform_set_drvdata(n_spi->board_device, 0);
-			platform_device_unregister(n_spi->board_device);
+            neuronspi_board_device_remove(n_spi->board_device);
 		}
-        /*if (n_spi->reg_map) 
-            regmap_exit(n_spi->reg_map); */
+        if (n_spi->reg_map) 
+            regmap_exit(n_spi->reg_map); 
+        if (n_spi->regstart_table)
+            kfree(n_spi->regstart_table);
 
         kthread_destroy_worker(n_spi->primary_worker);
+        // clear global array item
         neuronspi_s_dev[neuron_index] = NULL; 
 		kfree(n_spi);
         printk(KERN_INFO "UNIPISPI: UniPi Board nspi%d removed\n", neuron_index);
@@ -1137,8 +1076,11 @@ int char_register_driver(void)
 	unipi_spi_trace_1(KERN_DEBUG "UNIPISPI: CDEV Device class registered\n");
 
 	// Device driver registration
-	neuronspi_cdrv.dev = device_create_with_groups(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), \
-                            MKDEV(major, 0), NULL, neuron_plc_attr_groups, NEURON_DEVICE_NAME);
+	/*neuronspi_cdrv.dev = device_create_with_groups(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), \
+                            MKDEV(major, 0), NULL, neuron_plc_attr_groups, NEURON_DEVICE_NAME);*/
+            
+	neuronspi_cdrv.dev = device_create(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), MKDEV(major, 0), \
+                            neuron_plc_dev, NEURON_DEVICE_NAME);
 	if (IS_ERR(neuronspi_cdrv.dev)) {
 		class_destroy(neuronspi_cdrv.driver_class);
         unregister_chrdev(major, NEURON_DEVICE_NAME);
@@ -1156,7 +1098,6 @@ void char_unregister_driver(void)
     if (neuronspi_cdrv.major_number < 0) return;
 
 	device_destroy(neuronspi_cdrv.driver_class, MKDEV(neuronspi_cdrv.major_number, 0));     // Destroy the device
-	//class_unregister(neuronspi_cdrv.driver_class);                          				// registrace nebyla volana
 	class_destroy(neuronspi_cdrv.driver_class);                             				// Destroy the class
 	unregister_chrdev(neuronspi_cdrv.major_number, NEURON_DEVICE_NAME);             		// Unregister the major number
 	unipi_spi_trace(KERN_INFO "UNIPISPI: CDEV unloaded\n");

@@ -23,27 +23,19 @@
  * Non-static Functions *
  ************************/
 
-void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, enum led_brightness brightness, int id)
+void neuronspi_spi_led_set_brightness(struct spi_device* spi_dev, int brightness, u16 coil)
 {
-	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
-        u16 coil;
-#if NEURONSPI_DETAILED_DEBUG > 0
-	printk(KERN_INFO "UNIPISPI: SPI LED Set, Dev-CS:%d, led id:%d\n", spi_dev->chip_select, id);
-#endif
-
-	if (d_data->features != NULL) {
-		coil = d_data->features->di_count + d_data->features->do_count + d_data->features->ro_count + id;
-	} else {
-		coil = 8 + id;
-	}
-    unipispi_modbus_write_coil(spi_dev, coil, brightness > 0);
+    unipispi_modbus_write_coil(spi_dev, coil, brightness);
 }
 
 
 void neuronspi_led_proc(struct kthread_work *ws)
 {
 	struct neuronspi_led_driver *led = to_led_driver(ws, led_work);
-	neuronspi_spi_led_set_brightness(led->spi, led->brightness, led->id);
+	neuronspi_spi_led_set_brightness(led->spi, led->brightness > 0, led->coil);
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: SPI LED Set, Dev-CS:%d, led id:%d\n", led->spi->chip_select, led->id);
+#endif
 }
 
 void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness brightness)
@@ -58,23 +50,27 @@ void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness
 }
 
 
+
 struct neuronspi_led_driver * neuronspi_led_probe(int led_count, int neuron_index, struct platform_device *board_device)
 {
+    struct spi_device* spi = neuronspi_s_dev[neuron_index];
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	struct neuronspi_led_driver * led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * led_count, GFP_ATOMIC);
-	int i;
+	int i, coil;
+
+	if (n_spi->features != NULL) {
+		coil = n_spi->features->di_count + n_spi->features->do_count + n_spi->features->ro_count;
+	} else {
+		coil = 8;
+	}
 	
 	for (i = 0; i < led_count; i++) {
 		scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:uled-x%x", i);
-        /*strcpy(led_driver[i].name, "unipi:green:uled-x1");
-		if (i < 9) {
-			led_driver[i].name[18] = i + '1';
-		} else {
-			led_driver[i].name[18] = i - 9 + 'a';
-		}*/
 		// Initialise the rest of the structure
 		led_driver[i].id = i;
+		led_driver[i].coil = coil+i;
 		led_driver[i].brightness = LED_OFF;
-		led_driver[i].spi = neuronspi_s_dev[neuron_index];
+		led_driver[i].spi = spi;
 
 		spin_lock_init(&led_driver[i].lock);
 		led_driver[i].ldev.name = led_driver[i].name;

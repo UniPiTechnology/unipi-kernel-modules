@@ -144,7 +144,7 @@ struct neuronspi_gpio_driver * neuronspi_di_probe(int io_count, int neuron_index
 struct neuronspi_gpio_driver * neuronspi_ro_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
 	struct neuronspi_gpio_driver* ro_driver;
-	struct neuronspi_gpio_port* pro_driver;
+	struct neuronspi_gpio_port* gpio_port;
 	int i;
     char buf[20];
 
@@ -152,28 +152,28 @@ struct neuronspi_gpio_driver * neuronspi_ro_probe(int io_count, int neuron_index
 
 	ro_driver = kzalloc(sizeof(struct neuronspi_gpio_driver) + (sizeof(struct neuronspi_gpio_port)) * (io_count-1), GFP_ATOMIC);
 	for (i = 0; i < io_count; i++) {
-		pro_driver = ro_driver->ports + i;
+		gpio_port = ro_driver->ports + i;
 
         scnprintf(buf, 20, "ro_%d_%02d", neuron_index+1, i+1);
-		pro_driver->io_index = i;
-		pro_driver->spi = neuronspi_s_dev[neuron_index];
+		gpio_port->io_index = i;
+		gpio_port->spi = neuronspi_s_dev[neuron_index];
 				
-		pro_driver->plat_dev = platform_device_alloc(buf, -1);
-		pro_driver->plat_dev->dev.parent = &(board_device->dev);
-		pro_driver->plat_dev->dev.groups = neuron_gpio_ro_attr_groups;
-		pro_driver->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
-		platform_device_add(pro_driver->plat_dev);
+		gpio_port->plat_dev = platform_device_alloc(buf, -1);
+		gpio_port->plat_dev->dev.parent = &(board_device->dev);
+		gpio_port->plat_dev->dev.groups = neuron_gpio_ro_attr_groups;
+		gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
+		platform_device_add(gpio_port->plat_dev);
 
-		platform_set_drvdata(pro_driver->plat_dev, pro_driver);
-		pro_driver->gpio_c.owner = THIS_MODULE;
-		pro_driver->gpio_c.parent = &(pro_driver->plat_dev->dev);
-		pro_driver->gpio_c.label = "neuron_ro";
-		pro_driver->gpio_c.can_sleep = 1;
-		pro_driver->gpio_c.ngpio = 1;
-		pro_driver->gpio_c.base = -1;
-		pro_driver->gpio_c.direction_output = neuronspi_gpio_ro_direction_output;
-		pro_driver->gpio_c.set = neuronspi_gpio_ro_set;
-		gpiochip_add_data(&pro_driver->gpio_c, pro_driver);
+		platform_set_drvdata(gpio_port->plat_dev, gpio_port);
+		gpio_port->gpio_c.owner = THIS_MODULE;
+		gpio_port->gpio_c.parent = &(gpio_port->plat_dev->dev);
+		gpio_port->gpio_c.label = "neuron_ro";
+		gpio_port->gpio_c.can_sleep = 1;
+		gpio_port->gpio_c.ngpio = 1;
+		gpio_port->gpio_c.base = -1;
+		gpio_port->gpio_c.direction_output = neuronspi_gpio_ro_direction_output;
+		gpio_port->gpio_c.set = neuronspi_gpio_ro_set;
+		gpiochip_add_data(&gpio_port->gpio_c, gpio_port);
 
 	}
     ro_driver->count = io_count;
@@ -183,7 +183,7 @@ struct neuronspi_gpio_driver * neuronspi_ro_probe(int io_count, int neuron_index
 struct neuronspi_gpio_driver * neuronspi_do_probe(int io_count, int neuron_index, struct platform_device *board_device)
 {
 	struct neuronspi_gpio_driver* do_driver;
-	struct neuronspi_gpio_port* pdo_driver;
+	struct neuronspi_gpio_port* gpio_port;
 	int i;
     char buf[20];
 
@@ -191,28 +191,28 @@ struct neuronspi_gpio_driver * neuronspi_do_probe(int io_count, int neuron_index
 
 	do_driver = kzalloc(sizeof(struct neuronspi_gpio_driver) + (sizeof(struct neuronspi_gpio_port)) * (io_count-1), GFP_ATOMIC);
 	for (i = 0; i < io_count; i++) {
-		pdo_driver = do_driver->ports + i;
+		gpio_port = do_driver->ports + i;
 
         scnprintf(buf, 20, "do_%d_%02d", neuron_index+1, i+1);
-		pdo_driver->io_index = i;
-		pdo_driver->spi = neuronspi_s_dev[neuron_index];
+		gpio_port->io_index = i;
+		gpio_port->spi = neuronspi_s_dev[neuron_index];
 				
-		pdo_driver->plat_dev = platform_device_alloc(buf, -1);
-		pdo_driver->plat_dev->dev.parent = &(board_device->dev);
-		pdo_driver->plat_dev->dev.groups = neuron_gpio_do_attr_groups;
-		pdo_driver->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
-		platform_device_add(pdo_driver->plat_dev);
+		gpio_port->plat_dev = platform_device_alloc(buf, -1);
+		gpio_port->plat_dev->dev.parent = &(board_device->dev);
+		gpio_port->plat_dev->dev.groups = neuron_gpio_do_attr_groups;
+		gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
+		platform_device_add(gpio_port->plat_dev);
 
-		platform_set_drvdata(pdo_driver->plat_dev, pdo_driver);
-		pdo_driver->gpio_c.owner = THIS_MODULE;
-		pdo_driver->gpio_c.parent = &(pdo_driver->plat_dev->dev);
-		pdo_driver->gpio_c.label = "neuron_do";
-		pdo_driver->gpio_c.can_sleep = 1;
-		pdo_driver->gpio_c.ngpio = 1;
-		pdo_driver->gpio_c.base = -1;
-		pdo_driver->gpio_c.direction_output = neuronspi_gpio_do_direction_output;
-		pdo_driver->gpio_c.set = neuronspi_gpio_do_set;
-		gpiochip_add_data(&pdo_driver->gpio_c, pdo_driver);
+		platform_set_drvdata(gpio_port->plat_dev, gpio_port);
+		gpio_port->gpio_c.owner = THIS_MODULE;
+		gpio_port->gpio_c.parent = &(gpio_port->plat_dev->dev);
+		gpio_port->gpio_c.label = "neuron_do";
+		gpio_port->gpio_c.can_sleep = 1;
+		gpio_port->gpio_c.ngpio = 1;
+		gpio_port->gpio_c.base = -1;
+		gpio_port->gpio_c.direction_output = neuronspi_gpio_do_direction_output;
+		gpio_port->gpio_c.set = neuronspi_gpio_do_set;
+		gpiochip_add_data(&gpio_port->gpio_c, gpio_port);
 
 	}
     do_driver->count = io_count;
