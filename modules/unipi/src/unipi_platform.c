@@ -92,7 +92,7 @@ static u32 NEURONSPI_BOARD_B1000_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_B1000_HW_DE
 		.ro_count =					  0,	\
 		.ds_count =					  4,	\
 		.di_count =					  4,	\
-		.led_count =				  4,	\
+		.led_count =				 16,	\
 		.stm_ai_count =				  1,	\
 		.stm_ao_count =				  1,	\
 		.sec_ai_count =				  0,	\
