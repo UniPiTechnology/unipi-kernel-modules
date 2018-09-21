@@ -1,0 +1,3 @@
+if [ "$1" = "configure" ]; then
+		depmod -a #KVERS# || true
+fi

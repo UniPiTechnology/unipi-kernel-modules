@@ -1,0 +1,26 @@
+Source: unipi-kernel-modules
+Section: kernel
+Priority: optional
+Maintainer: Miroslav Ondra <info@unipi.technology>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.8
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: https://anonscm.debian.org/collab-maint/neuron-kernel.git
+
+Package: neuron-kernel
+Architecture: armhf
+Depends: ${misc:Depends}, unipi-common, raspberrypi-kernel(=${RPI-FIRMWARE-VER})
+Description: UniPi Neuron kernel modules
+ Binary kernel modules for UniPi Neuron controller. Compiled with
+ raspberrypi-kernel from Raspbian distribution. 
+
+Package: unipi-kernel-modules-dkms
+Architecture: linux-any
+Depends: ${misc:Depends}, unipi-common, dkms
+Replaces: neuron-kernel
+Conflicts: neuron-kernel
+Description: UniPi Neuron kernel modules - DKMS source
+ This package contains source code of kernel module for spi protocol 
+ used by internal boards in the UniPi Neuron/Axon controllers.
+ Can be used with DKMS so that local kernel images are automatically
+ built and installed every time relevant kernel packages are upgraded.
