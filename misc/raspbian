@@ -1,14 +1,23 @@
 #!/bin/bash
 
+###############################################
+#
+# check latest raspbian kernel version, download it to directory tmp
+# compile module 
+#################################################
+
 mkdir -p tmp
+
+# get latest raspbian kernel version
 wget -q http://archive.raspberrypi.org/debian/dists/stretch/main/binary-armhf/Packages.gz -O - | gunzip \
 | awk '/^Package: raspberrypi-kernel-headers[[:blank:]]*$/ { ok=1; next} /^Package: / {ok=0;} (ok!=1) {next} 
-/^Version: / {print "RPI_FIRMWARE_VER=" $2 } 
-/^Filename: / {print "RPI_FIRMWARE_FILE=" $2; nextfile }' > tmp/versions
+	/^Version: / {print "RPI_FIRMWARE_VER=" $2 } 
+	/^Filename: / {print "RPI_FIRMWARE_FILE=" $2; nextfile }' > tmp/versions
 
 cd tmp
 . versions
 
+# get kernel source
 #-----------------------------------------------------------------------
 # this method doesn't work if tag in git wasn't created
 #wget https://github.com/raspberrypi/linux/archive/raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
@@ -16,16 +25,20 @@ cd tmp
 
 # alternate method to get raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
 # get commit number used for making this kernel version
-wget https://raw.githubusercontent.com/raspberrypi/firmware/stable/extra/git_hash -O- > .git_hash
-GIT_VER=`cat .git_hash`
-wget https://github.com/raspberrypi/linux/archive/$GIT_VER.zip -O raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
-unzip raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
-mv linux-$GIT_VER linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
-#-----------------------------------------------------------------------
-rm raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
 
+	wget https://raw.githubusercontent.com/raspberrypi/firmware/stable/extra/git_hash -O- > .git_hash
+	GIT_VER=`cat .git_hash`
+	wget https://github.com/raspberrypi/linux/archive/$GIT_VER.zip -O raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
+	unzip raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
+	mv linux-$GIT_VER linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+	#-----------------------------------------------------------------------
+	rm raspberrypi-kernel_${RPI_FIRMWARE_VER}.zip
+
+# download headers and symbols
 wget http://archive.raspberrypi.org/debian/${RPI_FIRMWARE_FILE}
 dpkg-deb -x `basename ${RPI_FIRMWARE_FILE}` h
+
+# prepare kernel tree and compile module
 KERNEL_VER=`ls -1 h/lib/modules | grep '\-v7'`
 echo $KERNEL_VER
 cp h/usr/src/linux-headers-${KERNEL_VER}/.config linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}

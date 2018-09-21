@@ -1,0 +1,74 @@
+unipi-kernel-modules (1.16.1.20180919-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20180919-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 21 Sep 2018 02:36:55 +0200
+
+unipi-kernel-modules (1.16) unstable; urgency=medium
+
+  * changed from binary to dkms version
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 21 Sep 2018 01:03:41 +0200
+
+neuron-kernel (1.15.20180914) unstable; urgency=medium
+
+  * Compiled for kernel 4.14.69-v7+ (=1.20180910-1)
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 14 Sep 2018 16:35:36 +0200
+
+neuron-kernel (1.15.20180907) unstable; urgency=medium
+
+  * Compiled for kernel 4.14.62-v7+ (=1.20180817-1)
+  * fixed spi buffer alignement
+  * redesigned uart rx/tx proc
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 14 Sep 2018 00:47:53 +0200
+
+neuron-kernel (1.14.20180803) unstable; urgency=medium
+
+  * fixed trace_printk for debugging
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 03 Aug 2018 12:42:40 +0200
+
+neuron-kernel (1.14.20180802) unstable; urgency=medium
+
+  * redesigned line discipline
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 02 Aug 2018 21:37:29 +0200
+
+neuron-kernel (1.13.20180719) unstable; urgency=medium
+
+  * Compiled for kernel 4.14.52-v7+ (=1.20180703-1)
+  * changed char dev name to /dev/unipispi
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 02 Aug 2018 21:36:09 +0200
+
+neuron-kernel (1.12.14062018-0) unstable; urgency=medium
+
+  * Compiled for new distribution kernel 4.14.52-v7+ (=1.20180703-1)
+
+ -- Miroslav Ondra <info@unipi.technology>  Wed, 16 Jul 2018 10:00:19 +0200
+
+neuron-kernel (1.11.06062018-0) unstable; urgency=medium
+
+  * Compiled for new distribution kernel 4.14.34-v7+ (=1.20180417-1)
+
+ -- Miroslav Ondra <info@unipi.technology>  Wed, 06 Jun 2018 20:16:19 +0200
+
+neuron-kernel (0.03082018-3) unstable; urgency=medium
+
+  * Compiled for new distribution kernel 4.14.34-v7+ (=1.20180417-1)
+
+ -- Miroslav Ondra <info@unipi.technology>  Wed, 18 Apr 2018 21:49:19 +0200
+
+neuron-kernel (0.03082018-2) unstable; urgency=medium
+
+  * Compiled for new distribution kernel (=1.20180328-1)
+
+ -- Miroslav Ondra <info@unipi.technology>  Wed, 17 Apr 2018 10:14:19 +0200
+
+neuron-kernel (0.03082018) unstable; urgency=medium
+
+  * Initial Release.
+
+ -- Miroslav Ondra <info@unipi.technology>  Wed, 11 Apr 2018 10:14:19 +0200

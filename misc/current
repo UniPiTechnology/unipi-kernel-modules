@@ -17,4 +17,4 @@ cp h/usr/src/linux-headers-${KERNEL_VER}/Module.symvers linux-raspberrypi-kernel
 cd linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
 make modules_prepare CROSS_COMPILE=arm-linux-gnueabi- ARCH=arm
 cd ../..
-make all CCPREFIX=arm-linux-gnueabi- ARCH=arm LINUX_DIR_PATH=tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+#make all CCPREFIX=arm-linux-gnueabi- ARCH=arm LINUX_DIR_PATH=${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}

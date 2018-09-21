@@ -1,0 +1,70 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
+
+.raspbian-versions:
+	misc/check-raspbian
+
+include ./.raspbian-versions
+
+DISTRIB=$(shell dpkg-parsechangelog -l debian/neuron-kernel.changelog -S Distribution)
+NEURON_KERNEL_VERSION=$(shell dpkg-parsechangelog -l debian/neuron-kernel.changelog -S Version)
+
+%:
+	dh $@ --with dkms
+
+# dh_make generated override targets
+# This is example for Cmake (See https://bugs.debian.org/641051 )
+#override_dh_auto_configure:
+#	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+
+override_dh_installmodules:
+	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
+
+
+override_dh_prep:
+	dh_prep --exclude=neuron-kernel.substvars 
+	echo RPI-FIRMWARE-VER=${RPI_FIRMWARE_VER} >> debian/neuron-kernel.substvars
+	sed "s/#MOD_VERSION#/$(MOD_VERSION)/g" debian/unipi-kernel-modules-dkms.install.in > debian/unipi-kernel-modules-dkms.install
+	@if echo ${NEURON_KERNEL_VERSION} | grep -qve "^$(MOD_VERSION)"; then\
+		( sed '/^ -- /q;' debian/changelog; echo ""; cat debian/neuron-kernel.changelog )>debian/_cl;\
+		mv debian/_cl debian/neuron-kernel.changelog;\
+	fi
+	@if [ ${NEURON_KERNEL_VERSION} != $(MOD_VERSION).$(RPI_FIRMWARE_VER) ]; then\
+		dch  -mv $(MOD_VERSION).$(RPI_FIRMWARE_VER) --release-heuristic=log \
+			 -c debian/neuron-kernel.changelog "Compiled for raspberrypi-kernel ${RPI_FIRMWARE_VER}"; \
+	fi;
+	@if [ ${DISTRIB} != "UNRELEASED" ]; then dch  -rm -c debian/neuron-kernel.changelog ""; fi
+
+override_dh_dkms:
+	dh_dkms -V $(MOD_VERSION)
+
+#override_dh_build:
+
+override_dh_auto_configure:
+	misc/check-raspbian
+	misc/current
+
+override_dh_auto_build:
+	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+		LINUX_DIR_PATH=${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/neuron-kernel -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+		LINUX_DIR_PATH=${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+
+#override_dh_gencontrol:
+#	dh_gencontrol 

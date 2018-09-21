@@ -49,9 +49,13 @@ default: all ;
 all: 
 	make ARCH=arm CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules
 
+modules_install: 
+	make ARCH=arm CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules_install
+
 clean: 
-	make -C ${LINUX_DIR_PATH} M=$(PWD) clean
-	rm -f ${BIN_DIR_PATH}/${KERNEL_MODULE_NAME}.ko
+	rm -f ${unipi-objs} src/.*.o.cmd
+	rm -f ${KERNEL_MODULE_NAME}.ko ${KERNEL_MODULE_NAME}.mod.c .*.o.cmd .*.ko.cmd *.o modules.order Module.symvers
+	rm -rf .tmp_versions
 
 transfer: clean symlink
 	scp ${BIN_DIR_PATH}/${KERNEL_MODULE_NAME}.ko ${TARGET_PLC_PATH}
