@@ -842,6 +842,48 @@ err_end:
 	return count;
 }
 
+static ssize_t neuronspi_spi_store_reboot(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	struct spi_device *spi;
+	struct platform_device *plat = to_platform_device(dev);
+    struct neuronspi_board_device_data *board_device_data = platform_get_drvdata(plat);
+	struct neuronspi_driver_data *n_spi = board_device_data->n_spi;
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: Index %d\n", n_spi->neuron_index);
+#endif
+	err = kstrtouint(buf, 0, &val);
+	if (err >= 0) {
+		if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map) {
+	        spi = neuronspi_s_dev[n_spi->neuron_index];
+	        unipispi_modbus_write_coil(spi, 1002, val);
+		}
+	}
+	return count;
+}
+
+static ssize_t neuronspi_spi_store_save_initial_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	ssize_t err = 0;
+	unsigned int val = 0;
+	struct spi_device *spi;
+	struct platform_device *plat = to_platform_device(dev);
+    struct neuronspi_board_device_data *board_device_data = platform_get_drvdata(plat);
+	struct neuronspi_driver_data *n_spi = board_device_data->n_spi;
+#if NEURONSPI_DETAILED_DEBUG > 0
+	printk(KERN_INFO "UNIPISPI: Index %d\n", n_spi->neuron_index);
+#endif
+	err = kstrtouint(buf, 0, &val);
+	if (err >= 0) {
+		if (n_spi && n_spi->combination_id != 0xFF && n_spi->reg_map && n_spi->regstart_table->uart_conf_reg) {
+	        spi = neuronspi_s_dev[n_spi->neuron_index];
+	        unipispi_modbus_write_coil(spi, 1003, val);
+		}
+	}
+	return count;
+}
+
 static ssize_t neuronspi_spi_show_board(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -1141,6 +1183,8 @@ static DEVICE_ATTR(register_read, 0660, neuronspi_spi_show_register, neuronspi_s
 static DEVICE_ATTR(register_set, 0220, NULL, neuronspi_spi_store_register_value);
 static DEVICE_ATTR(regmap_read, 0660, neuronspi_show_regmap, neuronspi_store_regmap);
 static DEVICE_ATTR(regmap_set, 0220, NULL, neuronspi_store_regmap_value);
+static DEVICE_ATTR(reboot_group, 0220, NULL, neuronspi_spi_store_reboot);
+static DEVICE_ATTR(save_initial_state, 0220, NULL, neuronspi_spi_store_save_initial_state);
 static DEVICE_ATTR(sys_board_serial, 0440, neuronspi_spi_show_serial, NULL);
 static DEVICE_ATTR(sys_board_name, 0444, neuronspi_spi_show_board, NULL);
 static DEVICE_ATTR(sys_primary_major_id, 0444, neuronspi_spi_show_lboard_id, NULL);
@@ -1202,6 +1246,8 @@ static struct attribute *neuron_board_attrs[] = {
 		&dev_attr_register_set.attr,
 		&dev_attr_regmap_read.attr,
 		&dev_attr_regmap_set.attr,
+		&dev_attr_reboot_group.attr,
+		&dev_attr_save_initial_state.attr,
 		NULL,
 };
 
