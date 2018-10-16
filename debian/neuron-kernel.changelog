@@ -1,8 +1,20 @@
+unipi-kernel-modules (1.17.1.20180919-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20180919-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Mon, 24 Sep 2018 19:47:34 +0200
+
+unipi-kernel-modules (1.17) UNRELEASED; urgency=medium
+
+  * add dependncy on raspberrypi-kernel-headers
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 21 Sep 2018 13:20:35 +0200
+
 unipi-kernel-modules (1.16.1.20180919-1) unstable; urgency=medium
 
   * Compiled for raspberrypi-kernel 1.20180919-1
 
- -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 21 Sep 2018 02:36:55 +0200
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 21 Sep 2018 12:06:43 +0200
 
 unipi-kernel-modules (1.16) unstable; urgency=medium
 

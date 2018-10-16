@@ -12,6 +12,9 @@ cd tmp
 
 KERNEL_VER=`ls -1 h/lib/modules | grep '\-v7'`
 echo $KERNEL_VER
+KV=${KERNEL_VER%-v7*}
+SCM=${KERNEL_VER#${KV}}
+echo $SCM > linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}/.scmversion
 cp h/usr/src/linux-headers-${KERNEL_VER}/.config linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
 cp h/usr/src/linux-headers-${KERNEL_VER}/Module.symvers linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
 cd linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
