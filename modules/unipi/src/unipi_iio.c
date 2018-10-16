@@ -383,6 +383,11 @@ int neuronspi_iio_sec_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spe
 	}
 }
 
+int neuronspi_iio_sec_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
+{
+	return -EINVAL;
+}
+
 int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int val, int val2, long mask)
 {
 	if (ch->type == IIO_VOLTAGE) {
@@ -419,6 +424,7 @@ static const struct iio_info neuronspi_sec_ai_info = {
 static const struct iio_info neuronspi_sec_ao_info = {
 	.write_raw = neuronspi_iio_sec_ao_write_raw,
 	.driver_module = THIS_MODULE,
+	.read_raw = neuronspi_iio_sec_ao_read_raw,
 	//.attrs = &neuron_sec_ao_group,
 };
 
