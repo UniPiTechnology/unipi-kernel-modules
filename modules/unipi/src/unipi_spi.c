@@ -570,7 +570,7 @@ void neuronspi_spi_uart_read(struct spi_device* spi, u8 *recv_buf, s32 len, u8 u
 	send_op.first_message[2] = 0;
 	send_op.first_message[3] = uart_index;
 
-	send_buf = kzalloc(transmit_len, GFP_ATOMIC);
+	send_buf = kzalloc(transmit_len+64/*safety space*/, GFP_ATOMIC);
 
 #if 1
 	send_op.first_message[0] = 0x65;
@@ -1053,7 +1053,7 @@ struct file_operations file_ops =
 int char_register_driver(void)
 {
     int major;
-    
+    struct device *parent = NULL;
 	if (neuronspi_cdrv.major_number >= 0) return 0;
 
 	// Character device registration
@@ -1078,8 +1078,9 @@ int char_register_driver(void)
 	// Device driver registration
 	/*neuronspi_cdrv.dev = device_create_with_groups(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), \
                             MKDEV(major, 0), NULL, neuron_plc_attr_groups, NEURON_DEVICE_NAME);*/
-            
-	neuronspi_cdrv.dev = device_create(neuronspi_cdrv.driver_class, &(neuron_plc_dev->dev), MKDEV(major, 0), \
+
+    if (neuron_plc_dev != NULL) parent = &(neuron_plc_dev->dev);
+	neuronspi_cdrv.dev = device_create(neuronspi_cdrv.driver_class, parent, MKDEV(major, 0), \
                             neuron_plc_dev, NEURON_DEVICE_NAME);
 	if (IS_ERR(neuronspi_cdrv.dev)) {
 		class_destroy(neuronspi_cdrv.driver_class);
