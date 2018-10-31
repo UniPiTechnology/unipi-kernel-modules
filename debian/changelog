@@ -1,5 +1,6 @@
 unipi-kernel-modules (1.18) unstable; urgency=medium
 
+  * disabled long spi tranfer
   * added missing dummy method for reading secondary analog output
 
  -- Miroslav Ondra <bokula@bokula.faster.cz>  Mon, 16 Oct 2018 15:08:40 +0200
