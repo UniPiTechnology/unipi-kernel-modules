@@ -531,6 +531,15 @@ static void unipi_tty_close(struct tty_struct *tty)
 	unipi_tty_trace(KERN_INFO "UNIPI_LDISC: Close OK.");
 }
 
+static int unipi_is_port_unipi(struct tty_struct *tty)
+{
+    struct uart_state *state = tty->driver_data;
+    struct uart_port *uport;
+
+    uport = state->uart_port;
+    return (uport->type == PORT_NEURONSPI);
+}
+
 /**
  *	unipi_tty_open		-	open an ldisc
  *	@tty: terminal to open
@@ -545,6 +554,9 @@ static int unipi_tty_open(struct tty_struct *tty)
 {
 	struct unipi_tty_data *ldata;
 
+	if (!unipi_is_port_unipi(tty))
+        goto err;
+        
 	/* Currently a malloc failure here can panic */
 	ldata = vmalloc(sizeof(*ldata));
 	if (!ldata)
