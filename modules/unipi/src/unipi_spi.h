@@ -27,11 +27,12 @@
 /********************
  * Module Constants *
  ********************/
-
+/*
 #define NEURONSPI_SLOWER_MODELS_LEN 					3
 static const u16 NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
+*/
 
 struct neuronspi_frequecy_map
 {

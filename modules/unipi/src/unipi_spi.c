@@ -217,9 +217,14 @@ int _neuronspi_spi_send_op(struct spi_device* spi_dev, s32 trans_count, const st
 	}
 
     // Call SPI transaction
-	spi_sync_transfer(spi_dev, s_trans, trans_count);
+	ret_code = spi_sync_transfer(spi_dev, s_trans, trans_count);
 	kfree(s_trans);
 
+	if (ret_code != 0) {
+        mutex_unlock(&neuronspi_master_mutex);
+        unipi_spi_trace(KERN_INFO "UNIPISPI: Err=3 txopcode:%d\n", send_buf->first_message[0]);
+        return 3;  // spi_tranfer error
+	}
     if (send_header & UNIPISPI_OP_MODE_SEND_HEADER) {
         unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI Master Read (op1) %8ph\n", recv_buf->first_message);
         if (d_data && d_data->poll_enabled) {
@@ -249,7 +254,11 @@ int _neuronspi_spi_send_op(struct spi_device* spi_dev, s32 trans_count, const st
                         //kthread_queue_work(&neuronspi_uart_data_global->kworker, &port->rx_work);
                         kthread_queue_work(d_data->primary_worker, &port->rx_work);
                     }
-                }
+                } else if (opcode != 0xfa) {
+        			mutex_unlock(&neuronspi_master_mutex);
+                    unipi_spi_trace(KERN_INFO "UNIPISPI: Err txopcode:%d, rx:%d\n", send_buf->first_message[0], opcode);
+					return 1; // op code error - probably uncatched crc
+				}
 			}
 		} else {
             recv_buf->first_message[0] = 0;
@@ -269,13 +278,12 @@ int _neuronspi_spi_send_op(struct spi_device* spi_dev, s32 trans_count, const st
                                         recv_buf->second_message+128, recv_buf->second_message+192);
 
 		if (recv_crc2 != packet_crc) {
-            unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc2);
+            unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc2);
             if (send_header & UNIPISPI_OP_MODE_SEND_HEADER) 
                 recv_buf->second_message[0] = 0;
             ret_code = 1;
 
 		} else if (recv_buf->second_message[0] == 0x65) {
-            
             // this op can be invoked only from kernel_work rx_proc
             portindex = 0; // second_message[2]; Overit ve firmware
             if (d_data->uart_count && (portindex < d_data->uart_count)) {
@@ -523,7 +531,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, int length, u
 		send_op.first_message[2] = 0;
 		send_op.first_message[3] = uart_index;
 		//neuronspi___spi_send_message_crc(spi, &send_op, &recv_op, transmit_len, frequency, 65);
-		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 65, UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
+		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 20, UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
 	} else {
 		transmit_len = length & 1 ? length+1 : length;  // transmit_length must be even
 		send_op.first_message[0] = 0x64;                //NEURONSPI_SPI_UART_LONG_MESSAGE[0];
@@ -537,7 +545,7 @@ s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, int length, u
         
         recv_op.second_message = recv_buf;
         send_op.second_message = message_buf;
-		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 65, UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
+		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 20, UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
 		//neuronspi___spi_send_message_crc(spi, &send_op, &recv_op, transmit_len, frequency, 65);
 
 		kfree(message_buf);
@@ -585,7 +593,7 @@ void neuronspi_spi_uart_read(struct spi_device* spi, u8 *recv_buf, s32 len, u8 u
 	unipi_spi_trace(KERN_INFO "UNIPISPI: UART Device Read len:%d\n", transmit_len);
 
 	if (!d_data->reserved_device) {
-		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 65, 
+		neuronspi_spi_send_op(spi, &send_op, &recv_op, transmit_len, frequency, 20, 
                                 UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
 	}
     kfree(send_buf);
@@ -611,16 +619,18 @@ int unipispi_modbus_read_register(struct spi_device* spi_dev, u16 reg, u16* valu
     *((u16*)(send_buf.first_message + 2)) = reg;
 	memcpy(send_data, send_buf.first_message, 4);
 	send_data[1] = 1;
-    
+
 	ret_code = neuronspi_spi_send_op(spi_dev, &send_buf, &recv_buf, 4+2, frequency, 35,
                                     UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
 	if (ret_code == 0) {
-        if ((recv_data[0] == 0x03) && (recv_data[1]==1)) {
+        if ((recv_data[0] == 0x03) && (recv_data[1]==1)) {  // check opcode and register count
             *value = *((u16*)(recv_data + 4));
         } else {
+            //unipi_spi_trace("Read reg: %d %8ph\n", reg, recv_data);
             ret_code = 2;
         }
     }
+    unipi_spi_trace("Read reg: %d ret: %d %8ph\n", reg, ret_code, recv_data);
     return ret_code;
 }
 
@@ -654,6 +664,7 @@ int unipispi_modbus_read_u32(struct spi_device* spi_dev, u16 reg, u32* value)
             ret_code = 2;
         }
     }
+    unipi_spi_trace("Read reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
     return ret_code;
 }
 
@@ -691,9 +702,11 @@ int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 valu
                                     UNIPISPI_OP_MODE_SEND_HEADER|UNIPISPI_OP_MODE_DO_CRC|UNIPISPI_OP_MODE_HAVE_CRC_SPACE, 0);
 	if (ret_code == 0) {
         if ((recv_data[0] != 0x06) || (recv_data[1]!=1)) {
+            //unipi_spi_trace("Write reg: %d %8ph\n", reg, recv_data);
             ret_code = 2;
         }
     }
+    unipi_spi_trace("Write reg: %d ret: %d %8ph\n", reg, ret_code, recv_data);
     return ret_code;
 }
 
@@ -726,6 +739,7 @@ int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value)
             ret_code = 2;
         }
     }
+    unipi_spi_trace("Write reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
     return ret_code;
 }
 
@@ -770,7 +784,11 @@ void neuronspi_irq_proc(struct kthread_work *ws)
 	struct spi_device *spi = neuronspi_s_dev[n_spi->neuron_index];
     struct neuronspi_op_buffer recv_buf;
 
-	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_buf, 0, NEURONSPI_DEFAULT_FREQ, 25);
+	s32 frequency = NEURONSPI_DEFAULT_FREQ;
+	if (n_spi) {
+		frequency = n_spi->ideal_frequency;
+	}
+	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_buf, 0, frequency, 25);
 }
 
 
