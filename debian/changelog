@@ -1,3 +1,9 @@
+unipi-kernel-modules (1.19) unstable; urgency=medium
+
+  * fixed frequency detection
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 17 Jan 2019 11:17:54 +0100
+
 unipi-kernel-modules (1.18) unstable; urgency=medium
 
   * disabled long spi tranfer

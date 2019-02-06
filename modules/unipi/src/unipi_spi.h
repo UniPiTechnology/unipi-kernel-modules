@@ -33,6 +33,18 @@ static const u16 NEURONSPI_SLOWER_MODELS[NEURONSPI_SLOWER_MODELS_LEN] = {
 		0xb10, 0xc10, 0xf10
 };
 
+struct neuronspi_frequecy_map
+{
+    u16  model;
+    u16  mask;
+    int  frequency;
+};
+
+#define NEURONSPI_FREQUENCY_LEN      2
+static const struct neuronspi_frequecy_map NEURONSPI_FREQUENCY_MAP[NEURONSPI_FREQUENCY_LEN] = {
+	{model:0x0b00, mask:0xff00, frequency:NEURONSPI_SLOWER_FREQ },
+	{model:0x0000, mask:0x0000, frequency:NEURONSPI_COMMON_FREQ}
+};
 
 #define UNIPISPI_PROBE_MESSAGE_LEN						16
 static u8 _probe_message_second[UNIPISPI_PROBE_MESSAGE_LEN] = 
@@ -187,13 +199,20 @@ static __always_inline u16 neuronspi_spi_crc(u8* inputstring, s32 length, u16 in
     return result;
 }
 
-static __always_inline int neuronspi_is_slower_model(u16 model)
+static __always_inline int neuronspi_frequency_by_model(u16 model)
 {
     int i;
+    for (i = 0; i < NEURONSPI_FREQUENCY_LEN; i++) {
+        if ((NEURONSPI_FREQUENCY_MAP[i].mask & model) == NEURONSPI_FREQUENCY_MAP[i].model) 
+			return NEURONSPI_FREQUENCY_MAP[i].frequency;
+    }
+	return NEURONSPI_COMMON_FREQ;
+/*
     for (i = 0; i < NEURONSPI_SLOWER_MODELS_LEN; i++) {
         if (NEURONSPI_SLOWER_MODELS[i] == model) return 1;
     }
     return 0;
+*/
 }
 
 static __always_inline int neuronspi_is_noirq_model(u16 model)

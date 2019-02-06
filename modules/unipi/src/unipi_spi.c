@@ -909,11 +909,12 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
                 break;
 			}
 		}
-        n_spi->ideal_frequency = neuronspi_is_slower_model(lower_board) ? NEURONSPI_SLOWER_FREQ : NEURONSPI_COMMON_FREQ; 
+        //n_spi->ideal_frequency = neuronspi_is_slower_model(lower_board) ? NEURONSPI_SLOWER_FREQ : NEURONSPI_COMMON_FREQ; 
+        n_spi->ideal_frequency = neuronspi_frequency_by_model(lower_board);
         no_irq = neuronspi_is_noirq_model(lower_board);
 
-        printk(KERN_INFO "UNIPISPI: UniPi Board %s (L:%x U:%x C:%x) at CS%d (nspi%d) detected.\n\t\t\tFw: v%d.%d Uarts:%d, reg1001-4: %04x %04x %04x %04x\n",
-				board_name, hi(lower_board), upper_board, hardware_model, spi->chip_select, n_spi->neuron_index,
+        printk(KERN_INFO "UNIPISPI: UniPi Board %s (L:%x U:%x C:%x) at CS%d (nspi%d %dkHz) detected.\n\t\t\tFw: v%d.%d Uarts:%d, reg1001-4: %04x %04x %04x %04x\n",
+				board_name, hi(lower_board), upper_board, hardware_model, spi->chip_select, n_spi->neuron_index, n_spi->ideal_frequency/1000,
                 hi(n_spi->firmware_version), lo(n_spi->firmware_version), uart_count, 
                 REG1000(first_probe,1001), REG1000(first_probe,1002), REG1000(first_probe,1003), REG1000(first_probe,1004));
 
