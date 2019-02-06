@@ -1,8 +1,26 @@
+unipi-kernel-modules (1.19.1.20181112-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20181112-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 17 Jan 2019 11:18:36 +0100
+
+unipi-kernel-modules (1.19) unstable; urgency=medium
+
+  * fixed frequency detection
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 17 Jan 2019 11:17:54 +0100
+
+unipi-kernel-modules (1.18.1.20181112-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20181112-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 28 Nov 2018 09:11:02 +0100
+
 unipi-kernel-modules (1.18.1.20180924-1) unstable; urgency=medium
 
   * Compiled for raspberrypi-kernel 1.20180924-1
 
- -- Miroslav Ondra <bokula@bokula.faster.cz>  Fri, 19 Oct 2018 10:09:57 +0200
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 08 Nov 2018 09:16:26 +0100
 
 unipi-kernel-modules (1.18) unstable; urgency=medium
 
