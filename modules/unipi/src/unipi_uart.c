@@ -209,9 +209,9 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
         unipi_uart_trace("ttyNS%d Termios new:0x%04x %04x %04x %04x ldisc:%d", port->line,\
          termios->c_cflag, termios->c_iflag, \
          termios->c_oflag, termios->c_lflag, termios->c_line);
+        neuronspi_uart_set_cflag(n_port, termios->c_cflag);
     }
 
-	neuronspi_uart_set_cflag(n_port, termios->c_cflag);
 	if (termios && (!old || ((old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)))) {
 		neuronspi_uart_set_iflags(n_port, termios->c_iflag);
 	}
@@ -302,7 +302,7 @@ int static neuronspi_uart_read_tx_fifo_len(struct neuronspi_port *port)
         port->tx_fifo_len = 0;
         ret = 0;
     }
-	unipi_uart_trace("ttyNS%d Get tx fifo len:%d\n", port->port.line, read_length16);
+	unipi_uart_trace("ttyNS%d Get tx fifo len:%d err:%d\n", port->port.line, read_length16, ret);
 	return ret;
 }
 
