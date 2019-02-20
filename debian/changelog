@@ -1,3 +1,9 @@
+unipi-kernel-modules (1.20) unstable; urgency=medium
+
+  * fix line discipline setting on standard uarts
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 07 Feb 2019 00:06:36 +0100
+
 unipi-kernel-modules (1.19) unstable; urgency=medium
 
   * fixed frequency detection
