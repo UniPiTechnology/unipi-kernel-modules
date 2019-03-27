@@ -47,20 +47,6 @@ static const struct neuronspi_frequecy_map NEURONSPI_FREQUENCY_MAP[NEURONSPI_FRE
 	{model:0x0000, mask:0x0000, frequency:NEURONSPI_COMMON_FREQ}
 };
 
-#define UNIPISPI_PROBE_MESSAGE_LEN						16
-static u8 _probe_message_second[UNIPISPI_PROBE_MESSAGE_LEN] = 
-          {0x04, 0x00, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x16};
-static const struct neuronspi_op_buffer UNIPISPI_PROBE_MESSAGE = {
-    first_message: {0x04, 0x0e, 0xe8, 0x03, 0xa0, 0xdd},
-    second_message: _probe_message_second,
-};
-
-
-static const struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
-    first_message: {0xfa, 0x00, 0x55, 0x0e, 0xb6, 0x0a},
-    second_message: NULL,
-};
-
 
 #define NEURONSPI_CRC16TABLE_LEN						256
 static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
@@ -138,6 +124,8 @@ int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 valu
 int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value);
 int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
 int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
+int unipi_spi_write_str(struct spi_device* spi, struct neuronspi_port* port, int length);
+int unipi_spi_get_tx_fifo(struct spi_device* spi, struct neuronspi_port* port);
 
 void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
 

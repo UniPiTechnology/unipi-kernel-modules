@@ -1,3 +1,15 @@
+unipi-kernel-modules (1.21.1.20190215-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20190215-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 27 Mar 2019 16:42:04 +0100
+
+unipi-kernel-modules (1.21) UNRELEASED; urgency=medium
+
+  * rework spi to use async calling and RT kthread
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Thu, 21 Feb 2019 14:47:46 +0100
+
 unipi-kernel-modules (1.19.1.20181112-1) unstable; urgency=medium
 
   * Compiled for raspberrypi-kernel 1.20181112-1

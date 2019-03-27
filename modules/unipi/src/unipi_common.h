@@ -46,12 +46,13 @@
 /***************
  * Definitions *
  ***************/
+//#define UNIPISPI_USE_RX_THREAD
 
 #define NEURONSPI_SCHED_REQUIRED 1 // Older kernels do not require sched/types to be specifically imported
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.20:2019:02:05"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.21:2019:02:20"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				16
@@ -102,6 +103,11 @@ struct neuronspi_op_buffer
     u8  *second_message;
 };
 
+
+#define CB_WRITESTRING 1
+#define CB_GETTXFIFO  2
+#define START_TX       3
+
 struct neuronspi_port
 {
 	struct uart_port			port;
@@ -109,16 +115,9 @@ struct neuronspi_port
 	u8							dev_port;   // index of port on neuronspi device
     struct neuronspi_driver_data  *n_spi;     // shorthand to n_spi 
     
-    spinlock_t                  rx_queue_lock;
-    u8*                         rx_queue_primary;
-    int                         rx_qlen_primary;
-    u8*                         rx_queue_secondary;
-    int                         rx_qlen_secondary;
     u8                          rx_remain;
     
 	struct kthread_work			tx_work;
-	struct kthread_work			rx_work;
-
     u16                         tx_fifo_reg;  // register in neuronspi device modbus map to read internal tx fifo length
                                               // 0 if undefined
     u16                         tx_fifo_len;  // estimates char count in neuron internal tx fifo
@@ -126,6 +125,20 @@ struct neuronspi_port
 
 	s32							baud;
     s64                         one_char_nsec;
+
+    spinlock_t                  rx_in_progress_lock;
+    int                         rx_in_progress;
+    struct neuronspi_op_buffer  rx_send_buf;
+    struct neuronspi_op_buffer  rx_recv_buf;
+    u8                          rx_send_msg[NEURONSPI_FIFO_SIZE+4];
+    u8                          rx_recv_msg[NEURONSPI_FIFO_SIZE+4];
+
+    spinlock_t                  txop_lock;
+    int                         pending_txop;
+    struct neuronspi_op_buffer  tx_send_buf;
+    struct neuronspi_op_buffer  tx_recv_buf;
+    u8                          tx_send_msg[NEURONSPI_FIFO_SIZE+4];
+    u8                          tx_recv_msg[NEURONSPI_FIFO_SIZE+4];
 };
 
 struct neuronspi_uart_data
@@ -164,6 +177,9 @@ struct neuronspi_driver_data
 	u16 sysfs_regmap_target;
 	u16 sysfs_register_target;
 	u16 sysfs_counter_target;
+    
+    //struct neuronspi_op_buffer  idle_recv_buf;
+    cycles_t last_cs_cycles;
 };
 
 

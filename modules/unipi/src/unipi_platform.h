@@ -171,6 +171,8 @@ struct neuronspi_board_device_data {
 #define NEURONSPI_BOARD_UPPER_U14DI_ID		3
 #define NEURONSPI_BOARD_UPPER_P6DI5RO_ID	4
 #define NEURONSPI_BOARD_UPPER_U6DI5RO_ID	5
+#define NEURONSPI_BOARD_UPPER_P4DI5RO_ID	6
+#define NEURONSPI_BOARD_UPPER_U4DI5RO_ID	7
 
 // Register function codes
 // Digital Input Functions
@@ -291,6 +293,8 @@ extern struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOP6DI5RO_HW_COMB
 extern struct neuronspi_board_combination NEURONSPI_BOARD_B485_HW_COMBINATION[];				// B-485
 extern struct neuronspi_board_combination NEURONSPI_BOARD_E4LIGHT_HW_COMBINATION[];				// E-4Light (M613)
 extern struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_COMBINATION[];		// E-4Ai4Ao_U-6Di5Ro (L503)
+extern struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_COMBINATION[];		// E-4Ai4Ao_P-4Di5Ro (xS5?)
+extern struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_COMBINATION[];		// E-4Ai4Ao_U-4Di5Ro (L5?3)
 
 // Model Definitions
 #define NEURONSPI_MODEL_S103_HW_DEFINITION_BOARD_SIZE 1
@@ -351,7 +355,7 @@ extern struct neuronspi_board_combination NEURONSPI_MODEL_L205_HW_DEFINITION_BOA
 extern struct neuronspi_board_combination NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD_SIZE];
 
 // Board table
-#define NEURONSPI_BOARDTABLE_LEN		16
+#define NEURONSPI_BOARDTABLE_LEN		18
 extern struct neuronspi_board_entry NEURONSPI_BOARDTABLE[];
 
 // Module table

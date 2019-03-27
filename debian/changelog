@@ -1,3 +1,9 @@
+unipi-kernel-modules (1.21) unstable; urgency=medium
+
+  * rework spi to use async calling and RT kthread
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 27 Mar 2019 16:43:52 +0100
+
 unipi-kernel-modules (1.20) unstable; urgency=medium
 
   * fix line discipline setting on standard uarts
