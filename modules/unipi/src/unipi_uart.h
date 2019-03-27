@@ -33,6 +33,9 @@
 
 int neuronspi_rx_queue_add(struct neuronspi_port *port, u8 data);
 void neuronspi_rx_queue_swap(struct neuronspi_port *port);
+void neuronspi_uart_handle_rx(struct neuronspi_port *port, int rxlen, u8* pbuf);
+void unipi_uart_handle_tx(struct neuronspi_port *port, int calling);
+
 
 int neuronspi_uart_driver_init(void);
 int neuronspi_uart_driver_exit(void);

@@ -26,29 +26,68 @@
  * NOTE: This function uses 64-bit fixed-point arithmetic,
  * which necessitates using the do_div macro to avoid unnecessary long/long division.
  */
+ 
+/*
+ * Convert float32 (low_val:hight_val) to integer value / divider. 
+ *   optionaly multiply value by factor
+*/
+void float2int_with_divider(u16 low_val, u16 high_val, int factor, int* value, int* divider)
+{
+        int exponent;
+        //int i, mask;
+        int preshift = 0;
+        s64 tmp;
+        // exponent can be [-127 .. 128], exp=0 means value in (1 .. 1.999999)
+        // mantisa has 24 bit
+        
+        // calc log2(factor)
+        if (factor > 1) {
+            for (preshift = 30; preshift > 0; preshift--) {
+                if (factor & (1 << preshift)) {
+                    if (factor != (1 << preshift)) preshift++;
+                    break;
+                }
+            }
+        }
+        exponent = (int)((high_val >> 7) & 0xff) - 127 + preshift;
+        if (exponent > 23) { 
+            // value > 16M
+            *value = 1 << 24;
+            *divider = 1;
+        } else if (exponent < -23) {
+            // value is almost zero, set value to 0
+            *value = 0;
+            *divider = 1;
+        } else {
+            *value = (1 << 23) | ((high_val & 0x7f) << 16) | low_val;
+            if ((23 - exponent) < 30) {
+                // shift divider into right position
+                *divider = 1 << (23 - exponent);
+            } else {
+                // set max divider and shift value
+                *divider = 1 << 30;
+                *value = *value >> ((23 - exponent) - 30);
+            }
+            if (preshift) {
+                tmp = *value;
+                *value = (tmp * factor) >> preshift;
+            }
+        }
+        // check and set sign of value
+        if (high_val & 0x8000) *value = -(*value);
+}
+
 void neuronspi_spi_iio_sec_ai_read_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
 {
 	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	u32 sec_ai_val_l = 0;
-	u32 sec_ai_val_h = 0;
-	u32 sec_ai_val_m = 0;
-	u8 sec_ai_exp = 0;
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
-	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
-	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
+	u32 float_l;
+	u32 float_h;
 
-	*val = sec_ai_val_m | 0x00010000;
-	if (142 - ((int)sec_ai_exp) <= 0) {
-		*val = (*val << (((int)sec_ai_exp) - 142)) * 1000;
-		*val2 = 1;
-	} else {
-		*val = *val * 1000;
-		*val2 = 2 << (142 - sec_ai_exp);
-	}
-
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &float_l);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index) + 1, &float_h);
+        float2int_with_divider(float_l, float_h, 1000, val, val2);
 }
 
 void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
@@ -56,22 +95,12 @@ void neuronspi_spi_iio_sec_ai_read_current(struct iio_dev *indio_dev, struct iio
 	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	u32 sec_ai_val_l = 0;
-	u32 sec_ai_val_h = 0;
-	u32 sec_ai_val_m = 0;
-	u8 sec_ai_exp = 0;
+	u32 float_l;
+	u32 float_h;
 
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
-	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
-	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
-	*val = sec_ai_val_m | 0x00010000;
-	if (142 - ((int)sec_ai_exp) <= 0) {
-		*val2 = 1;
-		*val = *val << (((int)sec_ai_exp) - 142);
-	} else {
-		*val2 = 2 << (142 - sec_ai_exp);
-	}
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &float_l);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index) + 1, &float_h);
+        float2int_with_divider(float_l, float_h, 1, val, val2);
 }
 
 void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
@@ -79,21 +108,12 @@ void neuronspi_spi_iio_sec_ai_read_resistance(struct iio_dev *indio_dev, struct 
 	struct neuronspi_analog_data *ai_data = iio_priv(indio_dev);
 	struct spi_device *spi = ai_data->parent;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-	u32 sec_ai_val_l = 0;
-	u32 sec_ai_val_h = 0;
-	u32 sec_ai_val_m = 0;
-	u8 sec_ai_exp = 0;
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + 1 + (2 * ai_data->index), &sec_ai_val_h);
-	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &sec_ai_val_l);
-	sec_ai_val_m = ((((u32)sec_ai_val_h) << 25) | (((u32)sec_ai_val_l) << 9)) >> 16;
-	sec_ai_exp = (sec_ai_val_h & 0x7F80) >> 7;
-	*val = sec_ai_val_m | 0x00010000;
-	if (142 - ((int)sec_ai_exp) <= 0) {
-		*val2 = 1;
-		*val = *val << (((int)sec_ai_exp) - 142);
-	} else {
-		*val2 = 2 << (142 - sec_ai_exp);
-	}
+	u32 float_l;
+	u32 float_h;
+
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index), &float_l);
+	regmap_read(n_spi->reg_map, n_spi->regstart_table->sec_ai_val_reg + (2 * ai_data->index) + 1, &float_h);
+        float2int_with_divider(float_l, float_h, 1, val, val2);
 }
 
 void neuronspi_spi_iio_sec_ao_set_voltage(struct iio_dev *indio_dev, struct iio_chan_spec const *chan, int val, int val2, long mask)
@@ -404,26 +424,34 @@ int neuronspi_iio_sec_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_sp
  *****************************************************************/ 
 static const struct iio_info neuronspi_stm_ai_info = {
 	.read_raw = neuronspi_iio_stm_ai_read_raw,
+#ifdef UNIPI_USE_DRIVER_MODULE
 	.driver_module = THIS_MODULE,
+#endif
 	.attrs = &neuron_stm_ai_group,
 };
 
 static const struct iio_info neuronspi_stm_ao_info = {
 	.read_raw = neuronspi_iio_stm_ao_read_raw,
 	.write_raw = neuronspi_iio_stm_ao_write_raw,
+#ifdef UNIPI_USE_DRIVER_MODULE
 	.driver_module = THIS_MODULE,
+#endif
 	.attrs = &neuron_stm_ao_group,
 };
 
 static const struct iio_info neuronspi_sec_ai_info = {
 	.read_raw = neuronspi_iio_sec_ai_read_raw,
+#ifdef UNIPI_USE_DRIVER_MODULE
 	.driver_module = THIS_MODULE,
+#endif
 	.attrs = &neuron_sec_ai_group,
 };
 
 static const struct iio_info neuronspi_sec_ao_info = {
 	.write_raw = neuronspi_iio_sec_ao_write_raw,
+#ifdef UNIPI_USE_DRIVER_MODULE
 	.driver_module = THIS_MODULE,
+#endif
 	.read_raw = neuronspi_iio_sec_ao_read_raw,
 	//.attrs = &neuron_sec_ao_group,
 };
