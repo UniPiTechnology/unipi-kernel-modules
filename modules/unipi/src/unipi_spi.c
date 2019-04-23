@@ -1187,8 +1187,8 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     u16 hardware_model, lower_board;
     u8  upper_board = 0;
     const char *board_name = name_unknown;
-    u32 probe_always_succeeds;
-	u32 always_create_uart;
+    u32 probe_always_succeeds = 0;
+	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
 	struct sched_param rt_param = { .sched_priority = MAX_RT_PRIO - 1 };
 

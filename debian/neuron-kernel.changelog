@@ -1,3 +1,15 @@
+unipi-kernel-modules (1.22.1.20190215-1) unstable; urgency=medium
+
+  * Compiled for raspberrypi-kernel 1.20190215-1
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 27 Mar 2019 16:54:40 +0100
+
+unipi-kernel-modules (1.22) UNRELEASED; urgency=medium
+
+  * fix float to int convertor in unipi_iio
+
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 27 Mar 2019 16:45:22 +0100
+
 unipi-kernel-modules (1.21.1.20190215-1) unstable; urgency=medium
 
   * Compiled for raspberrypi-kernel 1.20190215-1
