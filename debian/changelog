@@ -1,8 +1,8 @@
-unipi-kernel-modules (1.22) UNRELEASED; urgency=medium
+unipi-kernel-modules (1.22) unstable; urgency=medium
 
   * fix float to int convertor in unipi_iio
 
- -- Miroslav Ondra <bokula@bokula.faster.cz>  Wed, 27 Mar 2019 16:45:22 +0100
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Mon, 29 Apr 2019 10:24:33 +0200
 
 unipi-kernel-modules (1.21) unstable; urgency=medium
 
