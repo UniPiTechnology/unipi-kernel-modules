@@ -15,6 +15,8 @@ all:
 		cd ${MODULES_DIR_PATH}$$m; make all;\
 		done
 
+modules_install: install ;
+
 install: 
 	for m in ${MODULES_LIST}; do\
 		cd ${MODULES_DIR_PATH}$$m; make modules_install INSTALL_MOD_PATH=${DESTDIR};\

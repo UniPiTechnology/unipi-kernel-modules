@@ -47,10 +47,10 @@ TARGET_PLC_PATH = tomunipi:
 default: all ;
 
 all: 
-	make ARCH=arm CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules
+	make ARCH=${ARCH} CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules
 
 modules_install: 
-	make ARCH=arm CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules_install
+	make ARCH=${ARCH} CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules_install
 
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd
