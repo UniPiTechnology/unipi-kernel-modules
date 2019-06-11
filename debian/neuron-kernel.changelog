@@ -2,7 +2,7 @@ unipi-kernel-modules (1.22.1.20190401-1) unstable; urgency=medium
 
   * Compiled for raspberrypi-kernel 1.20190401-1
 
- -- Miroslav Ondra <bokula@bokula.faster.cz>  Tue, 23 Apr 2019 10:13:19 +0200
+ -- Miroslav Ondra <bokula@bokula.faster.cz>  Mon, 29 Apr 2019 10:25:58 +0200
 
 unipi-kernel-modules (1.22.1.20190215-1) unstable; urgency=medium
 
