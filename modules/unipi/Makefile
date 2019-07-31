@@ -2,8 +2,16 @@
 # filesystems (notably VirtualBox vmfs); therefore we allow using /run/ through the 'symlink' target,
 # if necessary.
  
+LINUX_DIR_PATH = /lib/modules/$(shell uname -r)/build
+ifdef CCPREFIX
+    CCPAR = CROSS_COMPILE=${CCPREFIX}
+endif
+ifdef ARCH
+    CCPAR += ARCH=${ARCH}
+endif
+
 SYMLINK_DIR_PATH = /run/kernel/unipi_spi
-LINUX_DIR_PATH = /root/linux/4_9_14/linux/
+
 SRC_DIR_PATH = $(PWD)/src
 BIN_DIR_PATH = $(PWD)/bin
 
@@ -47,10 +55,10 @@ TARGET_PLC_PATH = tomunipi:
 default: all ;
 
 all: 
-	make ARCH=${ARCH} CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules
+	make $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
 
 modules_install: 
-	make ARCH=${ARCH} CROSS_COMPILE=${CCPREFIX} -C ${LINUX_DIR_PATH} M=${PWD} modules_install
+	make $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
 
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd
