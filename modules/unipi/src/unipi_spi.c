@@ -121,7 +121,9 @@ static struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
     u16 unipi_spi_master_flag = 0;
     void (*unipi_spi_master_set_cs)(struct spi_device *spi, bool enable) = NULL;
     //cycles_t unipi_spi_cs_cycles;
+#if 0
 	static struct cpufreq_policy * current_policy = NULL;
+#endif
 
 static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
 {
@@ -138,6 +140,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
             udelay(NEURONSPI_LAST_TRANSFER_DELAY - udelta);
         }
     }
+#if 0
 	//current_policy = cpufreq_cpu_get_raw(task_cpu(current));
 	current_policy = cpufreq_cpu_get_raw(0);
 	if (current_policy && !enable) {
@@ -153,7 +156,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
         current_policy->transition_task = current;
         spin_unlock(&current_policy->transition_lock);
 	}
-
+#endif
 	if (gpio_is_valid(-spi->cs_gpio)) {
 		gpio_set_value(-spi->cs_gpio, enable);
         if ((unipi_spi_master_set_cs != NULL)  &&
@@ -165,13 +168,13 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
             unipi_spi_master_set_cs(spi, enable);
     }
     if (d_data) d_data->last_cs_cycles = cs_cycles;
-             
+#if 0             
 	if (current_policy && enable) {
         current_policy->transition_ongoing = false;
         current_policy->transition_task = NULL;
         wake_up(&current_policy->transition_wait);     
 	}
-
+#endif
 }
 
 
