@@ -7,12 +7,8 @@ image: $CI_REGISTRY/docker/bob-the-builder:latest
 # more up to date, since the packages can receive updates from the moment
 # when the builder image has been generated
 before_script:
-    - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
     - apt-get update
     - apt-get install -y dh-virtualenv dpkg-dev dh-exec build-essential fakeroot git 
-    - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
-    - apt-get update
-    - apt-get install -y raspberrypi-kernel-headers dkms
 stages:
     - build_package
     - deploy_packages
@@ -27,6 +23,11 @@ build_from_test_on_rpi:
     tags:
         - armhf
     script:
+        - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
+        - apt-get update
+        - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
+        - apt-get update
+        - apt-get install -y raspberrypi-kernel-headers dkms
         - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
     artifacts:
         paths:
@@ -52,6 +53,11 @@ build_from_tagged_master_on_rpi:
     tags:
         - armhf
     script:
+        - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
+        - apt-get update
+        - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
+        - apt-get update
+        - apt-get install -y raspberrypi-kernel-headers dkms
         - /ci-scripts/build-package-for-master.sh unipi-kernel-modules
     artifacts:
         paths:
