@@ -43,7 +43,7 @@ override_dh_prep:
 	@dh_prep --exclude=neuron-kernel.substvars
 	@echo RPI-FIRMWARE-VER=${RPI_FIRMWARE_VER} >> debian/neuron-kernel.substvars
 	@sed "s/#MOD_VERSION#/$(MOD_VERSION)/g" debian/unipi-kernel-modules-dkms.install.in > debian/unipi-kernel-modules-dkms.install
-	( sed 's/)/-${RPI_FIRMWARE_VER})/;q' debian/changelog; \
+	( sed 's/)/.${RPI_FIRMWARE_VER})/;q' debian/changelog; \
 	  printf "\n  * Compiled for raspberrypi-kernel\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
 	  cat debian/changelog;\
