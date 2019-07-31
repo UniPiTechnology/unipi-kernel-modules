@@ -23,11 +23,7 @@ build_from_test_on_rpi:
     tags:
         - armhf
     script:
-        - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
-        - apt-get update
-        - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
-        - apt-get update
-        - apt-get install -y raspberrypi-kernel-headers dkms
+        - apt-get install -y raspberrypi-kernel-headers
         - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
     artifacts:
         paths:
@@ -53,11 +49,7 @@ build_from_tagged_master_on_rpi:
     tags:
         - armhf
     script:
-        - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
-        - apt-get update
-        - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
-        - apt-get update
-        - apt-get install -y raspberrypi-kernel-headers dkms
+        - apt-get install -y raspberrypi-kernel-headers
         - /ci-scripts/build-package-for-master.sh unipi-kernel-modules
     artifacts:
         paths:
