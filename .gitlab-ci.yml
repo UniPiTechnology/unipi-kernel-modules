@@ -27,7 +27,7 @@ build_from_test_on_rpi:
     tags:
         - armhf
     script:
-        - /ci-scripts/build-package-for-test.sh unipi-modbus-tools
+        - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
     artifacts:
         paths:
             - build/*deb
@@ -52,7 +52,7 @@ build_from_tagged_master_on_rpi:
     tags:
         - armhf
     script:
-        - /ci-scripts/build-package-for-master.sh unipi-modbus-tools
+        - /ci-scripts/build-package-for-master.sh unipi-kernel-modules
     artifacts:
         paths:
             - build/*deb
