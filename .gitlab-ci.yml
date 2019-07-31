@@ -1,0 +1,68 @@
+# use the prepared docker image
+# any dependencies - packages, etc - should be added to the definition
+# of the builder image for speeding up the pipeline
+image: $CI_REGISTRY/docker/bob-the-builder:latest
+# even when the image will be prepared, it is good to put the build
+# dependencies here for documentation purposes and making the dependencies
+# more up to date, since the packages can receive updates from the moment
+# when the builder image has been generated
+before_script:
+    - echo 'deb http://archive.raspberrypi.org/debian/ stretch main' > /etc/apt/sources.list.d/raspi.list
+    - apt-get update
+    - apt-get install -y dh-virtualenv dpkg-dev dh-exec build-essential fakeroot git 
+    - apt-get install --allow-unauthenticated -y raspberrypi-archive-keyring
+    - apt-get update
+    - apt-get install -y raspberrypi-kernel-headers dkms
+stages:
+    - build_package
+    - deploy_packages
+# builds package upon each commit to the test branch
+# the version is taken from the commit date and time in format YYMMDDHHMMSS
+build_from_test_on_rpi:
+    stage: build_package
+    only:
+        - test
+    except:
+        - tags
+    tags:
+        - armhf
+    script:
+        - /ci-scripts/build-package-for-test.sh unipi-modbus-tools
+    artifacts:
+        paths:
+            - build/*deb
+            - debian/changelog
+deploy_package_from_test:
+    stage: deploy_packages
+    only:
+        - test
+    except:
+        - tags
+    script:
+        - /ci-scripts/push-tags.sh
+        - /ci-scripts/deploy-testing-packages.sh
+# build upon each pushed tag to the master branch
+# the version is taken from the tag name
+build_from_tagged_master_on_rpi:
+    stage: build_package
+    only:
+        - tags
+    except:
+        - /\.test\./
+    tags:
+        - armhf
+    script:
+        - /ci-scripts/build-package-for-master.sh unipi-modbus-tools
+    artifacts:
+        paths:
+            - build/*deb
+            - debian/changelog
+# deploy the packages to the repository
+deploy_package_from_tagged_master:
+    stage: deploy_packages
+    only:
+        - tags
+    except:
+        - /\.test\./
+    script:
+        - /ci-scripts/deploy-master-packages.sh
