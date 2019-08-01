@@ -65,12 +65,12 @@ build_from_schedule_on_rpi:
     tags:
         - armhf
     script:
-        - echo 'deb https://repo.unipi.technology/debian testing main' > /etc/apt/sources.list.d/unipi.list
+        - echo "deb https://repo.unipi.technology/debian testing main" > /etc/apt/sources.list.d/unipi.list
         - wget https://repo.unipi.technology/debian/unipi_pub.gpg -O - | apt-key add -
         - apt-get update
         - NEURON_KERNEL=`apt-cache show --no-all-versions neuron-kernel | sed -n 's/^Depends: .*raspberrypi-kernel (= \([^)]*\).*$/\1/p'`
         - RPI_KERNEL=`apt-cache show --no-all-versions raspberrypi-kernel | sed -n 's/^Version: //p'`
-        - echo ${NEURON_KERNEL} ?? ${RPI_KERNEL}
+        - echo "${NEURON_KERNEL} ?? ${RPI_KERNEL}"
     artifacts:
         paths:
             - build/*deb
