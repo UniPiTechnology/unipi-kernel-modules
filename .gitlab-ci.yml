@@ -8,7 +8,7 @@ image: $CI_REGISTRY/docker/bob-the-builder:latest
 # when the builder image has been generated
 before_script:
     - apt-get update
-    - apt-get install -y dh-virtualenv dpkg-dev dh-exec build-essential fakeroot git 
+    - apt-get install -y dh-virtualenv dpkg-dev dh-exec build-essential fakeroot git dkms
 stages:
     - build_package
     - deploy_packages
@@ -24,6 +24,21 @@ build_from_test_on_rpi:
         - armhf
     script:
         - apt-get install -y raspberrypi-kernel-headers
+        - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
+    artifacts:
+        paths:
+            - build/*deb
+            - debian/changelog
+build_from_test_on_nano:
+    stage: build_package
+    only:
+        - test
+    except:
+        - tags
+    tags:
+        - arm64
+    script:
+        - apt-get install -y axon-kernel-headers
         - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
     artifacts:
         paths:
