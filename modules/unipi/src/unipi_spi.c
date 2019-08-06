@@ -1136,7 +1136,7 @@ void neuronspi_irq_proc(struct kthread_work *ws)
 static enum hrtimer_restart neuronspi_poll_timer_func(struct hrtimer *timer)
 {
     struct neuronspi_driver_data* n_spi = ((container_of((timer), struct neuronspi_driver_data, poll_timer)));
-    struct spi_device *spi = neuronspi_s_dev [n_spi->neuron_index];
+    //struct spi_device *spi = neuronspi_s_dev [n_spi->neuron_index];
     
 	unipi_spi_trace_1(KERN_INFO "UNIPISPI: nspi%d POLL IRQ\n", n_spi->neuron_index);
 	kthread_queue_work(n_spi->primary_worker, &n_spi->irq_work);
