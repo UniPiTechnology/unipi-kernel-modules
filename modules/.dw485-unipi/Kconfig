@@ -1,0 +1,21 @@
+#
+# The 8250/16550 serial drivers.  You shouldn't be in this list unless
+# you somehow have an implicit or explicit dependency on SERIAL_8250.
+#
+
+config SERIAL_8250_DW_UNIPI
+	tristate "Support for Synopsys DesignWare 8250 in 485 mode on UniPi "
+	depends on SERIAL_8250
+	help
+	  Selecting this option will enable handling of 485 ports on UniPi
+	  controllers .
+
+
+#config RXTX_LED_TRIG
+#       bool "RXTX Serial LED Triggers"
+#       depends on LEDS_CLASS && LEDS_TRIGGERS
+#       help
+#         This option adds LED triggers for RX/TX serial activity.
+#
+#         Say Y here if you are working on a system with led-class supported
+#         LEDs and you want to use them as activity indicators for serial port.
