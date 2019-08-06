@@ -673,7 +673,7 @@ read_rtc:
 		.priv = rtc_unipi,
 	    };
 
-	    ds1307->rtc->nvram_old_abi = true;
+	    rtc_unipi->rtc->nvram_old_abi = true;
 	    rtc_nvmem_register(ds1307->rtc, &nvmem_cfg);
 
 #endif
