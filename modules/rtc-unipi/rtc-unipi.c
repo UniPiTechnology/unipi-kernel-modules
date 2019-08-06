@@ -27,6 +27,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/clk-provider.h>
 #include <linux/regmap.h>
+#include <linux/version.h>
 
 
 /* RTC registers don't differ much, except for the century flag */
@@ -648,6 +649,7 @@ read_rtc:
 		}
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
 	/*if (chip->nvram_size) {*/
 		rtc_unipi->nvmem_cfg.name = "rtc_unipi_nvram";
 		rtc_unipi->nvmem_cfg.word_size = 1;
@@ -660,7 +662,21 @@ read_rtc:
 		rtc_unipi->rtc->nvmem_config = &rtc_unipi->nvmem_cfg;
 		rtc_unipi->rtc->nvram_old_abi = true;
 	/*}*/
+#else
+	    struct nvmem_config nvmem_cfg = {
+		.name = "rtc_unipi_nvram",
+		.word_size = 1,
+		.stride = 1,
+		.size = MCP794XX_NVRAM_SIZE,
+		.reg_read = rtc_unipi_nvram_read,
+		.reg_write = rtc_unipi_nvram_write,
+		.priv = rtc_unipi,
+	    };
 
+	    ds1307->rtc->nvram_old_abi = true;
+	    rtc_nvmem_register(ds1307->rtc, &nvmem_cfg);
+
+#endif
 	rtc_unipi->rtc->ops = &mcp794xx_rtc_ops; /*chip->rtc_ops ?: &ds13xx_rtc_ops;*/
 	err = rtc_register_device(rtc_unipi->rtc);
 	if (err)
