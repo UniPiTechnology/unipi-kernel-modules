@@ -38,6 +38,10 @@ build_from_test_on_nano:
     tags:
         - arm64
     script:
+        - apt-get install -y apt-transport-https
+        - echo 'deb https://repo.unipi.technology/debian stretch main' > /etc/apt/sources.list.d/unipi.list
+        - wget https://repo.unipi.technology/debian/unipi_pub.gpg -O - | apt-key add -
+        - apt-get update
         - apt-get install -y axon-kernel-headers
         - /ci-scripts/build-package-for-test.sh unipi-kernel-modules
     artifacts:
