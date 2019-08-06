@@ -674,7 +674,7 @@ read_rtc:
 	    };
 
 	    rtc_unipi->rtc->nvram_old_abi = true;
-	    rtc_nvmem_register(ds1307->rtc, &nvmem_cfg);
+	    rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
 
 #endif
 	rtc_unipi->rtc->ops = &mcp794xx_rtc_ops; /*chip->rtc_ops ?: &ds13xx_rtc_ops;*/
