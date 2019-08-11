@@ -24,14 +24,14 @@ job-build-stretch:nano:
 
 job-build-buster:rpi:
     extends: .build_for_buster
-    tags: ['arm64']
+    tags: ['armhf']
     #before_script: 
     #    - apt-get update
     #    - apt-get install -y raspberrypi-kernel-headers
 
 job-build-stretch:rpi:
     extends: .build_for_stretch
-    tags: ['arm64']
+    tags: ['armhf']
     #before_script: 
     #    - apt-get update
     #    - apt-get install -y raspberrypi-kernel-headers
