@@ -1,3 +1,4 @@
+debian/unipi-kernel-modules.changelog
 debian/neuron-kernel.install
 debian/unipi-kernel-modules-dkms.install
 debian/neuron-kernel.substvars

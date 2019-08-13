@@ -121,7 +121,9 @@ static struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
     u16 unipi_spi_master_flag = 0;
     void (*unipi_spi_master_set_cs)(struct spi_device *spi, bool enable) = NULL;
     //cycles_t unipi_spi_cs_cycles;
+#ifdef USE_UNIPI_CPUFREQ_PATCH
 	static struct cpufreq_policy * current_policy = NULL;
+#endif
 
 static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
 {
@@ -138,6 +140,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
             udelay(NEURONSPI_LAST_TRANSFER_DELAY - udelta);
         }
     }
+#ifdef USE_UNIPI_CPUFREQ_PATCH
 	//current_policy = cpufreq_cpu_get_raw(task_cpu(current));
 	current_policy = cpufreq_cpu_get_raw(0);
 	if (current_policy && !enable) {
@@ -153,7 +156,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
         current_policy->transition_task = current;
         spin_unlock(&current_policy->transition_lock);
 	}
-
+#endif
 	if (gpio_is_valid(-spi->cs_gpio)) {
 		gpio_set_value(-spi->cs_gpio, enable);
         if ((unipi_spi_master_set_cs != NULL)  &&
@@ -165,13 +168,13 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
             unipi_spi_master_set_cs(spi, enable);
     }
     if (d_data) d_data->last_cs_cycles = cs_cycles;
-             
+#ifdef USE_UNIPI_CPUFREQ_PATCH             
 	if (current_policy && enable) {
         current_policy->transition_ongoing = false;
         current_policy->transition_task = NULL;
         wake_up(&current_policy->transition_wait);     
 	}
-
+#endif
 }
 
 
@@ -1133,7 +1136,7 @@ void neuronspi_irq_proc(struct kthread_work *ws)
 static enum hrtimer_restart neuronspi_poll_timer_func(struct hrtimer *timer)
 {
     struct neuronspi_driver_data* n_spi = ((container_of((timer), struct neuronspi_driver_data, poll_timer)));
-    struct spi_device *spi = neuronspi_s_dev [n_spi->neuron_index];
+    //struct spi_device *spi = neuronspi_s_dev [n_spi->neuron_index];
     
 	unipi_spi_trace_1(KERN_INFO "UNIPISPI: nspi%d POLL IRQ\n", n_spi->neuron_index);
 	kthread_queue_work(n_spi->primary_worker, &n_spi->irq_work);
