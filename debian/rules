@@ -12,24 +12,32 @@
 #export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
 # package maintainers to append LDFLAGS
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+export DEB_LDFLAGS_SET = -zrelro
 
 MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
 
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
-
 RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
-LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
+LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p'|head -1)
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
-
 else
-
 .raspbian-versions:
 	misc/check-raspbian
 
 include ./.raspbian-versions
 LINUX_DIR_PATH = ${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
-
 endif
+endif
+
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+AXON_KERNEL_VER = $(shell dpkg-query -f='$${Version}' -W axon-kernel-headers)
+#AXON_KERNEL_VER = 4.14.111
+LINUX_DIR_PATH = $(shell dpkg -L axon-kernel-headers | sed -n '/^\/lib\/modules\/.*\/build$$/p')
+#LINUX_DIR_PATH = '/lib/modules/4.14.111/build'
+KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
+endif
+
 
 %:
 	dh $@ --with dkms
@@ -38,35 +46,58 @@ endif
 override_dh_installmodules:
 	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
 
-
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_prep:
 	@dh_prep --exclude=neuron-kernel.substvars
 	@echo RPI-FIRMWARE-VER=${RPI_FIRMWARE_VER} >> debian/neuron-kernel.substvars
-	@sed "s/#MOD_VERSION#/$(MOD_VERSION)/g" debian/unipi-kernel-modules-dkms.install.in > debian/unipi-kernel-modules-dkms.install
 	( sed 's/)/.${RPI_FIRMWARE_VER})/;q' debian/changelog; \
 	  printf "\n  * Compiled for raspberrypi-kernel\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
 	  cat debian/changelog;\
 	) >debian/neuron-kernel.changelog
+endif 
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+override_dh_prep:
+	@dh_prep --exclude=unipi-kernel-modules.substvars
+	@echo AXON-KERNEL-VER=${AXON_KERNEL_VER} > debian/unipi-kernel-modules.substvars
+	( sed 's/)/.${AXON_KERNEL_VER})/;q' debian/changelog; \
+	  printf "\n  * Compiled for axon-kernel-image\n";\
+	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
+	  cat debian/changelog;\
+	) >debian/unipi-kernel-modules.changelog
+endif
 
+#ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
 override_dh_dkms:
 	dh_dkms -V $(MOD_VERSION)
+	make dkms DESTDIR=$(PWD)/debian//unipi-kernel-modules-dkms/usr/src/unipi-$(MOD_VERSION)
+#endif
 
 #override_dh_build:
 
 ifneq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_auto_configure:
 	misc/check-raspbian
 	misc/current
+endif
 endif
 
 override_dh_auto_build:
 	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
 		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
 
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/unipi-kernel-modules -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
+endif
+
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/neuron-kernel -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
 		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
+endif
 
 
 #override_dh_gencontrol:

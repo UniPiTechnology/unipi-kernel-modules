@@ -5,6 +5,7 @@
 *.rc
 */*/bin/*
 !*/*/bin/.dummy
+/tmp/
 modules/unipi/tmp*
 modules/unipi/.tmp_versions
 modules/unipi/unipi.mod.c

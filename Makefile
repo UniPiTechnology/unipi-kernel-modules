@@ -3,8 +3,7 @@
 # if necessary.
  
 MODULES_DIR_PATH = ${PWD}/modules/
-MODULES_LIST = unipi/
-TRANSFER_MODULE = unipi/
+MODULES_LIST = unipi/ rtc-unipi/
 
 .PHONY: default
 #default: symlink ;
@@ -22,15 +21,13 @@ install:
 		cd ${MODULES_DIR_PATH}$$m; make modules_install INSTALL_MOD_PATH=${DESTDIR};\
 		done
 
+dkms:
+	for m in ${MODULES_LIST}; do\
+		cd ${MODULES_DIR_PATH}$$m; make dkms INSTALL_MOD_PATH=${DESTDIR}/$$m;\
+		done
+
 clean: 
 	for m in ${MODULES_LIST}; do\
 		cd ${MODULES_DIR_PATH}$$m; make clean;\
 		done
 
-transfer:
-	cd ${MODULES_DIR_PATH}${TRANSFER_MODULE}; make transfer;
-	
-symlink:
-	for m in ${MODULES_LIST}; do\
-		cd ${MODULES_DIR_PATH}$$m; make symlink;\
-		done
