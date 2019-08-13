@@ -19,7 +19,7 @@ MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
 RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
-LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
+LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p'|head -1)
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 else
 .raspbian-versions:
