@@ -64,7 +64,14 @@
 #define NEURONSPI_B_PER_WORD 			8
 #define NEURONSPI_DEFAULT_FREQ			600000
 #define NEURONSPI_COMMON_FREQ			12000000
-#define NEURONSPI_SLOWER_FREQ			7500000
+
+#if defined(CONFIG_ARM64)
+/* on NanoPi there are only 12MHz and 6MHz available, not in between */
+   #define NEURONSPI_SLOWER_FREQ			6000000
+#else
+   #define NEURONSPI_SLOWER_FREQ			7500000
+#endif
+
 #define NEURONSPI_MAX_TX				60
 //#define NEURONSPI_MAX_TX				256
 #define NEURONSPI_MAX_BAUD				115200
