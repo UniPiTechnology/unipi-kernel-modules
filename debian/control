@@ -4,8 +4,8 @@ Priority: optional
 Maintainer: Miroslav Ondra <info@unipi.technology>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.9.8
-Homepage: <insert the upstream URL, if relevant>
-#Vcs-Git: https://anonscm.debian.org/collab-maint/neuron-kernel.git
+Homepage: https://www.unipi.technology/
+Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
 
 Package: neuron-kernel
 Architecture: armhf
