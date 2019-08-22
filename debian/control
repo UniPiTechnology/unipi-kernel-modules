@@ -15,7 +15,7 @@ Description: UniPi Neuron kernel modules
  raspberrypi-kernel from Raspbian distribution. 
 
 Package: unipi-kernel-modules-dkms
-Architecture: linux-all
+Architecture: all
 Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers(>= 4.0) | linux-headers(>=4.0)
 Depends: ${misc:Depends}, unipi-common, dkms
 Replaces: neuron-kernel
