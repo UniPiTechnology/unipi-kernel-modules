@@ -21,6 +21,10 @@ build-newstable:rpi:
     #    - apt-get update
     #    - apt-get install -y raspberrypi-kernel-headers
 
+build-newstable:all:
+    extends: .build_for_newstable
+    tags: ['amd64']
+
 build-stable:nano:
     extends: .build_for_stable
     tags: ['arm64']
@@ -35,6 +39,11 @@ build-stable:rpi:
     #    - apt-get update
     #    - apt-get install -y raspberrypi-kernel-headers
 
+build-stable:all:
+    extends: .build_for_stable
+    tags: ['amd64']
+
+
 build-oldstable:nano:
     extends: .build_for_oldstable
     tags: ['arm64']
@@ -48,6 +57,11 @@ build-oldstable:rpi:
     #before_script: 
     #    - apt-get update
     #    - apt-get install -y raspberrypi-kernel-headers
+
+build-oldstable:all:
+    extends: .build_for_oldstable
+    tags: ['amd64']
+
 
 deploy-test:
     extends: .deploy_test
