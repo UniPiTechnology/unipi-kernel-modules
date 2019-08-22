@@ -25,7 +25,7 @@ build-newstable:all:
     extends: .build_for_newstable
     tags: ['amd64']
     before_script: 
-        - RUN apt-get install -y dkms
+        - apt-get install -y dkms
 
 build-stable:nano:
     extends: .build_for_stable
@@ -45,7 +45,7 @@ build-stable:all:
     extends: .build_for_stable
     tags: ['amd64']
     before_script: 
-        - RUN apt-get install -y dkms
+        - apt-get install -y dkms
 
 
 build-oldstable:nano:
