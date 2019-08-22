@@ -83,9 +83,14 @@ override_dh_auto_configure:
 endif
 endif
 
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),amd64)
+override_dh_auto_build:
+	@echo "skip build"
+else
 override_dh_auto_build:
 	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
 		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
+endif
 
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
 override_dh_auto_install:
