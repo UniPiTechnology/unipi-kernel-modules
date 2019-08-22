@@ -16,10 +16,10 @@ Description: UniPi Neuron kernel modules
 
 Package: unipi-kernel-modules-dkms
 Architecture: all
-Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers(>= 4.0) | linux-headers(>=4.0)
+Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0)
 Depends: ${misc:Depends}, unipi-common, dkms
-Replaces: neuron-kernel
-Conflicts: neuron-kernel
+Replaces: neuron-kernel, unipi-kernel-modules
+Conflicts: neuron-kernel, unipi-kernel-modules
 Description: UniPi Neuron kernel modules - DKMS source
  This package contains source code of kernel module for spi protocol 
  used by internal boards in the UniPi Neuron/Axon controllers.
