@@ -64,7 +64,7 @@ build-oldstable:rpi:
 
 build-oldstable:all:
     extends: .build_for_oldstable
-    tags: ['amd64']
+    tags: ['arm64']
 
 
 deploy-test:
