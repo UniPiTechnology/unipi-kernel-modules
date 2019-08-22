@@ -64,7 +64,9 @@ build-oldstable:rpi:
 
 build-oldstable:all:
     extends: .build_for_oldstable
-    tags: ['arm64']
+    tags: ['amd64']
+    before_script: 
+        - apt-get install -y dkms
 
 
 deploy-test:
