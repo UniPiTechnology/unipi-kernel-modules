@@ -17,15 +17,7 @@ build-newstable:nano:
 build-newstable:rpi:
     extends: .build_for_newstable
     tags: ['armhf']
-    #before_script: 
-    #    - apt-get update
-    #    - apt-get install -y raspberrypi-kernel-headers
 
-build-newstable:all:
-    extends: .build_for_newstable
-    tags: ['amd64']
-    before_script: 
-        - apt-get install -y dkms
 
 build-stable:nano:
     extends: .build_for_stable
@@ -37,16 +29,13 @@ build-stable:nano:
 build-stable:rpi:
     extends: .build_for_stable
     tags: ['armhf']
-    #before_script: 
-    #    - apt-get update
-    #    - apt-get install -y raspberrypi-kernel-headers
 
+## this runs ony for stable - creates common packages
 build-stable:all:
     extends: .build_for_stable
     tags: ['amd64']
     before_script: 
         - apt-get install -y dkms
-
 
 build-oldstable:nano:
     extends: .build_for_oldstable
@@ -58,15 +47,6 @@ build-oldstable:nano:
 build-oldstable:rpi:
     extends: .build_for_oldstable
     tags: ['armhf']
-    #before_script: 
-    #    - apt-get update
-    #    - apt-get install -y raspberrypi-kernel-headers
-
-build-oldstable:all:
-    extends: .build_for_oldstable
-    tags: ['amd64']
-    before_script: 
-        - apt-get install -y dkms
 
 
 deploy-test:

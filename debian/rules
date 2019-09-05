@@ -70,7 +70,7 @@ endif
 #ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
 override_dh_dkms:
 	dh_dkms -V $(MOD_VERSION)
-	make dkms DESTDIR=$(PWD)/debian//unipi-kernel-modules-dkms/usr/src/unipi-$(MOD_VERSION)
+	make dkms DESTDIR=$(PWD)/debian/unipi-kernel-modules-dkms/usr/src/unipi-$(MOD_VERSION)
 #endif
 
 #override_dh_build:
