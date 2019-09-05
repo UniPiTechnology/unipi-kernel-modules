@@ -13,10 +13,14 @@ build-newstable:nano:
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
+    variables:
+        VERSION_SUFFIX: ""
 
 build-newstable:rpi:
     extends: .build_for_newstable
     tags: ['armhf']
+    variables:
+        VERSION_SUFFIX: ""
 
 
 build-stable:nano:
@@ -43,10 +47,14 @@ build-oldstable:nano:
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
+    variables:
+        VERSION_SUFFIX: ""
 
 build-oldstable:rpi:
     extends: .build_for_oldstable
     tags: ['armhf']
+    variables:
+        VERSION_SUFFIX: ""
 
 
 deploy-test:
