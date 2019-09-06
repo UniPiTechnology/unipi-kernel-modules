@@ -9,7 +9,7 @@ Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
 
 Package: neuron-kernel
 Architecture: armhf
-Depends: ${misc:Depends}, unipi-common, raspberrypi-kernel(=${RPI-FIRMWARE-VER})
+Depends: ${misc:Depends}, unipi-common, raspberrypi-kernel(=${PKG-KERNEL-VER})
 Description: UniPi Neuron kernel modules
  Binary kernel modules for UniPi Neuron controller. Compiled with
  raspberrypi-kernel from Raspbian distribution. 
@@ -28,7 +28,7 @@ Description: UniPi Neuron kernel modules - DKMS source
 
 Package: unipi-kernel-modules
 Architecture: arm64
-Depends: ${misc:Depends}, unipi-common, axon-kernel-image(=${AXON-KERNEL-VER})
+Depends: ${misc:Depends}, unipi-common, axon-kernel-image(=${PKG-KERNEL-VER})
 Description: UniPi Axon kernel modules
  Binary kernel modules for UniPi Axon controller. Compiled for axon-kernel-image 
  version. 
