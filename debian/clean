@@ -1,7 +1,12 @@
 debian/unipi-kernel-modules.changelog
 debian/neuron-kernel.install
 debian/unipi-kernel-modules-dkms.install
+debian/unipi-kernel-modules.substvars
+debian/unipi-kernel-modules.postinst.debhelper
+debian/unipi-kernel-modules.prerm.debhelper
+debian/unipi-kernel-modules.postrm.debhelper
 debian/neuron-kernel.substvars
 debian/neuron-kernel.postinst.debhelper 
 debian/neuron-kernel.postrm.debhelper
 debian/neuron-kernel/
+debian/unipi-kernel-modules/
