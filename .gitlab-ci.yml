@@ -6,6 +6,7 @@ include:
     project: docker/template
     file: debian-pkg.yaml
 
+
 ##############################################################
 ## set empty VERSION_SUFFIX; package names are concatenated with 
 ##      last kernel name, so they differs for distributions
