@@ -25,16 +25,14 @@
 
 int neuronspi_spi_gpio_di_get(struct spi_device* spi_dev, u32 id)
 {
-	u8 *recv_buf;
+	unsigned int recv_buf;
 	bool ret = 0;
 	u32 offset = id / 16;
 	struct neuronspi_driver_data *d_data = spi_get_drvdata(spi_dev);
-	recv_buf = kzalloc(4, GFP_ATOMIC);
-	regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, (void*)recv_buf);
-	if (*recv_buf & (0x1 << offset)) {
+	regmap_read(d_data->reg_map, d_data->regstart_table->di_val_reg + offset, &recv_buf);
+	if (recv_buf & (0x1 << (id % 16))) {
 		ret = 1;
 	}
-	kfree(recv_buf);
 	return ret;
 }
 
