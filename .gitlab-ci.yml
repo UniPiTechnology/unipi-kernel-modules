@@ -42,6 +42,9 @@ build-stable:all:
     tags: ['amd64']
     before_script: 
         - apt-get install -y dkms
+    except:
+        refs: [/\.test\./, pipeline]
+
 
 build-oldstable:nano:
     extends: .build_for_oldstable
