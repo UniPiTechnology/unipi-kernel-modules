@@ -1371,7 +1371,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     kthread_init_work(&(n_spi->irq_work), neuronspi_irq_proc); // prepare work function for interrupt status checking
 	if (!no_irq) {
 		n_spi->no_irq = 0;
-		ret = devm_request_irq(&(spi->dev), spi->irq, neuronspi_spi_irq, 0x81, dev_name(&(spi->dev)), spi);
+		//ret = devm_request_irq(&(spi->dev), spi->irq, neuronspi_spi_irq, 0x81, dev_name(&(spi->dev)), spi);
+		//ret = devm_request_irq(&(spi->dev), spi->irq, neuronspi_spi_irq, IRQF_TRIGGER_HIGH, dev_name(&(spi->dev)), spi);
+        // load setting of EDGE/LEVEL from devicetree
+		ret = devm_request_irq(&(spi->dev), spi->irq, neuronspi_spi_irq, 0, dev_name(&(spi->dev)), spi);
 		unipi_spi_trace(KERN_DEBUG "UNIPISPI: SPI IRQ %d registration: ret=%d\n", spi->irq, ret);
         no_irq = (ret !=0);
         ret = 0;

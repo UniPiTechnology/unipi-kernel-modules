@@ -6,7 +6,6 @@ include:
     project: docker/template
     file: debian-pkg.yaml
 
-
 ##############################################################
 ## set empty VERSION_SUFFIX; package names are concatenated with 
 ##      last kernel name, so they differs for distributions
@@ -48,7 +47,7 @@ build-stable:all:
     before_script: 
         - apt-get install -y dkms
     except:
-        refs: [/\.test\./, pipelines]
+        refs: [/\.test\./, triggers]
 
 
 build-oldstable:nano:
