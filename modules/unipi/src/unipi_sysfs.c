@@ -480,8 +480,7 @@ static ssize_t neuronspi_spi_gpio_di_show_value(struct device *dev, struct devic
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->di_count > n_di->io_index) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_val_reg + (n_di->io_index / 16), &val);
-		val &= 0x1 << (n_di->io_index % 15);
-		val = val >> (n_di->io_index % 15);
+		val = val & (0x1 << (n_di->io_index % 16)) ? 1:0;
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -498,8 +497,7 @@ static ssize_t neuronspi_spi_gpio_do_show_value(struct device *dev, struct devic
 	n_spi = spi_get_drvdata(n_do->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->io_index) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), &val);
-		val &= 0x1 << (n_do->io_index % 15);
-		val = val >> (n_do->io_index % 15);
+		val = val & (0x1 << (n_do->io_index % 16)) ? 1:0;
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -522,8 +520,8 @@ static ssize_t neuronspi_spi_gpio_do_store_value(struct device *dev, struct devi
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->do_count > n_do->io_index) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), &val);
-		val &= ~(0x1 << (n_do->io_index % 15));
-		val |= inp << (n_do->io_index % 15);
+		val &= ~(0x1 << (n_do->io_index % 16));
+		val |= inp << (n_do->io_index % 16);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->do_val_reg + (n_do->io_index / 16), val);
 	}
 err_end:
@@ -541,8 +539,8 @@ static ssize_t neuronspi_spi_gpio_ro_show_value(struct device *dev, struct devic
 	n_spi = spi_get_drvdata(n_ro->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->io_index) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), &val);
-		val &= 0x1 << (n_ro->io_index % 15);
-		val = val >> (n_ro->io_index % 15);
+		val &= 0x1 << (n_ro->io_index % 16);
+		val = val >> (n_ro->io_index % 16);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -565,8 +563,8 @@ static ssize_t neuronspi_spi_gpio_ro_store_value(struct device *dev, struct devi
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ro_count > n_ro->io_index) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), &val);
-		val &= ~(0x1 << (n_ro->io_index % 15));
-		val |= inp << (n_ro->io_index % 15);
+		val &= ~(0x1 << (n_ro->io_index % 16));
+		val |= inp << (n_ro->io_index % 16);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->ro_val_reg + (n_ro->io_index / 16), val);
 	}
 err_end:
@@ -585,8 +583,8 @@ static ssize_t neuronspi_spi_gpio_show_ds_enable(struct device *dev, struct devi
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), &val);
-		val &= 0x1 << (n_di->io_index % 15);
-		val = val >> (n_di->io_index % 15);
+		val &= 0x1 << (n_di->io_index % 16);
+		val = val >> (n_di->io_index % 16);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -603,8 +601,8 @@ static ssize_t neuronspi_spi_gpio_show_ds_toggle(struct device *dev, struct devi
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), &val);
-		val &= 0x1 << (n_di->io_index % 15);
-		val = val >> (n_di->io_index % 15);
+		val &= 0x1 << (n_di->io_index % 16);
+		val = val >> (n_di->io_index % 16);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -621,8 +619,8 @@ static ssize_t neuronspi_spi_gpio_show_ds_polarity(struct device *dev, struct de
 	n_spi = spi_get_drvdata(n_di->spi);
 	if (n_spi && n_spi->combination_id != -1 && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), &val);
-		val &= 0x1 << (n_di->io_index % 15);
-		val = val >> (n_di->io_index % 15);
+		val &= 0x1 << (n_di->io_index % 16);
+		val = val >> (n_di->io_index % 16);
 		ret = scnprintf(buf, 255, "%d\n", val);
 	}
 	return ret;
@@ -645,8 +643,8 @@ static ssize_t neuronspi_spi_gpio_store_ds_enable(struct device *dev, struct dev
 	}
 	if (n_spi && n_spi->combination_id != -1 && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), &val);
-		val &= ~(0x1 << (n_di->io_index % 15));
-		val |= inp << (n_di->io_index % 15);
+		val &= ~(0x1 << (n_di->io_index % 16));
+		val |= inp << (n_di->io_index % 16);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_direct_reg + (n_di->io_index / 16), val);
 	}
 err_end:
@@ -670,8 +668,8 @@ static ssize_t neuronspi_spi_gpio_store_ds_toggle(struct device *dev, struct dev
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), &val);
-		val &= ~(0x1 << (n_di->io_index % 15));
-		val |= inp << (n_di->io_index % 15);
+		val &= ~(0x1 << (n_di->io_index % 16));
+		val |= inp << (n_di->io_index % 16);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_toggle_reg + (n_di->io_index / 16), val);
 	}
 err_end:
@@ -695,8 +693,8 @@ static ssize_t neuronspi_spi_gpio_store_ds_polarity(struct device *dev, struct d
 	}
 	if (n_spi && n_spi->combination_id != 0xFF && n_spi->features && n_spi->features->ds_count) {
 		regmap_read(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), &val);
-		val &= ~(0x1 << (n_di->io_index % 15));
-		val |= inp << (n_di->io_index % 15);
+		val &= ~(0x1 << (n_di->io_index % 16));
+		val |= inp << (n_di->io_index % 16);
 		regmap_write(n_spi->reg_map, n_spi->regstart_table->di_polar_reg + (n_di->io_index / 16), val);
 	}
 err_end:
