@@ -6,7 +6,6 @@ include:
     project: docker/template
     file: debian-pkg.yaml
 
-
 ##############################################################
 ## set empty VERSION_SUFFIX; package names are concatenated with 
 ##      last kernel name, so they differs for distributions
@@ -29,6 +28,8 @@ build-newstable:rpi:
 build-stable:nano:
     extends: .build_for_stable
     tags: ['arm64']
+    only: 
+        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
@@ -36,8 +37,10 @@ build-stable:nano:
 build-stable:rpi:
     extends: .build_for_stable
     tags: ['armhf']
+    only: 
+        variables: [$DISABLE_STABLE_ARMHF==null, $DISABLE_STABLE_ARMHF=="0"]
 
-## this runs ony for stable - creates common packages
+## this runs ony for stable - creates common packages - DON'T call for triggered pipeline
 build-stable:all:
     extends: .build_for_stable
     tags: ['amd64']
@@ -50,6 +53,8 @@ build-stable:all:
 build-oldstable:nano:
     extends: .build_for_oldstable
     tags: ['arm64']
+    only: 
+        variables: [$DISABLE_OLDSTABLE_ARM64==null, $DISABLE_OLDSTABLE_ARM64=="0"]
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
@@ -59,6 +64,8 @@ build-oldstable:nano:
 build-oldstable:rpi:
     extends: .build_for_oldstable
     tags: ['armhf']
+    only: 
+        variables: [$DISABLE_OLDSTABLE_ARMHF==null, $DISABLE_OLDSTABLE_ARMHF=="0"]
     variables:
         VERSION_SUFFIX: ""
 
