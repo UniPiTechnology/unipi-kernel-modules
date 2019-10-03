@@ -47,7 +47,7 @@ build-stable:all:
     before_script: 
         - apt-get install -y dkms
     except:
-        refs: [/\.test\./, pipelines]
+        refs: [/\.test\./, triggers]
 
 
 build-oldstable:nano:
