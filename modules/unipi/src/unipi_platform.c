@@ -1485,7 +1485,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 }
 
 #define NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION { \
-		.combination_board_id = 	18, \
+		.combination_board_id = 	0x12, \
 		.lower_board_id = 			NEURONSPI_BOARD_LOWER_E4AI4AO_ID, \
 		.upper_board_id = 			NEURONSPI_BOARD_UPPER_P4DI5RO_ID, \
 		.name_length =				17, \
@@ -1569,7 +1569,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 }
 
 #define NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION { \
-		.combination_board_id = 	15, \
+		.combination_board_id = 	0x13, \
 		.lower_board_id = 			NEURONSPI_BOARD_LOWER_E4AI4AO_ID, \
 		.upper_board_id = 			NEURONSPI_BOARD_UPPER_U4DI5RO_ID, \
 		.name_length =				17, \
