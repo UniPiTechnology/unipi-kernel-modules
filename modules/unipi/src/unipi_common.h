@@ -95,9 +95,9 @@
  * Module Constants *
  ********************/
 
-#define NEURONSPI_NO_INTERRUPT_MODELS_LEN 				3
+#define NEURONSPI_NO_INTERRUPT_MODELS_LEN 				4
 static const u16 NEURONSPI_NO_INTERRUPT_MODELS[NEURONSPI_NO_INTERRUPT_MODELS_LEN] = {
-		0xb10, 0xc10, 0xf10
+		0xb10, 0xc10, 0xf10, 0xb20
 };
 
 /*******************
