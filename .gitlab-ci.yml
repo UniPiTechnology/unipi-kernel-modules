@@ -46,6 +46,8 @@ build-stable:all:
     tags: ['amd64']
     before_script: 
         - apt-get install -y dkms
+    script:
+        - /ci-scripts/build-package.sh --build=all $TEMPLATE_DEB_NAME
     except:
         refs: [/\.test\./, triggers]
 

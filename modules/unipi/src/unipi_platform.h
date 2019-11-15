@@ -353,13 +353,15 @@ extern struct neuronspi_board_combination NEURONSPI_MODEL_L513_HW_DEFINITION_BOA
 extern struct neuronspi_board_combination NEURONSPI_MODEL_L205_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L205_HW_DEFINITION_BOARD_SIZE];
 #define NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD_SIZE 3
 extern struct neuronspi_board_combination NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L505_HW_DEFINITION_BOARD_SIZE];
+#define NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD_SIZE 3
+extern struct neuronspi_board_combination NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD_SIZE];
 
 // Board table
 #define NEURONSPI_BOARDTABLE_LEN		18
 extern struct neuronspi_board_entry NEURONSPI_BOARDTABLE[];
 
 // Module table
-#define NEURONSPI_MODELTABLE_LEN		28
+#define NEURONSPI_MODELTABLE_LEN		29
 extern struct neuronspi_model_definition NEURONSPI_MODELTABLE[];
 
 /*************************
