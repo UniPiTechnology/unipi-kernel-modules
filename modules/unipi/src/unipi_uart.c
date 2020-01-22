@@ -103,11 +103,11 @@ void neuronspi_uart_null_void(struct uart_port *port)
 void neuronspi_uart_stop_rx(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
-    unsigned long flags;
+    /*unsigned long flags;*/
 
-    spin_lock_irqsave(&port->lock, flags);
+    /*spin_lock_irqsave(&port->lock, flags);*/
     n_port->accept_rx = 0;
-    spin_unlock_irqrestore(&port->lock, flags);
+    /*spin_unlock_irqrestore(&port->lock, flags);*/
 }
 
 void neuronspi_uart_config_port(struct uart_port *port, int flags)
