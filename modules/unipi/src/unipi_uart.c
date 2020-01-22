@@ -100,7 +100,7 @@ void neuronspi_uart_null_void(struct uart_port *port)
 	/* Do nothing */
 }
 
-void neuronspi_uart_stop_tx(struct uart_port *port)
+void neuronspi_uart_stop_rx(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
     unsigned long flags;
