@@ -128,7 +128,7 @@ int unipi_spi_write_str(struct spi_device* spi, struct neuronspi_port* port, int
 int unipi_spi_get_tx_fifo(struct spi_device* spi, struct neuronspi_port* port);
 
 void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
-
+void neuronspi_uart_flush_proc(struct kthread_work *ws);
 
 /***********************
  * Function structures *
