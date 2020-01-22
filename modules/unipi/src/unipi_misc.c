@@ -55,9 +55,9 @@ struct neuronspi_led_driver * neuronspi_led_probe(int uled_count, int sysled_cou
 {
     struct spi_device* spi = neuronspi_s_dev[neuron_index];
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+    int led_count = uled_count + sysled_count;
 	struct neuronspi_led_driver * led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * led_count, GFP_ATOMIC);
 	int i, coil;
-    int led_count = uled_count + sysled_count;
 
 	if (n_spi->features != NULL) {
 		coil = n_spi->features->di_count + n_spi->features->do_count + n_spi->features->ro_count;
@@ -68,7 +68,7 @@ struct neuronspi_led_driver * neuronspi_led_probe(int uled_count, int sysled_cou
 	for (i = 0; i < led_count; i++) {
         if (i < uled_count) {
 			scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:uled-x%x", i);
-		{ else {
+		} else {
 			scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:sysled-x%x", i-uled_count);
 		}
 		// Initialise the rest of the structure
