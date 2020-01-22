@@ -126,6 +126,7 @@ struct neuronspi_port
     
     u8                          rx_remain;
     int                         accept_rx;
+	struct kthread_work			flush_work;
     
 	struct kthread_work			tx_work;
     u16                         tx_fifo_reg;  // register in neuronspi device modbus map to read internal tx fifo length

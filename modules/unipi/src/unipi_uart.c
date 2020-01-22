@@ -153,12 +153,45 @@ void neuronspi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
     unipispi_modbus_write_register(spi, port_to_uartregs(n_port->dev_port, NEURONSPI_UART_LDISC_REGISTER), kterm->c_line);
 }
 
+
+void neuronspi_uart_flush_proc(struct kthread_work *ws)
+{
+	struct neuronspi_port *n_port = ((container_of((ws), struct neuronspi_port, flush_work)));
+	struct spi_device *spi = neuronspi_s_dev[n_spi->neuron_index];
+    struct neuronspi_op_buffer recv_buf;
+	unsigned long flags;
+
+    unipi_spi_read_str(spi,  n_port);
+    if (n_port->rx_in_progress) {
+		s32 frequency = NEURONSPI_DEFAULT_FREQ;
+		if (n_spi) {
+			frequency = n_spi->ideal_frequency;
+		}
+		neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_buf, 0, frequency, 25);
+	}
+
+	spin_lock_irqsave(&port->port.lock, flags);
+    n_port->accept_rx = 1;
+    spin_lock_irqrestore(&port->port.lock, flags);
+
+}
+
+
 void neuronspi_uart_flush_buffer(struct uart_port* port)
 { 
+	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
+	struct neuronspi_driver_data *n_spi = n_port->n_spi;
+	#struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
+	#struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+
     //port->lock taken, This call must not sleep
-    // ToDo :    
 	unipi_uart_trace("ttyNS%d Flush buffer\n", port->line);
+    n_port->accept_rx = 0;
+	unipi_spi_trace(KERN_INFO "UNIPISPI: nspi%d SPI IRQ\n", n_spi->neuron_index);
+	kthread_queue_work(n_spi->primary_worker, &n_port->flush_work);
+    //unipi_spi_idle_op(spi);
 }
+
 
 u32 neuronspi_uart_tx_empty(struct uart_port *port)
 {
@@ -601,7 +634,7 @@ void neuronspi_uart_remove(struct spi_device* spi)
     struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
     struct neuronspi_port *port; 
 	int i, uart_count;
-    
+
     uart_count = n_spi->uart_count;
     n_spi->uart_count = 0;
 
@@ -675,7 +708,7 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
             spin_lock_init(&port->txop_lock);
             port->tx_send_buf.second_message = port->tx_send_msg;
             port->tx_recv_buf.second_message = port->tx_recv_msg;
-            
+
             port->tx_fifo_len = 0x7fff; //set it to big number; invoke reading current value from Neuron
             if (n_spi && (n_spi->firmware_version >= 0x0519) ) {
                 port->tx_fifo_reg = port_to_uartregs(i,NEURONSPI_UART_FIFO_REGISTER);        // define modbus register
@@ -685,8 +718,9 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
 
             hrtimer_init(&port->tx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
             port->tx_timer.function = unipi_uart_timer_func;
-            
+
             //kthread_init_work(&(port->tx_work), neuronspi_uart_tx_proc);
+            kthread_init_work(&(port->flush_work), neuronspi_flush_proc); // prepare work function for port flushing
             uart_add_one_port(neuronspi_uart_driver_global, &port->port);
             printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d on UniPi Board nspi%d port:%d created\n", neuronspi_uart_data_global->p_count, port->dev_index, port->dev_port);
             unipi_uart_trace("Probe cflag:%08x\n", neuronspi_spi_uart_get_cflag(spi, i));
