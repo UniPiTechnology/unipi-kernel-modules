@@ -430,7 +430,7 @@ static void unipi_spi_read_str_complete(void *arg)
 
     port = unipi_spi_check_message(context);
     context->string_op_port->rx_in_progress = 0;
- 
+
     if (recv_buf->second_message[0] == 0x65) {
         // this op can be invoked only from kernel_work rx_proc
         portindex2 = 0; // second_message[2]; Overit ve firmware
@@ -446,7 +446,7 @@ static void unipi_spi_read_str_complete(void *arg)
     }
 
     if (port && (port->rx_remain))  unipi_spi_read_str(context->message.spi, port);
-    
+
     kfree(context);
 }
 
