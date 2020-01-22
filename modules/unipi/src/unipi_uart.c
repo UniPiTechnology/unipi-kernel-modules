@@ -317,7 +317,7 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, int rxlen, u8* pbuf)
 
 			ch = *pbuf;
             pbuf++;
-			if (uart_handle_sysrq_char(port, ch))
+			if (uart_handle_sysrq_char(&port->port, ch))
 				continue;
 
 			uart_insert_char(&port->port, 0, 0, ch, flag);
