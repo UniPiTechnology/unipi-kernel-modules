@@ -1120,6 +1120,7 @@ void neuronspi_spi_set_irqs(struct spi_device* spi_dev, u16 to)
 void neuronspi_uart_flush_proc(struct kthread_work *ws)
 {
 	struct neuronspi_port *n_port = ((container_of((ws), struct neuronspi_port, flush_work)));
+    struct neuronspi_driver_data *n_spi = n_port->n_spi;
 	struct spi_device *spi = neuronspi_s_dev[n_spi->neuron_index];
     struct neuronspi_op_buffer recv_buf;
 	unsigned long flags;
@@ -1135,7 +1136,7 @@ void neuronspi_uart_flush_proc(struct kthread_work *ws)
 
 	spin_lock_irqsave(&n_port->port.lock, flags);
     n_port->accept_rx = 1;
-    spin_lock_irqrestore(&n_port->port.lock, flags);
+    spin_unlock_irqrestore(&n_port->port.lock, flags);
 
 }
 
