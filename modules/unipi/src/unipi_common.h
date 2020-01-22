@@ -52,7 +52,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.33:2019:09:26"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.33:2020:01:22"
 
 #define NEURONSPI_MAX_DEVS				3
 #define NEURONSPI_MAX_UART				16
@@ -64,6 +64,8 @@
 #define NEURONSPI_B_PER_WORD 			8
 #define NEURONSPI_DEFAULT_FREQ			600000
 #define NEURONSPI_COMMON_FREQ			12000000
+
+#define NEURONSPI_SYSLED_REGISTER 	509
 
 #if defined(CONFIG_ARM64)
 /* on NanoPi there are only 12MHz and 6MHz available, not in between */

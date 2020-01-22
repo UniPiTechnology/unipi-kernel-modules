@@ -62,6 +62,7 @@ struct neuronspi_board_features
 	u32		extension_sys_count;
 	u32		light_count;
 	u32		owire_count;
+	u32		sysled_count;
 };
 
 struct neuronspi_board_regstart_table
@@ -114,6 +115,8 @@ struct neuronspi_board_regstart_table
 	u32		sys_hw_ver;
 	u32		sys_hw_flash_ver;
 	u32		sys_sw_ver;
+	u32		sysled_val_coil;
+	u32		sysled_val_reg;
 };
 
 struct neuronspi_board_combination
