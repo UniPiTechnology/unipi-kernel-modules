@@ -160,13 +160,12 @@ void neuronspi_uart_flush_buffer(struct uart_port* port)
 { 
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
 	struct neuronspi_driver_data *n_spi = n_port->n_spi;
-	#struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
-	#struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
-
+	/*struct spi_device *spi = neuronspi_s_dev[n_port->dev_index];
+	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+    */
     //port->lock taken, This call must not sleep
 	unipi_uart_trace("ttyNS%d Flush buffer\n", port->line);
     n_port->accept_rx = 0;
-	unipi_spi_trace(KERN_INFO "UNIPISPI: nspi%d SPI IRQ\n", n_spi->neuron_index);
 	kthread_queue_work(n_spi->primary_worker, &n_port->flush_work);
     //unipi_spi_idle_op(spi);
 }
@@ -699,7 +698,7 @@ int neuronspi_uart_probe(struct spi_device* spi, struct neuronspi_driver_data *n
             port->tx_timer.function = unipi_uart_timer_func;
 
             //kthread_init_work(&(port->tx_work), neuronspi_uart_tx_proc);
-            kthread_init_work(&(port->flush_work), neuronspi_flush_proc); // prepare work function for port flushing
+            kthread_init_work(&(port->flush_work), neuronspi_uart_flush_proc); // prepare work function for port flushing
             uart_add_one_port(neuronspi_uart_driver_global, &port->port);
             printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d on UniPi Board nspi%d port:%d created\n", neuronspi_uart_data_global->p_count, port->dev_index, port->dev_port);
             unipi_uart_trace("Probe cflag:%08x\n", neuronspi_spi_uart_get_cflag(spi, i));
