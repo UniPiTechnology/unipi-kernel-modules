@@ -30,7 +30,7 @@ struct neuronspi_led_driver
     int                 id;
     u16                 coil;
 	int					brightness;
-	char				name[sizeof("unipi:green:uled-x1")];
+	char				name[sizeof("unipi:green:sysled-x1")];
 	spinlock_t			lock;
 };
 
