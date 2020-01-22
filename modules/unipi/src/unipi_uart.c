@@ -100,6 +100,16 @@ void neuronspi_uart_null_void(struct uart_port *port)
 	/* Do nothing */
 }
 
+void neuronspi_uart_stop_tx(struct uart_port *port)
+{
+	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
+    unsigned long flags;
+
+    spin_lock_irqsave(&port->lock, flags);
+    n_port->accept_rx = 0;
+    spin_unlock_irqrestore(&port->lock, flags);
+}
+
 void neuronspi_uart_config_port(struct uart_port *port, int flags)
 {
 	if (flags & UART_CONFIG_TYPE) {
@@ -213,7 +223,13 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
         unipi_uart_trace("ttyNS%d Termios new:0x%04x %04x %04x %04x ldisc:%d", port->line,\
          termios->c_cflag, termios->c_iflag, \
          termios->c_oflag, termios->c_lflag, termios->c_line);
+        spin_lock_irq(&port->lock);
+        n_port->accept_rx = 0;
+        spin_unlock_irq(&port->lock);
         neuronspi_uart_set_cflag(n_port, termios->c_cflag);
+        spin_lock_irq(&port->lock);
+        n_port->accept_rx = 1;
+        spin_unlock_irq(&port->lock);
     }
 
 	if (termios && (!old || ((old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)))) {
@@ -311,16 +327,18 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, int rxlen, u8* pbuf)
 
 	if (rxlen) {
 		spin_lock_irqsave(&port->port.lock, flags);
-		port->port.icount.rx++;
-		flag = TTY_NORMAL;
-		for (i = 0; i < rxlen; ++i) {
+		if (port->accept_rx) {
+			port->port.icount.rx++;
+			flag = TTY_NORMAL;
+			for (i = 0; i < rxlen; ++i) {
 
-			ch = *pbuf;
-            pbuf++;
-			if (uart_handle_sysrq_char(&port->port, ch))
-				continue;
+				ch = *pbuf;
+            	pbuf++;
+				if (uart_handle_sysrq_char(&port->port, ch))
+					continue;
 
-			uart_insert_char(&port->port, 0, 0, ch, flag);
+				uart_insert_char(&port->port, 0, 0, ch, flag);
+			}
 		}
 		spin_unlock_irqrestore(&port->port.lock, flags);
 	}
@@ -561,6 +579,8 @@ void neuronspi_uart_tx_proc(struct kthread_work *ws)
 s32 neuronspi_uart_startup(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
+
+    n_port->accept_rx = 0;
 	neuronspi_enable_uart_interrupt(n_port);
 	neuronspi_uart_power(port, 1);
 	// TODO: /* Reset FIFOs*/
@@ -604,7 +624,7 @@ static const struct uart_ops neuronspi_uart_ops =
 	.get_mctrl			= neuronspi_uart_get_mctrl,
 	.stop_tx			= neuronspi_uart_null_void,
 	.start_tx			= unipi_uart_start_tx,
-	.stop_rx			= neuronspi_uart_null_void,
+	.stop_rx			= neuronspi_uart_stop_rx,
 	.flush_buffer		= neuronspi_uart_flush_buffer,
 	.break_ctl			= neuronspi_uart_break_ctl,
 	.startup			= neuronspi_uart_startup,
