@@ -41,6 +41,6 @@ struct neuronspi_led_driver
 
 void neuronspi_led_proc(struct kthread_work *ws);
 void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness brightness);
-struct neuronspi_led_driver * neuronspi_led_probe(int led_count, int neuron_index, struct platform_device *board_device);
+struct neuronspi_led_driver * neuronspi_led_probe(int uled_count, int sysled_count, int neuron_index, struct platform_device *board_device);
 
 #endif /* MODULES_NEURON_SPI_SRC_UNIPI_MISC_H_ */
