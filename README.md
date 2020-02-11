@@ -8,3 +8,4 @@ Tested for kernel versions 4.11 .. 4.19
 ```
 dpkg-buildpackage --target-type=arm-linux-gnueabihf -t arm-linux-gnueabihf -aarmhf -uc -us -b
 ```
+
