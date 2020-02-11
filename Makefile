@@ -11,19 +11,19 @@ default: all ;
 
 all: 
 	for m in ${MODULES_LIST}; do\
-		cd ${MODULES_DIR_PATH}$$m; make all;\
+		cd ${MODULES_DIR_PATH}$$m; make all || exit 1;\
 		done
 
 modules_install: install ;
 
 install: 
 	for m in ${MODULES_LIST}; do\
-		cd ${MODULES_DIR_PATH}$$m; make modules_install INSTALL_MOD_PATH=${DESTDIR};\
+		cd ${MODULES_DIR_PATH}$$m; make modules_install INSTALL_MOD_PATH=${DESTDIR} || exit 1;\
 		done
 
 dkms:
 	for m in ${MODULES_LIST}; do\
-		cd ${MODULES_DIR_PATH}$$m; make dkms INSTALL_MOD_PATH=${DESTDIR}/$$m;\
+		cd ${MODULES_DIR_PATH}$$m; make dkms INSTALL_MOD_PATH=${DESTDIR}/$$m || exit 1;\
 		done
 
 clean: 
