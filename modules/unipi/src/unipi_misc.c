@@ -51,10 +51,11 @@ void neuronspi_led_set_brightness(struct led_classdev *ldev, enum led_brightness
 
 
 
-struct neuronspi_led_driver * neuronspi_led_probe(int led_count, int neuron_index, struct platform_device *board_device)
+struct neuronspi_led_driver * neuronspi_led_probe(int uled_count, int sysled_count, int neuron_index, struct platform_device *board_device)
 {
     struct spi_device* spi = neuronspi_s_dev[neuron_index];
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
+    int led_count = uled_count + sysled_count;
 	struct neuronspi_led_driver * led_driver = kzalloc(sizeof(struct neuronspi_led_driver) * led_count, GFP_ATOMIC);
 	int i, coil;
 
@@ -65,7 +66,11 @@ struct neuronspi_led_driver * neuronspi_led_probe(int led_count, int neuron_inde
 	}
 	
 	for (i = 0; i < led_count; i++) {
-		scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:uled-x%x", i);
+        if (i < uled_count) {
+			scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:uled-x%x", i);
+		} else {
+			scnprintf(led_driver[i].name, sizeof(led_driver[i].name), "unipi:green:sysled-x%x", i-uled_count);
+		}
 		// Initialise the rest of the structure
 		led_driver[i].id = i;
 		led_driver[i].coil = coil+i;
