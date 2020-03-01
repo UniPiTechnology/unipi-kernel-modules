@@ -1,7 +1,7 @@
 Package: neuron-kernel
 Architecture: armhf
 Pre-Depends: unipi-common
-Depends: ${misc:Depends}, raspberrypi-kernel(=${PKG-KERNEL-VER})
+Depends: ${misc:Depends}, raspberrypi-kernel(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
 Description: UniPi Neuron kernel modules
  Binary kernel modules for UniPi Neuron controller. Compiled with
  raspberrypi-kernel from Raspbian distribution. 
@@ -9,7 +9,7 @@ Description: UniPi Neuron kernel modules
 Package: unipi-kernel-modules
 Architecture: arm64
 Pre-Depends: unipi-common
-Depends: ${misc:Depends}, axon-kernel-image(=${PKG-KERNEL-VER}) | raspberrypi-kernel(=${PKG-KERNEL-VER})
+Depends: ${misc:Depends}, axon-kernel-image(=${PKG-KERNEL-VER}) | raspberrypi-kernel(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
 Description: UniPi Neuron/Axon kernel modules
  Binary kernel modules for UniPi Neuron/Axon controller. Compiled for axon-kernel-image 
  version. 

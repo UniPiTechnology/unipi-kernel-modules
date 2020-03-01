@@ -92,7 +92,7 @@ static u32 NEURONSPI_BOARD_B1000_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_B1000_HW_DE
 		.ro_count =					  0,	\
 		.ds_count =					  4,	\
 		.di_count =					  4,	\
-		.led_count =				 16,	\
+		.led_count =				  4,	\
 		.stm_ai_count =				  1,	\
 		.stm_ao_count =				  1,	\
 		.sec_ai_count =				  0,	\
@@ -104,6 +104,7 @@ static u32 NEURONSPI_BOARD_B1000_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_B1000_HW_DE
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  1,    \
+		.sysled_count =				 16,	\
 }
 
 #define NEURONSPI_BOARD_B1000_HW_DEFINITION { \
@@ -182,6 +183,7 @@ static u32 NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E8DI8RO_H
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION { \
@@ -233,6 +235,7 @@ static u32 NEURONSPI_BOARD_E14RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E14RO_HW_DE
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E14RO_HW_DEFINITION { \
@@ -331,6 +334,7 @@ static u32 NEURONSPI_BOARD_E16DI_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E16DI_HW_DE
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E16DI_HW_DEFINITION { \
@@ -412,6 +416,7 @@ static u32 NEURONSPI_BOARD_E8DI8ROP11DIR485_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E8DI8ROP11DIR485_HW_DEFINITION { \
@@ -517,6 +522,7 @@ static u32 NEURONSPI_BOARD_E14ROP11DIR485_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E1
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E14ROP11DIR485_HW_DEFINITION { \
@@ -643,6 +649,7 @@ static u32 NEURONSPI_BOARD_E16DIP11DIR485_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E1
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E16DIP11DIR485_HW_DEFINITION { \
@@ -694,6 +701,7 @@ static u32 NEURONSPI_BOARD_E14ROU14RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E14ROU
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E14ROU14RO_HW_DEFINITION { \
@@ -796,6 +804,7 @@ static u32 NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E16DIU
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E16DIU14RO_HW_DEFINITION { \
@@ -892,6 +901,7 @@ static u32 NEURONSPI_BOARD_E14ROU14DI_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E14ROU
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E14ROU14DI_HW_DEFINITION { \
@@ -1034,6 +1044,7 @@ static u32 NEURONSPI_BOARD_E16DIU14DI_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E16DIU
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E16DIU14DI_HW_DEFINITION { \
@@ -1099,6 +1110,7 @@ static u32 NEURONSPI_BOARD_E4AI4AO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4AI4AO_H
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  16,	\
 }
 
 
@@ -1190,6 +1202,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOP6DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E4AI4AOP6DI5RO_HW_DEFINITION { \
@@ -1239,6 +1252,7 @@ static u32 NEURONSPI_BOARD_B485_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_B485_HW_DEFI
 	.extension_sys_count = 		  0,	\
 	.light_count = 				  0,	\
 	.owire_count =				  0,    \
+	.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_B485_HW_DEFINITION { \
@@ -1308,6 +1322,7 @@ static u32 NEURONSPI_BOARD_E4LIGHT_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4LIGHT_H
 	.extension_sys_count = 		  0,	\
 	.light_count = 				  4,	\
 	.owire_count =				  0,    \
+	.sysled_count =				 16,	\
 }
 
 #define NEURONSPI_BOARD_E4LIGHT_HW_DEFINITION { \
@@ -1398,6 +1413,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 	.extension_sys_count = 		  0,	\
 	.light_count = 				  0,	\
 	.owire_count =				  0,    \
+	.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION { \
@@ -1482,6 +1498,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 		.extension_sys_count = 		  1,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION { \
@@ -1566,6 +1583,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 	.extension_sys_count = 		  0,	\
 	.light_count = 				  0,	\
 	.owire_count =				  0,    \
+	.sysled_count =				  0,	\
 }
 
 #define NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION { \
@@ -2037,6 +2055,9 @@ int neuronspi_create_reg_starts(struct neuronspi_board_regstart_table *out_table
 	if (board->features.led_count > 0) {
 		out_table->led_val_reg = neuronspi_find_reg_start(board, NEURONSPI_REGFUN_LED_RW);
 	}
+	if (board->features.sysled_count > 0) {
+		out_table->sysled_val_reg = NEURONSPI_SYSLED_REGISTER;
+	}
 	if (board->features.light_count > 0) {
 		// TODO: Fill in light bus registers
 	}
@@ -2275,9 +2296,10 @@ struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_da
 	platform_set_drvdata(board_device, board_data);
 
 	if (n_spi->features) {
-		if (n_spi->features->led_count) {
-			printk(KERN_INFO "UNIPISPI: %d User LEDs detected at nspi%d\n", n_spi->features->led_count, n_spi->neuron_index);
-			board_data->led_driver = neuronspi_led_probe(n_spi->features->led_count, n_spi->neuron_index, board_device);
+		if ((n_spi->features->led_count>0) || (n_spi->features->sysled_count>0)) {
+			if (n_spi->features->led_count) printk(KERN_INFO "UNIPISPI: %d User LEDs detected at nspi%d\n", n_spi->features->led_count, n_spi->neuron_index);
+			if (n_spi->features->sysled_count) printk(KERN_INFO "UNIPISPI: %d System LEDs detected at nspi%d\n", n_spi->features->sysled_count, n_spi->neuron_index);
+			board_data->led_driver = neuronspi_led_probe(n_spi->features->led_count, n_spi->features->sysled_count, n_spi->neuron_index, board_device);
 		}
 #ifdef CONFIG_GPIOLIB
 		if (n_spi->features->di_count) {

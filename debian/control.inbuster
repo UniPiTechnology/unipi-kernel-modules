@@ -2,7 +2,7 @@
 Package: unipi-kernel-modules
 Architecture: arm64 armhf
 Pre-Depends: unipi-common
-Depends: ${misc:Depends}, axon-kernel-image(=${PKG-KERNEL-VER}) | raspberrypi-kernel(=${PKG-KERNEL-VER})
+Depends: ${misc:Depends}, axon-kernel-image(=${PKG-KERNEL-VER}) | raspberrypi-kernel(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
 Replaces: neuron-kernel
 Breaks: neuron-kernel
 Description: UniPi Neuron/Axon kernel modules
