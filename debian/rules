@@ -29,7 +29,7 @@ endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
 RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
-LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p'|head -1)
+LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 else
 .raspbian-versions:
@@ -99,8 +99,10 @@ override_dh_auto_build:
 	@echo "skip build"
 else
 override_dh_auto_build:
-	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
-		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
+    for LDP in $(LINUX_DIR_PATH); do \
+            make clean || exit 1;\
+        dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- LINUX_DIR_PATH=$${LDP} ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+    done
 endif
 
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
@@ -110,8 +112,10 @@ override_dh_auto_install:
 endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_auto_install:
-	dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
-		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
+    for LDP in $(LINUX_DIR_PATH); do \
+        dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+            LINUX_DIR_PATH=$${LDP} ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+    done
 endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),amd64)
 override_dh_auto_install:
