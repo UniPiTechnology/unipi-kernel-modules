@@ -114,7 +114,10 @@ override_dh_auto_install:
 endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_auto_install:
+	ls -lR debian/tempdest
+	ls -lR debian/$(BINARY_PKG_NAME)
 	mv debian/tempdest/* debian/$(BINARY_PKG_NAME) || exit 1;
+	ls -lR debian/$(BINARY_PKG_NAME)
 	#for LDP in $(LINUX_DIR_PATH); do \
 	#	dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
 	#		LINUX_DIR_PATH=$${LDP} ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
