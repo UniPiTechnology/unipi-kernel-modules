@@ -115,6 +115,7 @@ endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 override_dh_auto_install:
 	ls -lR debian/tempdest
+	mkdir -p debian/$(BINARY_PKG_NAME)
 	ls -lR debian/$(BINARY_PKG_NAME)
 	mv debian/tempdest/* debian/$(BINARY_PKG_NAME) || exit 1;
 	ls -lR debian/$(BINARY_PKG_NAME)
