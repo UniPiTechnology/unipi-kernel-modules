@@ -32,7 +32,7 @@ build-stable:nano:
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
         - apt-get update
-        - apt-get install -y axon-kernel-headers
+        - apt-get install -y curl
 
 build-stable:rpi:
     extends: .build_for_stable
