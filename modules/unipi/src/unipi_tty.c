@@ -55,6 +55,7 @@
 #include <linux/module.h>
 #include <linux/ratelimit.h>
 #include <linux/vmalloc.h>
+#include <linux/version.h>
 
 #include "unipi_tty.h"
 
@@ -945,6 +946,8 @@ static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
 }
 
 #ifdef CONFIG_COMPAT
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+
 static long unipi_tty_compat_ioctl(struct tty_struct *tty, struct file *file,
 		       unsigned int cmd, unsigned long arg)
 {
@@ -965,6 +968,7 @@ static long unipi_tty_compat_ioctl(struct tty_struct *tty, struct file *file,
 	}
 }
 #endif
+#endif
 
 static struct tty_ldisc_ops unipi_tty_ops = {
 	.magic           = TTY_LDISC_MAGIC,
@@ -977,7 +981,9 @@ static struct tty_ldisc_ops unipi_tty_ops = {
 	.write           = unipi_tty_write,
 	.ioctl           = unipi_tty_ioctl,
 #ifdef CONFIG_COMPAT
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 	.compat_ioctl    = unipi_tty_compat_ioctl,
+#endif
 #endif
 	.set_termios     = unipi_tty_set_termios,
 	.poll            = unipi_tty_poll,
