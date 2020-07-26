@@ -18,6 +18,7 @@
 /************
  * Includes *
  ************/
+#include <linux/version.h>
 
 #include "unipi_common.h"
 #include "unipi_platform.h"
@@ -162,7 +163,12 @@ static const struct regmap_config neuronspi_regmap_config_default =
 		.val_bits				= 16,
 		.max_register			= 65535,
 		.cache_type				= REGCACHE_RBTREE,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,6)
+		.use_single_read			= 0,
+		.use_single_write			= 0,
+#else
 		.use_single_rw			= 0,
+#endif
 		.can_multi_write		= 1,
 };
 
