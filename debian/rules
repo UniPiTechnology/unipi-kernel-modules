@@ -18,13 +18,21 @@ MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
 
 DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
 
+PLATFORM=$(shell echo $${PLATFORM:-axon})
+
 ifeq ($(DEBIAN_VERSION),stretch)
     BINARY_PKG_NAME=neuron-kernel
     CONTROL_INC=stretch
 else
     BINARY_PKG_NAME=unipi-kernel-modules
     CONTROL_INC=buster
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+ifneq ($(PLATFORM),axon)
+    CONTROL_INC=$(PLATFORM)
+endif
+endif
 endif 
+
 
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
@@ -41,9 +49,9 @@ endif
 endif
 
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
-PKG_KERNEL_VER = $(shell dpkg-query -f='$${Version}' -W axon-kernel-headers)
+PKG_KERNEL_VER = $(shell dpkg-query -f='$${Version}' -W $(PLATFORM)-kernel-headers)
 #PKG_KERNEL_VER = 4.14.111
-LINUX_DIR_PATH = $(shell dpkg -L axon-kernel-headers | sed -n '/^\/lib\/modules\/.*\/build$$/p')
+LINUX_DIR_PATH = $(shell dpkg -L $(PLATFORM)-kernel-headers | sed -n '/^\/lib\/modules\/.*\/build$$/p')
 #LINUX_DIR_PATH = '/lib/modules/4.14.111/build'
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 endif
@@ -74,7 +82,7 @@ override_dh_prep:
 	@dh_prep --exclude=unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/unipi-kernel-modules.substvars
 	( sed 's/)/.${PKG_KERNEL_VER})/;q' debian/changelog; \
-	  printf "\n  * Compiled for axon-kernel-image\n";\
+	  printf "\n  * Compiled for $(PLATFORM)-kernel-image\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
 	  cat debian/changelog;\
 	) >debian/unipi-kernel-modules.changelog

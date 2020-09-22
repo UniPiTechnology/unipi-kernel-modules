@@ -37,6 +37,8 @@ include:
 build-stable:g1:
     extends: .g1build_for_stable
     tags: ['arm64']
+    variables:
+        PLATFORM: "g1"
     only: 
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
@@ -46,6 +48,8 @@ build-stable:g1:
 .build-stable:nano:
     extends: .g1build_for_stable
     tags: ['arm64']
+    variables:
+        PLATFORM: "axon"
     only: 
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
