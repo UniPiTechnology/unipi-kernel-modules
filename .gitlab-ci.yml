@@ -6,27 +6,45 @@ include:
     project: docker/template
     file: debian-pkg.yaml
 
+
+#######################################################################################
+######### Modified from debian-pkg.yaml - REMOVE in final branch ######################
+#######################################################################################
+
+.g1build_for_stable:
+    stage: build_package
+    image: $CI_REGISTRY/docker/bob-the-builder/$STABLE_CODENAME:latest
+    only: ['g1']
+    variables:
+        VERSION_SUFFIX: ""
+        GIT_STRATEGY: clone
+        GIT_CHECKOUT: "true"
+    script:
+        - /ci-scripts/build-package.sh $TEMPLATE_DEB_NAME
+    artifacts:
+        paths:
+            - build/
+            - debian/changelog
+
+#######################################################################################
+######### END END                         REMOVE in final branch ######################
+#######################################################################################
+
 ##############################################################
 ## set empty VERSION_SUFFIX; package names are concatenated with 
 ##      last kernel name, so they differs for distributions
-build-newstable:nano:
-    extends: .build_for_newstable
+
+build-stable:g1:
+    extends: .g1build_for_stable
     tags: ['arm64']
+    only: 
+        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
         - apt-get update
-        - apt-get install -y axon-kernel-headers
-    variables:
-        VERSION_SUFFIX: ""
+        - apt-get install -y g1-kernel-headers
 
-build-newstable:rpi:
-    extends: .build_for_newstable
-    tags: ['armhf']
-    variables:
-        VERSION_SUFFIX: ""
-
-
-build-stable:nano:
-    extends: .build_for_stable
+.build-stable:nano:
+    extends: .g1build_for_stable
     tags: ['arm64']
     only: 
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
@@ -34,46 +52,8 @@ build-stable:nano:
         - apt-get update
         - apt-get install -y axon-kernel-headers
 
-build-stable:rpi:
-    extends: .build_for_stable
-    tags: ['armhf']
-    only: 
-        variables: [$DISABLE_STABLE_ARMHF==null, $DISABLE_STABLE_ARMHF=="0"]
-
-## this runs ony for stable - creates common packages - DON'T call for triggered pipeline
-build-stable:all:
-    extends: .build_for_stable
-    tags: ['amd64']
-    before_script: 
-        - apt-get install -y dkms
-    script:
-        - /ci-scripts/build-package.sh --build=all $TEMPLATE_DEB_NAME
-    except:
-        refs: [/\.test\./, triggers]
 
 
-build-oldstable:nano:
-    extends: .build_for_oldstable
-    tags: ['arm64']
-    only: 
-        variables: [$DISABLE_OLDSTABLE_ARM64==null, $DISABLE_OLDSTABLE_ARM64=="0"]
-    before_script: 
-        - apt-get update
-        - apt-get install -y axon-kernel-headers
-    variables:
-        VERSION_SUFFIX: ""
+#deploy-test:
+#    extends: .deploy_test
 
-build-oldstable:rpi:
-    extends: .build_for_oldstable
-    tags: ['armhf']
-    only: 
-        variables: [$DISABLE_OLDSTABLE_ARMHF==null, $DISABLE_OLDSTABLE_ARMHF=="0"]
-    variables:
-        VERSION_SUFFIX: ""
-
-
-deploy-test:
-    extends: .deploy_test
-
-deploy-release:
-    extends: .deploy_master
