@@ -81,11 +81,13 @@ ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
 override_dh_prep:
 	@dh_prep --exclude=unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/unipi-kernel-modules.substvars
+	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/$(PLATFORM)-unipi-kernel-modules.substvars
 	( sed 's/)/.${PKG_KERNEL_VER})/;q' debian/changelog; \
 	  printf "\n  * Compiled for $(PLATFORM)-kernel-image\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
 	  cat debian/changelog;\
 	) >debian/unipi-kernel-modules.changelog
+	@cat debian/unipi-kernel-modules.changelog > debian/$(PLATFORM)-unipi-kernel-modules.changelog
 endif
 
 override_dh_dkms:
