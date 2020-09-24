@@ -57,7 +57,6 @@ build-stable:g1:
         - apt-get install -y axon-kernel-headers
 
 
-
 deploy-test:
     extends: .deploy_test
 
