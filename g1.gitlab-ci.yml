@@ -35,15 +35,26 @@ include:
 ##      last kernel name, so they differs for distributions
 
 build-stable:g1:
+    stage: build_package
+    image: $CI_REGISTRY/docker/bob-the-builder/$STABLE_CODENAME:latest
+    only: ['g1']
     extends: .g1build_for_stable
     tags: ['arm64']
     variables:
         PLATFORM: "g1"
-    only: 
-        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+        VERSION_SUFFIX: ""
+        GIT_STRATEGY: clone
+        GIT_CHECKOUT: "true"
+    script:
+        - /ci-scripts/build-package.sh $TEMPLATE_DEB_NAME
+    only: ['g1']
     before_script: 
         - apt-get update
         - apt-get install -y g1-kernel-headers
+    artifacts:
+        paths:
+            - build/
+            - debian/changelog
 
 .build-stable:nano:
     extends: .g1build_for_stable
