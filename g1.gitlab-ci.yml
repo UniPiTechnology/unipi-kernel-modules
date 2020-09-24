@@ -58,6 +58,6 @@ build-stable:g1:
 
 
 
-#deploy-test:
-#    extends: .deploy_test
+deploy-test:
+    extends: .deploy_test
 
