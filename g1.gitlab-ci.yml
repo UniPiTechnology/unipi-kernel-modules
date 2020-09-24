@@ -38,7 +38,6 @@ build-stable:g1:
     stage: build_package
     image: $CI_REGISTRY/docker/bob-the-builder/$STABLE_CODENAME:latest
     only: ['g1']
-    extends: .g1build_for_stable
     tags: ['arm64']
     variables:
         PLATFORM: "g1"
