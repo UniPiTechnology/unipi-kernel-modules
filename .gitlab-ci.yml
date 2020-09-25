@@ -39,7 +39,7 @@ build-stable:nano:
         - apt-get install -y axon-kernel-headers
 
 build-stable:g1:
-    extends: .g1build_for_stable
+    extends: .build_for_stable
     tags: ['arm64']
     variables:
         PLATFORM: "g1"
