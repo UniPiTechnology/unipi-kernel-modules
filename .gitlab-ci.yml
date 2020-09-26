@@ -25,6 +25,7 @@ build-newstable:rpi:
     tags: ['armhf']
     variables:
         VERSION_SUFFIX: ""
+        PLATFORM: "neuron"
 
 
 build-stable:nano:
@@ -52,6 +53,8 @@ build-stable:g1:
 build-stable:rpi:
     extends: .build_for_stable
     tags: ['armhf']
+    variables:
+        PLATFORM: "neuron"
     only: 
         variables: [$DISABLE_STABLE_ARMHF==null, $DISABLE_STABLE_ARMHF=="0"]
 

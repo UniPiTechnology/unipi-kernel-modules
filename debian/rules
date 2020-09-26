@@ -119,7 +119,7 @@ endif
 
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
 override_dh_auto_install:
-	dh_auto_install --destdir=debian/unipi-kernel-modules -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+	dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
 		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
 endif
 ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),armhf)
