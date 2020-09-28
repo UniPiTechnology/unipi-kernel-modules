@@ -1,0 +1,70 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+export DEB_LDFLAGS_SET = -zrelro
+
+MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
+
+DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
+
+PLATFORM=$(shell echo $${PLATFORM:-axon})
+
+ifeq ($(DEBIAN_VERSION),stretch)
+    BINARY_PKG_NAME=neuron-kernel
+    CONTROL_INC=stretch
+else
+    BINARY_PKG_NAME=unipi-kernel-modules
+    CONTROL_INC=buster
+ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+ifneq ($(PLATFORM),axon)
+    CONTROL_INC=$(PLATFORM)
+    BINARY_PKG_NAME=$(PLATFORM)-unipi-kernel-modules
+endif
+endif
+endif 
+
+
+PKG_KERNEL_VER = $(shell dpkg-query -f='$${Version}' -W $(PLATFORM)-kernel-headers)
+LINUX_DIR_PATH = $(shell dpkg -L $(PLATFORM)-kernel-headers | sed -n '/^\/lib\/modules\/.*\/build$$/p')
+KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
+
+clean:
+	cat debian/control.in debian/control.in$(CONTROL_INC) >debian/control
+	dh clean
+
+%:
+	dh $@
+
+
+override_dh_installmodules:
+	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
+
+override_dh_prep:
+	@dh_prep --exclude=unipi-kernel-modules.substvars
+	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/unipi-kernel-modules.substvars
+	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/$(PLATFORM)-unipi-kernel-modules.substvars
+	( sed 's/)/.${PKG_KERNEL_VER})/;q' debian/changelog; \
+	  printf "\n  * Compiled for $(PLATFORM)-kernel-image\n";\
+	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
+	  cat debian/changelog;\
+	) >debian/unipi-kernel-modules.changelog
+	@cat debian/unipi-kernel-modules.changelog > debian/$(PLATFORM)-unipi-kernel-modules.changelog
+
+
+override_dh_auto_build:
+	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+		LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
