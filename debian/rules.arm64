@@ -19,7 +19,7 @@ PLATFORM=$(shell echo $${PLATFORM:-axon})
 
 CONTROL_INC=$(PLATFORM)
 
-ifneq ($(PLATFORM),axon)
+ifeq ($(PLATFORM),axon)
     BINARY_PKG_NAME=unipi-kernel-modules
 else
     BINARY_PKG_NAME=$(PLATFORM)-unipi-kernel-modules
