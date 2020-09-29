@@ -7,15 +7,3 @@ Standards-Version: 3.9.8
 Homepage: https://www.unipi.technology/
 Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
 
-Package: unipi-kernel-modules-dkms
-Architecture: all
-Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0), unipi-common
-Depends: ${misc:Depends}, dkms, unipi-firmware (>=5.50)
-Replaces: neuron-kernel, unipi-kernel-modules
-Conflicts: neuron-kernel, unipi-kernel-modules
-Description: UniPi Neuron/Axon kernel modules - DKMS source
- This package contains source code of kernel module for spi protocol 
- used by internal boards in the UniPi Neuron/Axon controllers.
- Can be used with DKMS so that local kernel images are automatically
- built and installed every time relevant kernel packages are upgraded.
-
