@@ -17,7 +17,7 @@ export DEB_LDFLAGS_SET = -zrelro
 MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
 
 clean:
-	cat debian/control.in debian/control.dkms >debian/control
+	#cat debian/control.in debian/control.dkms >debian/control
 	dh clean --with dkms
 
 %:
