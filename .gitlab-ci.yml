@@ -32,8 +32,6 @@ build-newstable:g1:
     tags: ['arm64']
     variables:
         PLATFORM: "g1"
-    only: 
-        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
         - apt-get update
         - apt-get install -y g1-kernel-headers
