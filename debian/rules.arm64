@@ -14,24 +14,15 @@
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export DEB_LDFLAGS_SET = -zrelro
 
-MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
-
 DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
-
 PLATFORM=$(shell echo $${PLATFORM:-axon})
 
-ifeq ($(DEBIAN_VERSION),stretch)
-    BINARY_PKG_NAME=neuron-kernel
-    CONTROL_INC=stretch
-else
-    BINARY_PKG_NAME=unipi-kernel-modules
-    CONTROL_INC=buster
-ifeq ($(shell dpkg-architecture -q DEB_HOST_ARCH),arm64)
+CONTROL_INC=$(PLATFORM)
+
 ifneq ($(PLATFORM),axon)
-    CONTROL_INC=$(PLATFORM)
+    BINARY_PKG_NAME=unipi-kernel-modules
+else
     BINARY_PKG_NAME=$(PLATFORM)-unipi-kernel-modules
-endif
-endif
 endif 
 
 
@@ -40,7 +31,7 @@ LINUX_DIR_PATH = $(shell dpkg -L $(PLATFORM)-kernel-headers | sed -n '/^\/lib\/m
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 
 clean:
-	cat debian/control.in debian/control.in$(CONTROL_INC) >debian/control
+	cat debian/control.in debian/control.$(CONTROL_INC) >debian/control
 	dh clean
 
 %:
@@ -63,7 +54,7 @@ override_dh_prep:
 
 
 override_dh_auto_build:
-	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+	dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- LINUX_DIR_PATH=$(LINUX_DIR_PATH) ARCH=${DEB_TARGET_ARCH_CPU}
 
 override_dh_auto_install:
 	dh_auto_install --destdir=debian/$(BINARY_PKG_NAME) -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \

@@ -27,6 +27,17 @@ build-newstable:rpi:
         VERSION_SUFFIX: ""
         PLATFORM: "neuron"
 
+build-newstable:g1:
+    extends: .build_for_newstable
+    tags: ['arm64']
+    variables:
+        PLATFORM: "g1"
+    only: 
+        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+    before_script: 
+        - apt-get update
+        - apt-get install -y g1-kernel-headers
+
 
 build-stable:nano:
     extends: .build_for_stable

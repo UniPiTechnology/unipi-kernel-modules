@@ -14,18 +14,19 @@
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export DEB_LDFLAGS_SET = -zrelro
 
-MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
-
 DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
+PLATFORM=$(shell echo $${PLATFORM:-neuron})
 
 ifeq ($(DEBIAN_VERSION),stretch)
     BINARY_PKG_NAME=neuron-kernel
-    CONTROL_INC=stretch
+    CONTROL_INC=neuron
 else
     BINARY_PKG_NAME=unipi-kernel-modules
-    CONTROL_INC=buster
+    CONTROL_INC=axon
 endif 
 
+## Check possible cross compile 
+## LINUX_DIR_PATH can contain more directories !!
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
 RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
 LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
@@ -33,11 +34,16 @@ KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 else
 .raspbian-versions:
 	misc/check-raspbian
-
 include ./.raspbian-versions
 LINUX_DIR_PATH = ${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+
+ifneq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
+override_dh_auto_configure:
+	misc/check-raspbian
+	misc/current
 endif
 
+endif
 
 clean:
 	cat debian/control.in debian/control.in$(CONTROL_INC) >debian/control
@@ -45,7 +51,6 @@ clean:
 
 %:
 	dh $@
-
 
 override_dh_installmodules:
 	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
@@ -59,12 +64,8 @@ override_dh_prep:
 	  cat debian/changelog;\
 	) >debian/$(BINARY_PKG_NAME).changelog
 
-ifneq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
-override_dh_auto_configure:
-	misc/check-raspbian
-	misc/current
-endif
 
+## LINUX_DIR_PATH can contain more directories !!
 override_dh_auto_build:
 	for LDP in $(LINUX_DIR_PATH); do \
 		make clean || exit 1;\
