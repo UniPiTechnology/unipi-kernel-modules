@@ -46,7 +46,7 @@ endif
 endif
 
 clean:
-	cat debian/control.in debian/control.in$(CONTROL_INC) >debian/control
+	cat debian/control.in debian/control.$(CONTROL_INC) >debian/control
 	dh clean --with dkms
 
 %:
