@@ -1,5 +1,5 @@
 variables:
-#    TEMPLATE_DISABLE: "1"
+##    TEMPLATE_DISABLE: "1"
     TEMPLATE_DEB_NAME: "unipi-kernel-modules"
 
 include: 
