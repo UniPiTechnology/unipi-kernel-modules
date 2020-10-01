@@ -1,12 +1,3 @@
-Source: unipi-kernel-modules
-Section: kernel
-Priority: optional
-Maintainer: Miroslav Ondra <info@unipi.technology>
-Build-Depends: debhelper (>= 9)
-Standards-Version: 3.9.8
-Homepage: https://www.unipi.technology/
-Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
-
 Package: unipi-kernel-modules-dkms
 Architecture: all
 Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0), unipi-common
