@@ -342,9 +342,8 @@ void neuronspi_uart_handle_rx(struct neuronspi_port *port, int rxlen, u8* pbuf)
 			port->port.icount.rx++;
 			flag = TTY_NORMAL;
 			for (i = 0; i < rxlen; ++i) {
-
 				ch = *pbuf;
-            	pbuf++;
+            			pbuf++;
 				if (uart_handle_sysrq_char(&port->port, ch))
 					continue;
 
