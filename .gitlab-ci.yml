@@ -1,5 +1,5 @@
 variables:
-#    TEMPLATE_DISABLE: "1"
+##    TEMPLATE_DISABLE: "1"
     TEMPLATE_DEB_NAME: "unipi-kernel-modules"
 
 include: 
@@ -12,6 +12,8 @@ include:
 build-newstable:nano:
     extends: .build_for_newstable
     tags: ['arm64']
+    variables:
+        PLATFORM: "axon"
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
@@ -23,20 +25,45 @@ build-newstable:rpi:
     tags: ['armhf']
     variables:
         VERSION_SUFFIX: ""
+        PLATFORM: "neuron"
+
+build-newstable:g1:
+    extends: .build_for_newstable
+    tags: ['arm64']
+    variables:
+        PLATFORM: "g1"
+    before_script: 
+        - apt-get update
+        - apt-get install -y g1-kernel-headers
 
 
 build-stable:nano:
     extends: .build_for_stable
     tags: ['arm64']
+    variables:
+        PLATFORM: "axon"
     only: 
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
         - apt-get update
         - apt-get install -y axon-kernel-headers
 
+build-stable:g1:
+    extends: .build_for_stable
+    tags: ['arm64']
+    variables:
+        PLATFORM: "g1"
+    only: 
+        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+    before_script: 
+        - apt-get update
+        - apt-get install -y g1-kernel-headers
+
 build-stable:rpi:
     extends: .build_for_stable
     tags: ['armhf']
+    variables:
+        PLATFORM: "neuron"
     only: 
         variables: [$DISABLE_STABLE_ARMHF==null, $DISABLE_STABLE_ARMHF=="0"]
 
@@ -55,6 +82,8 @@ build-stable:all:
 build-oldstable:nano:
     extends: .build_for_oldstable
     tags: ['arm64']
+    variables:
+        PLATFORM: "axon"
     only: 
         variables: [$DISABLE_OLDSTABLE_ARM64==null, $DISABLE_OLDSTABLE_ARM64=="0"]
     before_script: 

@@ -1,0 +1,79 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+export DEB_LDFLAGS_SET = -zrelro
+
+DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
+PLATFORM=$(shell echo $${PLATFORM:-neuron})
+
+ifeq ($(DEBIAN_VERSION),stretch)
+    BINARY_PKG_NAME=neuron-kernel
+    CONTROL_INC=neuron
+else
+    BINARY_PKG_NAME=unipi-kernel-modules
+    CONTROL_INC=axon
+endif 
+
+## Check possible cross compile 
+## LINUX_DIR_PATH can contain more directories !!
+ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
+RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
+LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
+KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
+else
+.raspbian-versions:
+	misc/check-raspbian
+include ./.raspbian-versions
+LINUX_DIR_PATH = ${PWD}/tmp/linux-raspberrypi-kernel_${RPI_FIRMWARE_VER}
+
+ifneq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
+override_dh_auto_configure:
+	misc/check-raspbian
+	misc/current
+endif
+
+endif
+
+clean:
+	cat debian/control.in debian/control.$(CONTROL_INC) >debian/control
+	dh clean --with dkms
+
+%:
+	dh $@
+
+override_dh_installmodules:
+	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
+
+override_dh_prep:
+	@dh_prep --exclude=$(BINARY_PKG_NAME).substvars
+	@echo PKG-KERNEL-VER=${RPI_FIRMWARE_VER} >> debian/$(BINARY_PKG_NAME).substvars
+	( sed 's/)/.${RPI_FIRMWARE_VER})/;q' debian/changelog; \
+	  printf "\n  * Compiled for raspberrypi-kernel\n";\
+	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
+	  cat debian/changelog;\
+	) >debian/$(BINARY_PKG_NAME).changelog
+
+
+## LINUX_DIR_PATH can contain more directories !!
+override_dh_auto_build:
+	for LDP in $(LINUX_DIR_PATH); do \
+		make clean || exit 1;\
+		dh_auto_build -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- LINUX_DIR_PATH=$${LDP} ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+		dh_auto_install --destdir=debian/tempdest -- CCPREFIX=${DEB_TARGET_GNU_TYPE}- \
+			LINUX_DIR_PATH=$${LDP} ARCH=${DEB_TARGET_ARCH_CPU} || exit 1;\
+	done
+
+override_dh_auto_install:
+	mkdir -p debian/$(BINARY_PKG_NAME)
+	mv debian/tempdest/* debian/$(BINARY_PKG_NAME) || exit 1;
