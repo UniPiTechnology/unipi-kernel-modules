@@ -30,6 +30,8 @@ PKG_KERNEL_VER = $(shell dpkg-query -f='$${Version}' -W $(PLATFORM)-kernel-heade
 LINUX_DIR_PATH = $(shell dpkg -L $(PLATFORM)-kernel-headers | sed -n '/^\/lib\/modules\/.*\/build$$/p')
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 
+PROJECT_VERSION=$(shell dpkg-parsechangelog -S Version)
+
 clean:
 	cat debian/control.in debian/control.$(CONTROL_INC) >debian/control
 	dh clean
@@ -45,6 +47,8 @@ override_dh_prep:
 	@dh_prep --exclude=unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/$(PLATFORM)-unipi-kernel-modules.substvars
+	@echo PROJECT_VERSION=${PROJECT_VERSION} >> debian/unipi-kernel-modules.substvars
+	@echo PROJECT_VERSION=${PROJECT_VERSION} >> debian/$(PLATFORM)-unipi-kernel-modules.substvars
 	( sed 's/)/.${PKG_KERNEL_VER})/;q' debian/changelog; \
 	  printf "\n  * Compiled for $(PLATFORM)-kernel-image\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \

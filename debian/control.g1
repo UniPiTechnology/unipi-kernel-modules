@@ -2,7 +2,7 @@ Package: g1-unipi-kernel-modules
 Architecture: arm64
 Pre-Depends: unipi-common
 Depends: ${misc:Depends}, g1-kernel-image(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
-Provides: unipi-kernel-modules
+Provides: unipi-kernel-modules(=${PROJECT_VERSION})
 Replaces: unipi-kernel-modules
 Breaks: unipi-kernel-modules
 Description: UniPi G1 kernel modules
