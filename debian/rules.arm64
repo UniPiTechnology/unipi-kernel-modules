@@ -47,8 +47,8 @@ override_dh_prep:
 	@dh_prep --exclude=unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/unipi-kernel-modules.substvars
 	@echo PKG-KERNEL-VER=${PKG_KERNEL_VER} > debian/$(PLATFORM)-unipi-kernel-modules.substvars
-	@echo PROJECT_VERSION=${PROJECT_VERSION} >> debian/unipi-kernel-modules.substvars
-	@echo PROJECT_VERSION=${PROJECT_VERSION} >> debian/$(PLATFORM)-unipi-kernel-modules.substvars
+	@echo PROJECT-VERSION=${PROJECT_VERSION} >> debian/unipi-kernel-modules.substvars
+	@echo PROJECT-VERSION=${PROJECT_VERSION} >> debian/$(PLATFORM)-unipi-kernel-modules.substvars
 	( sed 's/)/.${PKG_KERNEL_VER})/;q' debian/changelog; \
 	  printf "\n  * Compiled for $(PLATFORM)-kernel-image\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
