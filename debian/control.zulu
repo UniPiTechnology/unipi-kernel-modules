@@ -1,0 +1,11 @@
+Package: zulu-unipi-kernel-modules
+Architecture: arm64
+Pre-Depends: unipi-common
+Depends: ${misc:Depends}, zulu-kernel-image(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
+Provides: unipi-kernel-modules(=${PROJECT-VERSION})
+Replaces: unipi-kernel-modules
+Breaks: unipi-kernel-modules
+Description: UniPi Zulu kernel modules
+ Binary kernel modules for UniPi Patron (Zulu based) PLC. Compiled for g1-kernel-image 
+ version. 
+
