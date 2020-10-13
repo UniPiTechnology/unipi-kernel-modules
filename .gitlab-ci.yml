@@ -36,6 +36,15 @@ build-newstable:g1:
         - apt-get update
         - apt-get install -y g1-kernel-headers
 
+build-newstable:zulu:
+    extends: .build_for_newstable
+    tags: ['arm64']
+    variables:
+        PLATFORM: "zulu"
+    before_script: 
+        - sed 's/main g1-main/main zulu-main/g' -i /etc/apt/sources.list.d/unipi.list
+        - apt-get update
+        - apt-get install -y zulu-kernel-headers
 
 build-stable:nano:
     extends: .build_for_stable
