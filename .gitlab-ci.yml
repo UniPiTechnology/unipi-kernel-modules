@@ -59,6 +59,17 @@ build-stable:g1:
         - apt-get update
         - apt-get install -y g1-kernel-headers
 
+build-stable:zulu:
+    extends: .build_for_stable
+    tags: ['arm64']
+    variables:
+        PLATFORM: "zulu"
+    only: 
+        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+    before_script: 
+        - apt-get update
+        - apt-get install -y zulu-kernel-headers
+
 build-stable:rpi:
     extends: .build_for_stable
     tags: ['armhf']
