@@ -67,6 +67,7 @@ build-stable:zulu:
     only: 
         variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
     before_script: 
+        - sed 's/main g1-main/main zulu-main/g' -i /etc/apt/sources.list.d/unipi.list
         - apt-get update
         - apt-get install -y zulu-kernel-headers
 
