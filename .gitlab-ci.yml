@@ -63,7 +63,7 @@ build-stable:g1:
     variables:
         PLATFORM: "g1"
     only: 
-        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+        variables: [$DISABLE_STABLE_G1==null, $DISABLE_STABLE_G1=="0"]
     before_script: 
         - apt-get update
         - apt-get install -y g1-kernel-headers
@@ -74,7 +74,7 @@ build-stable:zulu:
     variables:
         PLATFORM: "zulu"
     only: 
-        variables: [$DISABLE_STABLE_ARM64==null, $DISABLE_STABLE_ARM64=="0"]
+        variables: [$DISABLE_STABLE_ZULU==null, $DISABLE_STABLE_ZULU=="0"]
     before_script: 
         - sed 's/main g1-main/main zulu-main/g' -i /etc/apt/sources.list.d/unipi.list
         - apt-get update
