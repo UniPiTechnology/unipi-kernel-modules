@@ -1,1 +1,1 @@
-debian/bootcmd.d/40-enable-rtc-unipi.conf         etc/bootcmd.d
+debian/bootcmd.d/src/40-enable-rtc-unipi.conf         etc/src/bootcmd.d
