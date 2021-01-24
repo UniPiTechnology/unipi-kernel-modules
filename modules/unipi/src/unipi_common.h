@@ -74,7 +74,12 @@
    #define NEURONSPI_SLOWER_FREQ			7500000
 #endif
 
+#if defined(CONFIG_ARM64)
+#define NEURONSPI_MAX_TX				64
+#else
 #define NEURONSPI_MAX_TX				60
+#endif
+
 //#define NEURONSPI_MAX_TX				256
 #define NEURONSPI_MAX_BAUD				115200
 #define NEURONSPI_FIFO_SIZE				256
