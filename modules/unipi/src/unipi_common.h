@@ -75,7 +75,7 @@
 #endif
 
 #if defined(CONFIG_ARM64)
-#define NEURONSPI_MAX_TX				64
+#define NEURONSPI_MAX_TX				40
 #else
 #define NEURONSPI_MAX_TX				60
 #endif
