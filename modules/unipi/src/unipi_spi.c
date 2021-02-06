@@ -1219,9 +1219,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     u32 probe_always_succeeds = 0;
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
-	struct sched_param rt_param = { .sched_priority = MAX_RT_PRIO - 1 };
-#endif
 
 	unsigned long flags;
 
@@ -1316,7 +1313,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		no_irq = 1;
 		printk(KERN_INFO "UNIPISPI: DUMMY UniPi Board at CS%d (nspi%d) assigned. Uarts:%d, uses freq. %d Hz\n",
 				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->ideal_frequency);
-        
+
     } else {
 		ret = -ENODEV;
 		kfree(n_spi);
@@ -1324,13 +1321,6 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		return ret;
 	}
 
-	// Set rt priority to spi controller
-	//dev_info(&ctlr->dev, "will run message pump with realtime priority\n");
-#if 0
-	/* replaced by spi->master->rt = 1 */
-	if (spi->controller->kworker_task)
-		sched_setscheduler(spi->controller->kworker_task, SCHED_FIFO, &rt_param);
-#endif
     if (spi->controller->set_cs != unipi_spi_set_cs) {
         unipi_spi_master_set_cs = spi->controller->set_cs;
         unipi_spi_master_flag = spi->controller->flags;
@@ -1340,7 +1330,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     if (gpio_is_valid(spi->cs_gpio)) {
         spi->cs_gpio = -spi->cs_gpio;
     }
-        
+
     // Prepare worker for interrupt, LEDs, UARTs
     worker = kthread_create_worker(0, "unipispi%d", n_spi->neuron_index);
 	if (IS_ERR(worker)) {
