@@ -505,7 +505,6 @@ static int rtc_unipi_probe(struct i2c_client *client,
 		.size = MCP794XX_NVRAM_SIZE,
 		.reg_read = rtc_unipi_nvram_read,
 		.reg_write = rtc_unipi_nvram_write,
-		.priv = rtc_unipi,
     };
 #endif
 
@@ -673,6 +672,7 @@ read_rtc:
 		rtc_unipi->rtc->nvmem_config = &rtc_unipi->nvmem_cfg;
 		rtc_unipi->rtc->nvram_old_abi = true;
 #else
+		nvmem_cfg.priv = rtc_unipi;
 	    rtc_unipi->rtc->nvram_old_abi = true;
 	    rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
 
