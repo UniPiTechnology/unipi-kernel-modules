@@ -71,7 +71,9 @@ struct task_struct *neuronspi_invalidate_thread;
 
 static u8 neuronspi_probe_count = 0;
 static struct spinlock *neuronspi_probe_spinlock;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
 static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
 
 struct neuronspi_char_driver neuronspi_cdrv =
 {
@@ -1217,7 +1219,9 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     u32 probe_always_succeeds = 0;
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
 	struct sched_param rt_param = { .sched_priority = MAX_RT_PRIO - 1 };
+#endif
 
 	unsigned long flags;
 
