@@ -496,7 +496,8 @@ static int rtc_unipi_probe(struct i2c_client *client,
 	/*struct rtc_unipi_platform_data *pdata = dev_get_platdata(&client->dev);*/
 	struct rtc_time		tm;
 	unsigned long		timestamp;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
+#else
     struct nvmem_config nvmem_cfg = {
 		.name = "rtc_unipi_nvram",
 		.word_size = 1,
