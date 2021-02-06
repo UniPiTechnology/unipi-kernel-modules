@@ -19,6 +19,7 @@
  ************/
 #include <linux/completion.h>
 #include <linux/cpufreq.h>
+#include <linux/version.h>
 
 #include "unipi_common.h"
 #include "unipi_sysfs.h"
@@ -30,6 +31,7 @@
 #include "unipi_spi.h"
 #include "unipi_uart.h"
 #include "unipi_tty.h"
+
 
 /* using trace_printk or printk ???*/
 
@@ -1218,7 +1220,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	struct sched_param rt_param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	unsigned long flags;
-    
+
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
 	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
 	neuronspi_probe_count++;
@@ -1341,7 +1343,11 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
         kfree(n_spi);
 		return PTR_ERR(worker);
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
 	sched_setscheduler(worker->task, SCHED_FIFO, &neuronspi_sched_param);
+#else
+	sched_set_fifo(worker->task);
+#endif
     n_spi->primary_worker = worker;
     
     // Prepare Register map

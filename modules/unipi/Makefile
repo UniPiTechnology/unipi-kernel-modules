@@ -51,10 +51,10 @@ unipi-objs := ${OBJ_FILES}
 default: all ;
 
 all: 
-	make $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
+	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
 
 modules_install: 
-	make $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
+	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
 
 dkms:
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
