@@ -19,6 +19,7 @@
  ************/
 #include <linux/completion.h>
 #include <linux/cpufreq.h>
+#include <linux/version.h>
 
 #include "unipi_common.h"
 #include "unipi_sysfs.h"
@@ -30,6 +31,7 @@
 #include "unipi_spi.h"
 #include "unipi_uart.h"
 #include "unipi_tty.h"
+
 
 /* using trace_printk or printk ???*/
 
@@ -69,7 +71,9 @@ struct task_struct *neuronspi_invalidate_thread;
 
 static u8 neuronspi_probe_count = 0;
 static struct spinlock *neuronspi_probe_spinlock;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
 static struct sched_param neuronspi_sched_param = { .sched_priority = MAX_RT_PRIO / 2 };
+#endif
 
 struct neuronspi_char_driver neuronspi_cdrv =
 {
@@ -1215,10 +1219,9 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     u32 probe_always_succeeds = 0;
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
-	struct sched_param rt_param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	unsigned long flags;
-    
+
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
 	spin_lock_irqsave(neuronspi_probe_spinlock, flags);
 	neuronspi_probe_count++;
@@ -1235,6 +1238,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	spi->bits_per_word	= 8;
 	spi->mode		    = spi->mode ? spi->mode : SPI_MODE_0;
 	spi->max_speed_hz	= spi->max_speed_hz ? spi->max_speed_hz : 12000000;
+	spi->master->rt = 1;
 	ret = spi_setup(spi);
 	if (ret) {
         kfree(n_spi);
@@ -1309,18 +1313,13 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		no_irq = 1;
 		printk(KERN_INFO "UNIPISPI: DUMMY UniPi Board at CS%d (nspi%d) assigned. Uarts:%d, uses freq. %d Hz\n",
 				spi->chip_select,  n_spi->neuron_index, uart_count, n_spi->ideal_frequency);
-        
+
     } else {
 		ret = -ENODEV;
 		kfree(n_spi);
 		printk(KERN_INFO "UNIPISPI: Probe did not detect a valid UniPi device at CS%d\n", spi->chip_select);
 		return ret;
 	}
-
-	// Set rt priority to spi controller
-	//dev_info(&ctlr->dev, "will run message pump with realtime priority\n");
-	if (spi->controller->kworker_task)
-		sched_setscheduler(spi->controller->kworker_task, SCHED_FIFO, &rt_param);
 
     if (spi->controller->set_cs != unipi_spi_set_cs) {
         unipi_spi_master_set_cs = spi->controller->set_cs;
@@ -1331,14 +1330,18 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     if (gpio_is_valid(spi->cs_gpio)) {
         spi->cs_gpio = -spi->cs_gpio;
     }
-        
+
     // Prepare worker for interrupt, LEDs, UARTs
     worker = kthread_create_worker(0, "unipispi%d", n_spi->neuron_index);
 	if (IS_ERR(worker)) {
         kfree(n_spi);
 		return PTR_ERR(worker);
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
 	sched_setscheduler(worker->task, SCHED_FIFO, &neuronspi_sched_param);
+#else
+	sched_set_fifo(worker->task);
+#endif
     n_spi->primary_worker = worker;
     
     // Prepare Register map

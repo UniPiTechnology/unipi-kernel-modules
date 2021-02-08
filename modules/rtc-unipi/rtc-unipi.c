@@ -496,6 +496,17 @@ static int rtc_unipi_probe(struct i2c_client *client,
 	/*struct rtc_unipi_platform_data *pdata = dev_get_platdata(&client->dev);*/
 	struct rtc_time		tm;
 	unsigned long		timestamp;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
+#else
+    struct nvmem_config nvmem_cfg = {
+		.name = "rtc_unipi_nvram",
+		.word_size = 1,
+		.stride = 1,
+		.size = MCP794XX_NVRAM_SIZE,
+		.reg_read = rtc_unipi_nvram_read,
+		.reg_write = rtc_unipi_nvram_write,
+    };
+#endif
 
 	rtc_unipi = devm_kzalloc(&client->dev, sizeof(struct rtc_unipi), GFP_KERNEL);
 	if (!rtc_unipi)
@@ -650,7 +661,6 @@ read_rtc:
 	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
-	/*if (chip->nvram_size) {*/
 		rtc_unipi->nvmem_cfg.name = "rtc_unipi_nvram";
 		rtc_unipi->nvmem_cfg.word_size = 1;
 		rtc_unipi->nvmem_cfg.stride = 1;
@@ -661,18 +671,8 @@ read_rtc:
 
 		rtc_unipi->rtc->nvmem_config = &rtc_unipi->nvmem_cfg;
 		rtc_unipi->rtc->nvram_old_abi = true;
-	/*}*/
 #else
-	    struct nvmem_config nvmem_cfg = {
-		.name = "rtc_unipi_nvram",
-		.word_size = 1,
-		.stride = 1,
-		.size = MCP794XX_NVRAM_SIZE,
-		.reg_read = rtc_unipi_nvram_read,
-		.reg_write = rtc_unipi_nvram_write,
-		.priv = rtc_unipi,
-	    };
-
+		nvmem_cfg.priv = rtc_unipi;
 	    rtc_unipi->rtc->nvram_old_abi = true;
 	    rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
 
