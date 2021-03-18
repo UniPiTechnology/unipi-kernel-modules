@@ -183,7 +183,7 @@ static u32 NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E8DI8RO_H
 		.extension_sys_count = 		  0,	\
 		.light_count = 				  0,	\
 		.owire_count =				  0,    \
-		.sysled_count =				  0,	\
+		.sysled_count =				  2,	\
 }
 
 #define NEURONSPI_BOARD_E8DI8RO_HW_DEFINITION { \
