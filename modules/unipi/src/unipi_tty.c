@@ -940,6 +940,16 @@ static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
         retval = read_cnt(ldata);
 		up_write(&tty->termios_rwsem);
 		return put_user(retval, (unsigned int __user *) arg);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+    case 0x5481:
+	case 0x5480:
+		if (tty->ops->ioctl != NULL) {
+			retval = tty->ops->ioctl(tty, cmd, arg);
+			if (retval != -ENOIOCTLCMD)
+				return retval;
+		}
+        // fall through
+#endif
 	default:
 		return  n_tty_ioctl_helper(tty, file, cmd, arg);
 	}
