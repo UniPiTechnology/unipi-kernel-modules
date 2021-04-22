@@ -20,8 +20,8 @@
 		     spi-max-frequency = <12000000>;
 		     pinctrl-0 = <&neuron_0_irq_pin>;
 		     pinctrl-names = "default";
-		     /* interrupt-parent = <&gpio>;
-		     interrupts = <27 0x1>; */
+		     interrupt-parent = <&gpio>;
+		     interrupts = <27 0x1>;
 		     status = "okay";
 		     neuron-board-index = <0>;
 		     neuron-probe-always-succeeds = <0>;
@@ -82,11 +82,11 @@
 				brcm,function = <1>;
 				brcm,pull = <0>;
 			};
-			/*neuron_0_irq_pin: neuron_0_irq_pin {
+			neuron_0_irq_pin: neuron_0_irq_pin {
 				brcm,pins = <27>;
 				brcm,function = <0>;
 				brcm,pull = <1>;
-			};*/
+			};
 			neuron_1_irq_pin: neuron_1_irq_pin {
 				brcm,pins = <23>;
 				brcm,function = <0>;
@@ -105,7 +105,7 @@
 		cs1_pin = <&frag0>,"cs-gpios:16", <&spi0_cs_pins>,"brcm,pins:4";
 		cs2_pin = <&frag0>,"cs-gpios:40", <&spi0_cs_pins>,"brcm,pins:12";
 		cs3_pin = <&frag0>,"cs-gpios:28", <&spi0_cs_pins>,"brcm,pins:8";	
-		/*neuron_irq_0 = <&neuronspi0>,"interrupts:0", <&neuron_0_irq_pin>,"brcm,pins:0";*/
+		neuron_irq_0 = <&neuronspi0>,"interrupts:0", <&neuron_0_irq_pin>,"brcm,pins:0";
 		neuron_irq_1 = <&neuronspi1>,"interrupts:0", <&neuron_1_irq_pin>,"brcm,pins:0";
 		neuron_irq_2 = <&neuronspi2>,"interrupts:0", <&neuron_2_irq_pin>,"brcm,pins:0";
     };
