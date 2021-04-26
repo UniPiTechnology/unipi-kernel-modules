@@ -243,7 +243,7 @@ void neuronspi_uart_set_termios(struct uart_port *port, struct ktermios *termios
         spin_unlock_irq(&port->lock);
     }
 
-	if (termios && (!old || ((old->c_iflag & PARMRK) != (termios->c_iflag & PARMRK)))) {
+	if (termios && (!old || ((old->c_iflag) != (termios->c_iflag)))) {
 		neuronspi_uart_set_iflags(n_port, termios->c_iflag);
 	}
 	if (termios && !old) {
