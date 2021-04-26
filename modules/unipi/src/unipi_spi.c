@@ -1238,7 +1238,9 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	spi->bits_per_word	= 8;
 	spi->mode		    = spi->mode ? spi->mode : SPI_MODE_0;
 	spi->max_speed_hz	= spi->max_speed_hz ? spi->max_speed_hz : 12000000;
-	spi->master->rt = 1;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+	spi->rt = 1;
+#endif
 	ret = spi_setup(spi);
 	if (ret) {
         kfree(n_spi);
