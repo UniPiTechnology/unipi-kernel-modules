@@ -29,6 +29,11 @@ endif
 ## LINUX_DIR_PATH can contain more directories !!
 ifeq ($(shell dpkg-architecture -q DEB_BUILD_ARCH),armhf)
 RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-headers)
+# after rpi kernel 1.20210303-1 the version is prefixed with "1:", e.g. 1:1.20210430-2
+# this breaks the combined version since it is no longer a number (1.66.1:1.20210430-2)
+# we will strip the first ":" part
+# but in dependencies, we need to keep it !!!
+RPI_FIRMWARE_VER_STRIPPED = $(shell echo $(RPI_FIRMWARE_VER) | cut -d":" -f 2-)
 LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 else
@@ -58,7 +63,7 @@ override_dh_installmodules:
 override_dh_prep:
 	@dh_prep --exclude=$(BINARY_PKG_NAME).substvars
 	@echo PKG-KERNEL-VER=${RPI_FIRMWARE_VER} >> debian/$(BINARY_PKG_NAME).substvars
-	( sed 's/)/.${RPI_FIRMWARE_VER})/;q' debian/changelog; \
+	( sed 's/)/.$(RPI_FIRMWARE_VER_STRIPPED))/;q' debian/changelog; \
 	  printf "\n  * Compiled for raspberrypi-kernel\n";\
 	  printf "\n -- auto-generator <info@unipi.technology>  %s\n\n" "`date -R`"; \
 	  cat debian/changelog;\
