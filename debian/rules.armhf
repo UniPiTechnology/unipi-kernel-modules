@@ -33,7 +33,7 @@ RPI_FIRMWARE_VER = $(shell dpkg-query -f='$${Version}' -W raspberrypi-kernel-hea
 # this breaks the combined version since it is no longer a number (1.66.1:1.20210430-2)
 # we will strip the first ":" part
 # but in dependencies, we need to keep it !!!
-RPI_FIRMWARE_VER_STRIPPED = $(echo '$${RPI_FIRMWARE_VER}' | cut -d":" -f 2-)
+RPI_FIRMWARE_VER_STRIPPED = $(shell echo "$RPI_FIRMWARE_VER' | cut -d":" -f 2-)
 LINUX_DIR_PATH = $(shell dpkg -L raspberrypi-kernel-headers | sed -n '/^\/lib\/modules\/.*-v7.*\/build$$/p')
 KERNEL_VERSION = $(subst /lib/modules/,,$(subst /build,,$(LINUX_DIR_PATH)))
 else
