@@ -47,6 +47,8 @@
 # define unipi_spi_trace(f, args...)
 #endif
 
+#define unipi_spi_error(f, args...)	printk(f, ##args)
+
 
 /********************
  * Data Definitions *
@@ -236,7 +238,8 @@ static struct neuronspi_port* unipi_spi_check_message(struct unipi_spi_context* 
 	packet_crc = *((u16*)(recv_buf->first_message+4));
 
 	if (recv_crc != packet_crc) {
-		unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC1 Not Correct (Received: %04x Calculated: %04x)\n", packet_crc, recv_crc);
+		unipi_spi_error(KERN_INFO "UNIPISPI: SPI CRC1 Not Correct (Received: %04x Calculated: %04x)\n", packet_crc, recv_crc);
+		unipi_spi_error(KERN_INFO "UNIPISPI: part1 %4phC\n", recv_buf->first_message);
         recv_buf->first_message[0] = 0;
         goto err;
     }
@@ -268,7 +271,8 @@ static struct neuronspi_port* unipi_spi_check_message(struct unipi_spi_context* 
                                         recv_buf->second_message+128, recv_buf->second_message+192);
 
 		if (recv_crc != packet_crc) {
-            unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc);
+            unipi_spi_error(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc);
+		    unipi_spi_error(KERN_INFO "UNIPISPI: len=%d, part1=%4phC part2=%16phC\n", len, recv_buf->first_message,recv_buf->second_message);
             goto err;
         }
 #ifdef UNIPISPI_USE_RX_THREAD
@@ -1006,6 +1010,7 @@ int unipispi_modbus_read_u32(struct spi_device* spi_dev, u16 reg, u32* value)
             *value = *((u32*)(recv_data + 4));
         } else {
             ret_code = 2;
+            unipi_spi_error("Read reg32 error: %d ret: %d %10ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Read reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
@@ -1048,6 +1053,7 @@ int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 valu
         if ((recv_data[0] != 0x06) || (recv_data[1]!=1)) {
             //unipi_spi_trace("Write reg: %d %8ph\n", reg, recv_data);
             ret_code = 2;
+            unipi_spi_error("Write reg error: %d ret: %d %8ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Write reg: %d ret: %d %8ph\n", reg, ret_code, recv_data);
@@ -1081,6 +1087,7 @@ int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value)
 	if (ret_code == 0) {
         if ((recv_data[0] != 0x06) || (recv_data[1]!=2)) {
             ret_code = 2;
+            unipi_spi_error("Write reg32 error: %d ret: %d %10ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Write reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
