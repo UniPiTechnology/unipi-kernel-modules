@@ -1572,9 +1572,10 @@ static s32 __init neuronspi_init(void)
 	//mutex_init(&neuronspi_master_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     loop_per_us = ((loops_per_jiffy) * HZ )/ 1000000;
     if (loop_per_us == 0) loop_per_us = 1;
-
+#endif
     // clear global neuron spi devices list
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
 	ret = spi_register_driver(&neuronspi_spi_driver);
