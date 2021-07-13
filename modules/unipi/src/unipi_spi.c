@@ -130,7 +130,6 @@ static struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
 #ifdef USE_UNIPI_CPUFREQ_PATCH
 	static struct cpufreq_policy * current_policy = NULL;
 #endif
-#endif
 
 static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
 {
@@ -184,6 +183,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
 #endif
 }
 
+#endif
 
 /************************
  * Non-static Functions *
