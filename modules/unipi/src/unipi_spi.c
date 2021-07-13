@@ -122,13 +122,14 @@ static struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
 
 ***********************************************************/
 
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     static unsigned long loop_per_us = 24; 
     u16 unipi_spi_master_flag = 0;
     void (*unipi_spi_master_set_cs)(struct spi_device *spi, bool enable) = NULL;
     //cycles_t unipi_spi_cs_cycles;
 #ifdef USE_UNIPI_CPUFREQ_PATCH
 	static struct cpufreq_policy * current_policy = NULL;
+#endif
 #endif
 
 static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
@@ -1227,6 +1228,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+    struct spi_delay inactive_delay;
+#endif
+
 	unsigned long flags;
 
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
@@ -1330,6 +1335,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		return ret;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     if (spi->controller->set_cs != unipi_spi_set_cs) {
         unipi_spi_master_set_cs = spi->controller->set_cs;
         unipi_spi_master_flag = spi->controller->flags;
@@ -1339,6 +1345,11 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     if (gpio_is_valid(spi->cs_gpio)) {
         spi->cs_gpio = -spi->cs_gpio;
     }
+#else
+    inactive_delay.value = 40;
+    inactive_delay.unit = SPI_DELAY_UNIT_USECS;
+	spi_set_cs_timing(spi, NULL, NULL, &inactive_delay);
+#endif
 
     // Prepare worker for interrupt, LEDs, UARTs
     worker = kthread_create_worker(0, "unipispi%d", n_spi->neuron_index);
@@ -1429,6 +1440,7 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 
     if (n_spi) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
         if ((spi->cs_gpio < 0) && (spi->cs_gpio != -ENOENT)) { spi->cs_gpio = -spi->cs_gpio; }
         if (spi->controller->set_cs == unipi_spi_set_cs) {
             spi->controller->set_cs = unipi_spi_master_set_cs;
@@ -1438,7 +1450,7 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
                 spi->controller->flags &= ~SPI_MASTER_GPIO_SS;
             }
         }
-
+#endif
         neuron_index = n_spi->neuron_index; 
 		if (n_spi->no_irq) {
             hrtimer_cancel(&n_spi->poll_timer);
