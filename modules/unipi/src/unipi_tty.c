@@ -57,6 +57,9 @@
 #include <linux/vmalloc.h>
 #include <linux/version.h>
 
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0)
+
 #include "unipi_tty.h"
 
 /* number of characters left in xmit buffer before select has we have room */
@@ -1020,3 +1023,72 @@ void __exit unipi_tty_exit(void)
 {
      tty_unregister_ldisc(N_PROFIBUS_FDL);
 }
+
+#else
+
+struct tty_ldisc_ops unipi_tty_ldisc;
+static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count);
+static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count);
+
+static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count)
+{
+    int is_parmrk = I_PARMRK(tty);
+    if (is_parmrk) {
+        tty->termios.c_iflag = tty->termios.c_iflag & (~PARMRK);
+    }
+	unipi_tty_trace(KERN_INFO "UNIPI_LDISC: Buf start.");
+	alias_n_tty_receive_buf(tty, cp, fp, count);
+    if (is_parmrk) {
+        tty->termios.c_iflag = tty->termios.c_iflag | (PARMRK);
+    }
+}
+
+static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count)
+{
+    int ret;
+    int is_parmrk = I_PARMRK(tty);
+    if (is_parmrk) {
+        tty->termios.c_iflag = tty->termios.c_iflag & (~PARMRK);
+    }
+	unipi_tty_trace(KERN_INFO "UNIPI_LDISC: Buf2 start.");
+	ret = alias_n_tty_receive_buf2(tty, cp, fp, count);
+    if (is_parmrk) {
+        tty->termios.c_iflag = tty->termios.c_iflag | (PARMRK);
+    }
+    return ret;
+}
+
+int __init unipi_tty_init(void)
+{
+    int err;
+	unipi_tty_trace(KERN_INFO "UNIPISPI: TTY Init\n");
+
+    memset(&unipi_tty_ldisc, 0, sizeof(unipi_tty_ldisc));
+    n_tty_inherit_ops(&unipi_tty_ldisc);
+    unipi_tty_ldisc.magic           = TTY_LDISC_MAGIC;
+    unipi_tty_ldisc.name            = "unipi_tty";
+    unipi_tty_ldisc.owner           = THIS_MODULE;
+
+	alias_n_tty_receive_buf_= unipi_tty_ldisc.receive_buf;
+	alias_n_tty_receive_buf2 = unipi_tty_ldisc.receive_buf2;
+
+	unipi_tty_ldisc.receive_buf     = unipi_tty_receive_buf,
+	unipi_tty_ldisc.receive_buf2	= unipi_tty_receive_buf2,
+
+    err = tty_register_ldisc(N_PROFIBUS_FDL, &unipi_tty_ldisc);
+    if (err) {
+        printk(KERN_INFO "UniPi line discipline registration failed. (%d)", err);
+        return err;
+    }
+    return 0;
+}
+
+void __exit unipi_tty_exit(void)
+{
+     tty_unregister_ldisc(N_PROFIBUS_FDL);
+}
+#endif
