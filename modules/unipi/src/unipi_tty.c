@@ -59,6 +59,13 @@
 
 #include "unipi_tty.h"
 
+// #undef UNIPI_TTY_TRACE
+#if NEURONSPI_DETAILED_DEBUG > 0
+# define unipi_tty_trace(f, args...)	trace_printk(f, ##args)
+#else
+# define unipi_tty_trace(f, args...)
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0)
 
 
@@ -74,12 +81,6 @@
 #define TTY_THRESHOLD_UNTHROTTLE	128
 
 
-// #undef UNIPI_TTY_TRACE
-#if NEURONSPI_DETAILED_DEBUG > 0
-# define unipi_tty_trace(f, args...)	trace_printk(f, ##args)
-#else
-# define unipi_tty_trace(f, args...)
-#endif
 
 struct unipi_tty_data {
 	/* producer-published */
