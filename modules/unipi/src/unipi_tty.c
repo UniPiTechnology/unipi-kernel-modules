@@ -1074,7 +1074,7 @@ int __init unipi_tty_init(void)
     unipi_tty_ldisc.name            = "unipi_tty";
     unipi_tty_ldisc.owner           = THIS_MODULE;
 
-	alias_n_tty_receive_buf_= unipi_tty_ldisc.receive_buf;
+	alias_n_tty_receive_buf = unipi_tty_ldisc.receive_buf;
 	alias_n_tty_receive_buf2 = unipi_tty_ldisc.receive_buf2;
 
 	unipi_tty_ldisc.receive_buf     = unipi_tty_receive_buf,
