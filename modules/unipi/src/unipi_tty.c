@@ -57,10 +57,10 @@
 #include <linux/vmalloc.h>
 #include <linux/version.h>
 
+#include "unipi_tty.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0)
 
-#include "unipi_tty.h"
 
 /* number of characters left in xmit buffer before select has we have room */
 #define WAKEUP_CHARS 256
