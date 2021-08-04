@@ -47,6 +47,8 @@
 # define unipi_spi_trace(f, args...)
 #endif
 
+#define unipi_spi_error(f, args...)	printk(f, ##args)
+
 
 /********************
  * Data Definitions *
@@ -120,7 +122,7 @@ static struct neuronspi_op_buffer UNIPISPI_IDLE_MESSAGE = {
 
 ***********************************************************/
 
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     static unsigned long loop_per_us = 24; 
     u16 unipi_spi_master_flag = 0;
     void (*unipi_spi_master_set_cs)(struct spi_device *spi, bool enable) = NULL;
@@ -181,6 +183,7 @@ static void unipi_spi_set_cs(struct spi_device *spi, bool enable)
 #endif
 }
 
+#endif
 
 /************************
  * Non-static Functions *
@@ -236,7 +239,8 @@ static struct neuronspi_port* unipi_spi_check_message(struct unipi_spi_context* 
 	packet_crc = *((u16*)(recv_buf->first_message+4));
 
 	if (recv_crc != packet_crc) {
-		unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC1 Not Correct (Received: %04x Calculated: %04x)\n", packet_crc, recv_crc);
+		unipi_spi_error(KERN_INFO "UNIPISPI: SPI CRC1 Not Correct (Received: %04x Calculated: %04x)\n", packet_crc, recv_crc);
+		unipi_spi_error(KERN_INFO "UNIPISPI: part1 %4phC\n", recv_buf->first_message);
         recv_buf->first_message[0] = 0;
         goto err;
     }
@@ -268,7 +272,8 @@ static struct neuronspi_port* unipi_spi_check_message(struct unipi_spi_context* 
                                         recv_buf->second_message+128, recv_buf->second_message+192);
 
 		if (recv_crc != packet_crc) {
-            unipi_spi_trace(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc);
+            unipi_spi_error(KERN_INFO "UNIPISPI: SPI CRC2 Not Correct: %04x COMPUTED: %04x\n", packet_crc, recv_crc);
+		    unipi_spi_error(KERN_INFO "UNIPISPI: len=%d, part1=%4phC part2=%16phC\n", len, recv_buf->first_message,recv_buf->second_message);
             goto err;
         }
 #ifdef UNIPISPI_USE_RX_THREAD
@@ -1006,6 +1011,7 @@ int unipispi_modbus_read_u32(struct spi_device* spi_dev, u16 reg, u32* value)
             *value = *((u32*)(recv_data + 4));
         } else {
             ret_code = 2;
+            unipi_spi_error("Read reg32 error: %d ret: %d %10ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Read reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
@@ -1048,6 +1054,7 @@ int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 valu
         if ((recv_data[0] != 0x06) || (recv_data[1]!=1)) {
             //unipi_spi_trace("Write reg: %d %8ph\n", reg, recv_data);
             ret_code = 2;
+            unipi_spi_error("Write reg error: %d ret: %d %8ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Write reg: %d ret: %d %8ph\n", reg, ret_code, recv_data);
@@ -1081,6 +1088,7 @@ int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value)
 	if (ret_code == 0) {
         if ((recv_data[0] != 0x06) || (recv_data[1]!=2)) {
             ret_code = 2;
+            unipi_spi_error("Write reg32 error: %d ret: %d %10ph\n", reg, ret_code, recv_data);
         }
     }
     unipi_spi_trace("Write reg32: %d ret: %d %10ph\n", reg, ret_code, recv_data);
@@ -1220,6 +1228,10 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+    struct spi_delay inactive_delay;
+#endif
+
 	unsigned long flags;
 
 	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
@@ -1323,6 +1335,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		return ret;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     if (spi->controller->set_cs != unipi_spi_set_cs) {
         unipi_spi_master_set_cs = spi->controller->set_cs;
         unipi_spi_master_flag = spi->controller->flags;
@@ -1332,6 +1345,11 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     if (gpio_is_valid(spi->cs_gpio)) {
         spi->cs_gpio = -spi->cs_gpio;
     }
+#else
+    inactive_delay.value = 40;
+    inactive_delay.unit = SPI_DELAY_UNIT_USECS;
+	spi_set_cs_timing(spi, NULL, NULL, &inactive_delay);
+#endif
 
     // Prepare worker for interrupt, LEDs, UARTs
     worker = kthread_create_worker(0, "unipispi%d", n_spi->neuron_index);
@@ -1422,6 +1440,7 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 
     if (n_spi) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
         if ((spi->cs_gpio < 0) && (spi->cs_gpio != -ENOENT)) { spi->cs_gpio = -spi->cs_gpio; }
         if (spi->controller->set_cs == unipi_spi_set_cs) {
             spi->controller->set_cs = unipi_spi_master_set_cs;
@@ -1431,7 +1450,7 @@ s32 neuronspi_spi_remove(struct spi_device *spi)
                 spi->controller->flags &= ~SPI_MASTER_GPIO_SS;
             }
         }
-
+#endif
         neuron_index = n_spi->neuron_index; 
 		if (n_spi->no_irq) {
             hrtimer_cancel(&n_spi->poll_timer);
@@ -1553,9 +1572,10 @@ static s32 __init neuronspi_init(void)
 	//mutex_init(&neuronspi_master_mutex);
 	mutex_init(&unipi_inv_speed_mutex);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
     loop_per_us = ((loops_per_jiffy) * HZ )/ 1000000;
     if (loop_per_us == 0) loop_per_us = 1;
-
+#endif
     // clear global neuron spi devices list
 	memset(&neuronspi_s_dev, 0, sizeof(neuronspi_s_dev));
 	ret = spi_register_driver(&neuronspi_spi_driver);
