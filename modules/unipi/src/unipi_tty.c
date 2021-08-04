@@ -1032,6 +1032,8 @@ static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned ch
 			      char *fp, int count);
 static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
 			      char *fp, int count);
+static int (*alias_n_tty_ioctl)(struct tty_struct *tty, struct file *file,
+               unsigned int cmd, unsigned long arg);
 
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
 			      char *fp, int count)
@@ -1063,6 +1065,24 @@ static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *c
     return ret;
 }
 
+static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
+		       unsigned int cmd, unsigned long arg)
+{
+	int retval;
+
+	unipi_tty_trace(KERN_INFO "UNIPI_LDISC: Ioctl start. cmd=%x", cmd);
+	switch (cmd) {
+    case 0x5481:
+	case 0x5480:
+		if (tty->ops->ioctl != NULL) {
+			retval = tty->ops->ioctl(tty, cmd, arg);
+			if (retval != -ENOIOCTLCMD)
+				return retval;
+		}
+	}
+	return  alias_n_tty_ioctl(tty, file, cmd, arg);
+}
+
 int __init unipi_tty_init(void)
 {
     int err;
@@ -1076,9 +1096,11 @@ int __init unipi_tty_init(void)
 
 	alias_n_tty_receive_buf = unipi_tty_ldisc.receive_buf;
 	alias_n_tty_receive_buf2 = unipi_tty_ldisc.receive_buf2;
+	alias_n_tty_ioctl = unipi_tty_ldisc.ioctl;
 
-	unipi_tty_ldisc.receive_buf     = unipi_tty_receive_buf,
-	unipi_tty_ldisc.receive_buf2	= unipi_tty_receive_buf2,
+	unipi_tty_ldisc.receive_buf     = unipi_tty_receive_buf;
+	unipi_tty_ldisc.receive_buf2	= unipi_tty_receive_buf2;
+	unipi_tty_ldisc.ioctl	        = unipi_tty_ioctl;
 
     err = tty_register_ldisc(N_PROFIBUS_FDL, &unipi_tty_ldisc);
     if (err) {
