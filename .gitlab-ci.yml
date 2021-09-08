@@ -4,6 +4,6 @@ include:
 
 variables:
     package_name: "unipi-kernel-modules"
-    build_for_platform: "axon neuron g1 patron zulu iris" # omit neuron64 for now
+    build_for_product: "axon neuron g1 patron zulu iris" # omit neuron64 for now
     build_for_distribution: "oldstable stable" # omit bullseye for now
     build_common: "yes"
