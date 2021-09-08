@@ -14,7 +14,7 @@
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export DEB_LDFLAGS_SET = -zrelro
 
-DEBIAN_VERSION=$(shell . /ci-scripts/include.sh ; echo $${DEBIAN_VERSION})
+DEBIAN_VERSION=$(shell . /ci-scripts/include.sh >/dev/null; echo $${DEBIAN_VERSION})
 PLATFORM=$(shell echo $${PLATFORM:-neuron})
 
 ifeq ($(DEBIAN_VERSION),stretch)
