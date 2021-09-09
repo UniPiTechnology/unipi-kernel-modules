@@ -8,3 +8,4 @@ variables:
     build_for_distribution: "oldstable stable" # omit bullseye for now
     build_common: "yes"
     mirror_to_github: "yes"
+    github_url: "git@https://github.com/UniPiTechnology/unipi-kernel.git"
