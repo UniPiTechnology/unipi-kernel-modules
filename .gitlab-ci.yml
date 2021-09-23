@@ -6,6 +6,6 @@ variables:
     package_name: "unipi-kernel-modules"
     build_for_product: "axon neuron g1 patron zulu iris" # omit neuron64 for now
     build_for_distribution: "oldstable stable" # omit bullseye for now
-    build_common: "yes"
+    build_independent_for: "stable+oldstable newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
