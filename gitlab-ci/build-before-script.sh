@@ -14,5 +14,7 @@ elif [ "$PLATFORM" == "zulu" ] || [ "$PLATFORM" == "patron" ] || [ "$PLATFORM" =
     apt install -y zulu-kernel-headers
 fi
 
-echo "Unset the VERSION_SUFFIX"
-unset VERSION_SUFFIX
+if [ -n "$PLATFORM" ]; then
+    echo "Unset the VERSION_SUFFIX"
+    unset VERSION_SUFFIX
+fi
