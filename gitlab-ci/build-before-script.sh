@@ -2,16 +2,22 @@
 
 echo "Update package definition and install additional packages based on PLATFORM"
 
-if [ "$PLATFORM" == "axon" ]; then
+if [ "$PRODUCT" == "axon" ]; then
     apt update
     apt install -y axon-kernel-headers
-elif [ "$PLATFORM" == "g1" ]; then
+elif [ "$PRODUCT" == "g1" ]; then
     apt update
     apt install -y g1-kernel-headers
-elif [ "$PLATFORM" == "zulu" ] || [ "$PLATFORM" == "patron" ] || [ "$PLATFORM" == "iris" ]; then
+elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
     sed 's/main g1-main/main zulu-main/g' -i /etc/apt/sources.list.d/unipi.list
     apt update
     apt install -y zulu-kernel-headers
+    # modify repo-patch-table
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+bullseye-zulu-main    bullseye-zulu-main  bullseye-patron-main  bullseye-iris-main
+bullseye-zulu-test    bullseye-zulu-test  bullseye-patron-test  bullseye-iris-test
+EOF
 fi
 
 if [ -n "$PLATFORM" ]; then
