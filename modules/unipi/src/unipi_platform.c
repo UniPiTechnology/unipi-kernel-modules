@@ -1428,7 +1428,7 @@ static u32 NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 }
 struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_COMBINATION[] = {NEURONSPI_BOARD_E4AI4AOU6DI5RO_HW_DEFINITION};
 
-// E-4Ai4Ao_P-4Di5Ro (xS5x) 
+// E-4Ai4Ao_P-4Di5Ro (xS5x)
 #define NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION_BLOCK_SIZE 52
 static u32 NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_DEFINITION_BLOCK_SIZE] = {
 		0, 23,	// Register block beginning and size
@@ -1603,6 +1603,71 @@ static u32 NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION_BLOCK[NEURONSPI_BOARD_E4
 struct neuronspi_board_combination NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_COMBINATION[] = {NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_DEFINITION};
 
 
+// E-16Di_U-14Di (M303)
+#define IRIS_BOARD_ICDIS4_HW_DEFINITION_BLOCK_SIZE 28 //Reg count + 4
+static u32 IRIS_BOARD_ICDIS4_HW_DEFINITION_BLOCK[IRIS_BOARD_ICDIS4_HW_DEFINITION_BLOCK_SIZE] = {
+		0, 10,	// Register block beginning and size
+		NEURONSPI_REGFUN_DI_READ | NEURONSPI_REGFLAG_ACC_AFAP | NEURONSPI_REGFLAG_SYS_READ_ONLY,		// 0
+		NEURONSPI_REGFUN_MWD_STATUS | NEURONSPI_REGFLAG_ACC_6SEC,									 	// 1
+		NEURONSPI_REGFUN_DI_COUNTER_LOWER | NEURONSPI_REGFLAG_ACC_6SEC, 								// 2
+		NEURONSPI_REGFUN_DI_COUNTER_UPPER | NEURONSPI_REGFLAG_ACC_6SEC,									// 3
+		NEURONSPI_REGFUN_DI_COUNTER_LOWER | NEURONSPI_REGFLAG_ACC_6SEC, 								// 4
+		NEURONSPI_REGFUN_DI_COUNTER_UPPER | NEURONSPI_REGFLAG_ACC_6SEC,									// 5
+		NEURONSPI_REGFUN_DI_COUNTER_LOWER | NEURONSPI_REGFLAG_ACC_6SEC, 								// 6
+		NEURONSPI_REGFUN_DI_COUNTER_UPPER | NEURONSPI_REGFLAG_ACC_6SEC,									// 7
+		NEURONSPI_REGFUN_DI_COUNTER_LOWER | NEURONSPI_REGFLAG_ACC_6SEC, 								// 8
+		NEURONSPI_REGFUN_DI_COUNTER_UPPER | NEURONSPI_REGFLAG_ACC_6SEC,									// 9
+		1000, 14, // Register block beginning and size
+		NEURONSPI_REGFUN_SW_VER | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,			// 1000
+		NEURONSPI_REGFUN_DIDO_COUNT | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,		// 1001
+		NEURONSPI_REGFUN_UAIO_COUNT | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,		// 1002
+		NEURONSPI_REGFUN_HW_VER | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,			// 1003
+		NEURONSPI_REGFUN_FLASH_HW_VER | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,	// 1004
+		NEURONSPI_REGFUN_SERIAL_NR_LOWER | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,// 1005
+		NEURONSPI_REGFUN_SERIAL_NR_UPPER | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,// 1006
+		NEURONSPI_REGFUN_INTERRUPTS | NEURONSPI_REGFLAG_ACC_AFAP,										// 1007
+		NEURONSPI_REGFUN_MWD_TO | NEURONSPI_REGFLAG_ACC_6SEC, 											// 1008
+		NEURONSPI_REGFUN_V_REF_INT | NEURONSPI_REGFLAG_ACC_ONCE | NEURONSPI_REGFLAG_SYS_READ_ONLY,		// 1009
+		NEURONSPI_REGFUN_DI_DEBOUNCE | NEURONSPI_REGFLAG_ACC_6SEC,										// 1010
+		NEURONSPI_REGFUN_DI_DEBOUNCE | NEURONSPI_REGFLAG_ACC_6SEC, 										// 1011
+		NEURONSPI_REGFUN_DI_DEBOUNCE | NEURONSPI_REGFLAG_ACC_6SEC,										// 1012
+		NEURONSPI_REGFUN_DI_DEBOUNCE | NEURONSPI_REGFLAG_ACC_6SEC,										// 1013
+};
+
+#define IRIS_BOARD_ICDIS4_HW_FEATURES {	\
+		.do_count =					  0,	\
+		.ro_count =					  0,	\
+		.ds_count =					  0,	\
+		.di_count =					  4,	\
+		.led_count =				  0,	\
+		.stm_ai_count =				  0,	\
+		.stm_ao_count =				  0,	\
+		.sec_ai_count =				  0,	\
+		.sec_ao_count =				  0,	\
+		.uart_master_count =		  0,	\
+		.uart_slave_count = 		  0,	\
+		.pwm_channel_count = 		  0,	\
+		.wd_count = 				  1,	\
+		.extension_sys_count = 		  0,	\
+		.light_count = 				  0,	\
+		.owire_count =				  0,    \
+		.sysled_count =				  0,	\
+}
+
+#define IRIS_BOARD_ICDIS4_HW_DEFINITION { \
+		.combination_board_id = 	25, \
+		.lower_board_id = 			IRIS_BOARD_ICDIS4_ID, \
+		.upper_board_id = 			NEURONSPI_BOARD_UPPER_NONE_ID, \
+		.name_length =				7, \
+		.combination_name =			"IC-DIS4", \
+		.block_count = 				IRIS_BOARD_ICDIS4_HW_DEFINITION_BLOCK_SIZE, \
+		.blocks = 					IRIS_BOARD_ICDIS4_HW_DEFINITION_BLOCK, \
+		.features =					IRIS_BOARD_ICDIS4_HW_FEATURES \
+}
+struct neuronspi_board_combination IRIS_BOARD_ICDIS4_HW_COMBINATION[] = {IRIS_BOARD_ICDIS4_HW_DEFINITION};
+
+
+
 /********************
  * Data Definitions *
  ********************/
@@ -1763,7 +1828,11 @@ struct neuronspi_board_entry NEURONSPI_BOARDTABLE[NEURONSPI_BOARDTABLE_LEN] = {
 	{.index = 18, .lower_board_id = NEURONSPI_BOARD_LOWER_E4AI4AO_ID,	.upper_board_id = NEURONSPI_BOARD_UPPER_P4DI5RO_ID,
 			.data_register_count = 23, .config_register_count = 23,   .definition = NEURONSPI_BOARD_E4AI4AOP4DI5RO_HW_COMBINATION},		// E-4Ai4Ao_P-4Di5Ro (xS5x)
 	{.index = 19, .lower_board_id = NEURONSPI_BOARD_LOWER_E4AI4AO_ID,	.upper_board_id = NEURONSPI_BOARD_UPPER_U4DI5RO_ID,
-			.data_register_count = 24, .config_register_count = 22,   .definition = NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_COMBINATION}		// E-4Ai4Ao_U-4Di5Ro (M5x3)
+			.data_register_count = 24, .config_register_count = 22,   .definition = NEURONSPI_BOARD_E4AI4AOU4DI5RO_HW_COMBINATION},		// E-4Ai4Ao_U-4Di5Ro (M5x3)
+	{.index = 25, .lower_board_id = IRIS_BOARD_ICDIS4_ID,	.upper_board_id = NEURONSPI_BOARD_UPPER_NONE_ID,
+			.data_register_count = 10, .config_register_count = 14,   .definition = IRIS_BOARD_ICDIS4_HW_COMBINATION}		// E-4Ai4Ao_U-4Di5Ro (M5x3)
+
+
 };
 
 // Module table
@@ -1946,7 +2015,7 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
     } else {
         *val = 0;
     }
-/*    
+/*
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
 	u8 *outp_buf;
@@ -1960,7 +2029,7 @@ int neuronspi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *
 	memcpy(val, &outp_buf[NEURONSPI_HEADER_LENGTH], sizeof(u16));
 	kfree(inp_buf);
 	kfree(outp_buf);
-*/ 
+*/
 	return 0;
 }
 
@@ -1979,7 +2048,7 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
         return 0;
     }
     return 0; // ???
-/*    
+/*
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
 	u8 *inp_buf;
 	u8 *outp_buf;
@@ -1994,7 +2063,7 @@ int neuronspi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int 
 	kfree(inp_buf);
 	kfree(outp_buf);
 	return 0;
-*/ 
+*/
 }
 
 int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size, const void *val, size_t val_size)
@@ -2004,14 +2073,14 @@ int neuronspi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_
 	struct spi_device *spi = context;
 #if NEURONSPI_DETAILED_DEBUG > 0
 	printk(KERN_INFO "UNIPISPI: Regmap_hw_gather_write reg[%d](%zu) val(%zu):%8ph\n", *mb_reg_buf, reg_size, val_size, val);
-#endif    
+#endif
 	if (reg_size == sizeof(u16)) {
 		return unipispi_modbus_write_register(spi, mb_reg_buf[0], *((u16*)val));
 	}
 	if (reg_size == sizeof(u32)) {
 		return unipispi_modbus_write_u32(spi, mb_reg_buf[0], *((u32*)val));
 	}
-    
+
     if (val_size & 1) return 0; // val_size must be even (u16)
     return unipispi_modbus_write_many(spi, mb_reg_buf[0], (u16*)val, val_size / sizeof(u16));
 
@@ -2151,7 +2220,7 @@ int neuronspi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size
     }
 
     if (val_size & 1) return 0; // val_size must be even (u16)
-    
+
     return unipispi_modbus_read_many(spi, *mb_reg_buf, (u16*) val_buf, val_size / (sizeof(u16)));
 
 /*
@@ -2235,7 +2304,7 @@ void neuronspi_board_device_remove(struct platform_device * board_device)
     struct neuronspi_board_device_data *board_data = platform_get_drvdata(board_device);
     struct neuronspi_driver_data *n_spi = board_data->n_spi;
     int i;
-    
+
     if (board_data->led_driver) {
         for (i = 0; i < n_spi->features->led_count; i++) {
             led_classdev_unregister(&(board_data->led_driver[i].ldev));
@@ -2249,7 +2318,7 @@ void neuronspi_board_device_remove(struct platform_device * board_device)
     if (board_data->do_driver) { neuronspi_gpio_remove(board_data->do_driver); }
     if (board_data->ro_driver) { neuronspi_gpio_remove(board_data->ro_driver); }
     //unipi_spi_trace(KERN_INFO "UNIPISPI: GPIO Driver unregistered\n");
-        
+
     if (board_data->stm_ai_driver) { iio_device_unregister(board_data->stm_ai_driver); }
     if (board_data->stm_ao_driver) {	iio_device_unregister(board_data->stm_ao_driver); }
     if (board_data->sec_ai_driver) {
@@ -2268,7 +2337,7 @@ void neuronspi_board_device_remove(struct platform_device * board_device)
     }
     //unipi_spi_trace(KERN_INFO "UNIPISPI: IIO Driver unregistered\n");
 
-		
+
     platform_set_drvdata(board_device, 0);
     kfree(board_data);
     platform_device_unregister(board_device);
