@@ -166,6 +166,7 @@ struct neuronspi_board_device_data {
 #define NEURONSPI_BOARD_LOWER_E4AI4AO_ID	11
 #define NEURONSPI_BOARD_LOWER_B485_ID		13
 #define NEURONSPI_BOARD_LOWER_E4LIGHT_ID	14
+#define IRIS_BOARD_ICDIS4_ID				25
 
 // Upper Boards
 #define NEURONSPI_BOARD_UPPER_NONE_ID		0
@@ -363,8 +364,9 @@ extern struct neuronspi_board_combination NEURONSPI_MODEL_L505_HW_DEFINITION_BOA
 #define NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD_SIZE 3
 extern struct neuronspi_board_combination NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD[NEURONSPI_MODEL_L533_HW_DEFINITION_BOARD_SIZE];
 
+
 // Board table
-#define NEURONSPI_BOARDTABLE_LEN		18
+#define NEURONSPI_BOARDTABLE_LEN		19
 extern struct neuronspi_board_entry NEURONSPI_BOARDTABLE[];
 
 // Module table
