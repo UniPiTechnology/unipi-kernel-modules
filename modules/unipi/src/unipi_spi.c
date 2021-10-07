@@ -1282,6 +1282,19 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 		//devtype = (struct neuronspi_devtype *)id_entry->driver_data;
 	}
 
+	//Validate board index range
+	if ((n_spi->neuron_index < 0) || ((n_spi->neuron_index > NEURONSPI_MAX_DEVS))) {
+		printk(KERN_ERR "UNIPISPI: %s has invalid board index (%d)!\n", *(&spi->dev.of_node->full_name), n_spi->neuron_index);
+        kfree(n_spi);
+		return -ENODEV;
+	}
+
+	//Check if board index is not already assigned
+	if (neuronspi_s_dev[n_spi->neuron_index] != NULL) {
+		printk(KERN_ERR "UNIPISPI: %s has duplicit board index (%d)!\n", *(&spi->dev.of_node->full_name), n_spi->neuron_index);
+        kfree(n_spi);
+		return -ENODEV;
+	}
 
 	// We perform an initial probe of registers 1000-1004 to identify the device, using a premade message
 	neuronspi_spi_send_const_op(spi, &UNIPISPI_IDLE_MESSAGE, &recv_op, 0, NEURONSPI_DEFAULT_FREQ, 25);
@@ -1379,7 +1392,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	spi_set_drvdata(spi, n_spi);
 	neuronspi_s_dev[n_spi->neuron_index] = spi;
 
-	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {
+	if (neuronspi_probe_count == NEURONSPI_MAX_DEVS) {	//TODO - model guess procedure is obsolete - will be removed
 		neuronspi_model_id = neuronspi_find_model_id(neuronspi_probe_count);
 	}
 	spin_unlock_irqrestore(neuronspi_probe_spinlock, flags);
