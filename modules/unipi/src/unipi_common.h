@@ -54,7 +54,7 @@
 #endif
 #define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.61:2021:07:13"
 
-#define NEURONSPI_MAX_DEVS				3
+#define NEURONSPI_MAX_DEVS				7	//Maximal SPI card count
 #define NEURONSPI_MAX_UART				16
 #define NEURONSPI_BUFFER_MAX			1152
 #define NEURONSPI_HEADER_LENGTH 		10
