@@ -1,8 +1,0 @@
-Package: neuron-kernel
-Architecture: armhf
-Pre-Depends: unipi-common
-Depends: ${misc:Depends}, raspberrypi-kernel(=${PKG-KERNEL-VER}), unipi-firmware (>=5.50)
-Description: UniPi Neuron kernel modules
- Binary kernel modules for UniPi Neuron controller. Compiled with
- raspberrypi-kernel from Raspbian distribution. 
-
