@@ -2,7 +2,7 @@
 
 echo "Update package definition and install additional packages based on PLATFORM"
 
-/ci-scripts/fix-product-repository.sh
+./fix-product-repository.sh
 
 if [ "$PRODUCT" == "axon" ]; then
     apt update
