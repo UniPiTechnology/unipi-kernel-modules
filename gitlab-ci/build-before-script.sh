@@ -2,6 +2,8 @@
 
 echo "Update package definition and install additional packages based on PLATFORM"
 
+/ci-scripts/fix-product-repository.sh
+
 if [ "$PRODUCT" == "axon" ]; then
     apt update
     apt install -y axon-kernel-headers
@@ -14,10 +16,6 @@ EOF
     fi
 
 elif [ "$PRODUCT" == "neuron64" ]; then
-    . /ci-scripts/include.sh
-    RASPBIAN_REPO="http://archive.raspberrypi.org/debian"
-    curl $RASPBIAN_REPO/raspberrypi.gpg.key  | apt-key add -
-    echo "deb $RASPBIAN_REPO/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/raspi.list
     apt-get update
     apt-get install -y raspberrypi-kernel-headers
 
@@ -33,7 +31,6 @@ EOF
     fi
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
-    sed 's/main g1-main/main zulu-main/g' -i /etc/apt/sources.list.d/unipi.list
     apt update
     apt install -y zulu-kernel-headers
     # modify repo-patch-table
