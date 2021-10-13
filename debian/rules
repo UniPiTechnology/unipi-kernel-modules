@@ -14,26 +14,12 @@
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export DEB_LDFLAGS_SET = -zrelro
 
-MOD_VERSION=$(shell dpkg-parsechangelog |grep ^Version:|cut -d ' ' -f 2)
-
 clean:
-	#cat debian/control.in debian/control.dkms >debian/control
 	dh clean --with dkms
-
-%:
-	dh $@ --with dkms
+	[ -x debian/control-generator.sh ] && debian/control-generator.sh
 
 
 override_dh_installmodules:
 	DH_AUTOSCRIPTDIR=debian/autoscripts dh_installmodules
 
-override_dh_dkms:
-	dh_dkms -V $(MOD_VERSION)
-	make dkms DESTDIR=$(PWD)/debian/unipi-kernel-modules-dkms/usr/src/unipi-$(MOD_VERSION)
-
-override_dh_auto_build:
-	@echo "skip build"
-
-override_dh_auto_install:
-	@echo skip install
-
+-include debian/rules.in

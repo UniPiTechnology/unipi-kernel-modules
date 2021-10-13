@@ -5,6 +5,13 @@ echo "Update package definition and install additional packages based on PLATFOR
 if [ "$PRODUCT" == "axon" ]; then
     apt update
     apt install -y axon-kernel-headers
+elif [ "$PRODUCT" == "neuron64" ]; then
+    . /ci-scripts/include.sh
+    RASPBIAN_REPO="http://archive.raspberrypi.org/debian"
+    curl $RASPBIAN_REPO/raspberrypi.gpg.key  | apt-key add -
+    echo "deb $RASPBIAN_REPO/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/raspi.list
+    apt-get update
+    apt-get install -y raspberrypi-kernel-headers
 elif [ "$PRODUCT" == "g1" ]; then
     apt update
     apt install -y g1-kernel-headers
