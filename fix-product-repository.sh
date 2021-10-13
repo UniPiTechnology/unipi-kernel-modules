@@ -1,33 +1,45 @@
 #!/bin/bash
-
-echo "Update apt repository based on PRODUCT"
 #
-# create    /etc/apt/sources.list.d/unipi-product.list
-# and/or    /etc/apt/sources.list.d/raspi.list
+# call /ci-scripts/fix-product-repository.sh  PRODUCT DEBIAN_VESRION
 #
-# file /etc/apt/sources.list.d/unipi.list already contains
-#       deb UNIPI_REPO main
+# (re)creates  /etc/apt/sources.list.d/unipi.list
+# and/or       /etc/apt/sources.list.d/raspi.list
+#
 #
 
-. /ci-scripts/include.sh
+product=${1}
+debian_version=${2}
+
+echo "Update apt repository based on PRODUCT=$product DEBIAN_VERSION=$debian_version"
 
 RASPBIAN_REPO="http://archive.raspberrypi.org/debian"
 UNIPI_REPO="https://repo.unipi.technology/debian"
 
+components="main"
+
 ## for Raspberry Pi based products add raspbian repo
-if [ "$PRODUCT" == "neuron64" -o "$PRODUCT" == "neuron" ]; then
+if [ "$product" == "neuron64" -o "$product" == "neuron" ]; then
     #curl $RASPBIAN_REPO/raspberrypi.gpg.key  | apt-key add - # done in bob-the-builder
-    echo "deb ${RASPBIAN_REPO}/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/raspi.list
-    [ "${DEBIAN_VERSION}" = "buster" ] && exit
+    echo "deb ${RASPBIAN_REPO}/ ${debian_version} main" > /etc/apt/sources.list.d/raspi.list
 fi
 
-# skip all for stretch
-if [ "${DEBIAN_VERSION}" = "stretch" ]; then exit; fi
+case "${product}-${debian_version}" in
 
-if [ "$PRODUCT" == "axon" -a "${DEBIAN_VERSION}" = "buster" ]; then exit; fi
+    neuron-stretch | neuron-buster )
+            components="main"
+            ;;
 
-if [ "${DEBIAN_VERSION}" = "buster" ]; then 
-    rm /etc/apt/sources.list.d/unipi.list
-fi
+    axon-stretch | axon-buster )
+            components="main"
+            ;;
 
-echo "deb ${UNIPI_REPO}/ ${DEBIAN_VERSION} $PRODUCT-main" > /etc/apt/sources.list.d/unipi-product.list
+    zulu-buster | g1-buster )
+            components="${product}-main"
+            ;;
+
+    * )
+            components="${product}-main main"
+            ;;
+esac
+
+echo "deb ${UNIPI_REPO}/ ${debian_version} ${components}" > /etc/apt/sources.list.d/unipi.list
