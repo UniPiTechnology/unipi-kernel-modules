@@ -1,9 +1,0 @@
-Source: unipi-kernel-modules
-Section: kernel
-Priority: optional
-Maintainer: Miroslav Ondra <info@unipi.technology>
-Build-Depends: debhelper (>= 9)
-Standards-Version: 3.9.8
-Homepage: https://www.unipi.technology/
-Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
-

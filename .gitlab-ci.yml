@@ -4,8 +4,9 @@ include:
 
 variables:
     package_name: "unipi-kernel-modules"
-    build_for_product: "axon neuron g1 patron zulu iris" # omit neuron64 for now
-    build_for_distribution: "oldstable stable" # omit bullseye for now
-    build_independent_for: "stable+oldstable newstable"
+    build_for_product: "all"
+    build_for_distribution: "all"
+    build_independent_for: "stable+oldstable+newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
+    disable_for: "newstable-axon newstable-g1"
