@@ -9,4 +9,4 @@ variables:
     build_independent_for: "stable+oldstable+newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
-    disable_for: "newstable-axon newstable-g1"
+    disable_for: "newstable-axon"
