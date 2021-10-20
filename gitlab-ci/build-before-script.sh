@@ -23,13 +23,6 @@ elif [ "$PRODUCT" == "neuron64" ]; then
 elif [ "$PRODUCT" == "g1" ]; then
     apt update
     apt install -y g1-kernel-headers
-    if [ "${DEBIAN_VERSION}" = "buster" ]; then
-        cat >/ci-scripts/repo_patch_table.txt <<EOF
-
-buster-g1-main    buster-g1-main  bullseye-g1-main
-buster-g1-test    buster-g1-test  bullseye-g1-test
-EOF
-    fi
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
     apt update
