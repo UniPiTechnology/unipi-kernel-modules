@@ -175,7 +175,8 @@ u32 neuronspi_uart_tx_empty(struct uart_port *port)
 {
 	struct neuronspi_port *n_port = to_neuronspi_port(port, port);
     int len = n_port->tx_fifo_len;
-    if (len > 0) {
+    if (len > 0 && n_port->pending_txop == 0) {
+        n_port->pending_txop = 1;
         unipi_spi_get_tx_fifo(neuronspi_s_dev[n_port->dev_index], n_port);
     }
 	unipi_uart_trace("ttyNS%d Tx empty? %s\n", port->line, (len==0)?"Yes":"No");
