@@ -9,8 +9,9 @@ Vcs-Git: https://git.unipi.technology/UniPi/unipi-kernel.git
 
 Package: unipi-kernel-modules-dkms
 Architecture: all
-Pre-Depends: raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0), unipi-common
-Depends: ${misc:Depends}, dkms, unipi-firmware (>=5.50)
+Pre-Depends: ${unipi:Pre-Depends}
+Depends: ${misc:Depends}, dkms, ${unipi:Depends}
+Suggests: ${unipi:Suggests}
 Replaces: neuron-kernel, unipi-kernel-modules
 Conflicts: neuron-kernel, unipi-kernel-modules
 Description: UniPi Neuron/Axon kernel modules - DKMS source

@@ -13,9 +13,24 @@ PROJECT_VERSION=$(dpkg-parsechangelog -S Version)
 
 if [ -z "${PRODUCT}" ]; then
     ################## dkms #################333
+    BINARY_PKG_NAME=unipi-kernel-modules-dkms
+    if [ "${DEBIAN_VERSION}" == "stretch" -o "${DEBIAN_VERSION}" == "buster" ]; then
+        pre_depends="raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0), unipi-common"
+        depends="unipi-firmware (>=5.50)"
+    else
+        unset pre_depends
+        depends="linux-headers(>=4.0), unipi-os-configurator-data"
+        suggests="unipi-firmware"
+    fi
     cat >debian/rules.in <<EOF
 %:
 	dh \$@  --with dkms
+
+override_dh_prep:
+	@dh_prep --exclude=${BINARY_PKG_NAME}.substvars
+	@echo unipi:Pre-Depends="${pre_depends}" >> debian/${BINARY_PKG_NAME}.substvars
+	@echo unipi:Depends="${depends}" >> debian/${BINARY_PKG_NAME}.substvars
+	@echo unipi:Suggests="${suggests}" >> debian/${BINARY_PKG_NAME}.substvars
 
 override_dh_dkms:
 	dh_dkms -V ${PROJECT_VERSION}
@@ -111,6 +126,15 @@ cat debian/changelog >>debian/${BINARY_PKG_NAME}.changelog
 #####################################################################
 ### Append binary packages definition to control file
 
+if [ "${DEBIAN_VERSION}" == "stretch" -o "${DEBIAN_VERSION}" == "buster" ]; then
+    pre_depends="unipi-common"
+    depends="unipi-firmware (>=5.50)"
+else
+    unset pre_depends
+    depends="unipi-os-configurator-data"
+    suggests="unipi-firmware"
+fi
+
 if [ ${BINARY_PKG_NAME} == "unipi-kernel-modules" ]; then
     breaks="neuron-kernel"
     provides=""
@@ -126,8 +150,9 @@ cat >>debian/control <<EOF
 
 Package: ${BINARY_PKG_NAME}
 Architecture: ${arch}
-Pre-Depends: unipi-common
-Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}), unipi-firmware (>=5.50)
+Pre-Depends: ${pre_depends}
+Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}), ${depends}
+Suggests: ${suggests}
 Provides: ${provides}
 Replaces: ${breaks}
 Breaks: ${breaks}
