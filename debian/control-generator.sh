@@ -20,7 +20,8 @@ if [ -z "${PRODUCT}" ]; then
     else
         unset pre_depends
         depends="linux-headers(>=4.0), unipi-os-configurator-data"
-        suggests="unipi-firmware"
+        #suggests="unipi-firmware"
+        unset suggests
     fi
     cat >debian/rules.in <<EOF
 %:
@@ -132,7 +133,8 @@ if [ "${DEBIAN_VERSION}" == "stretch" -o "${DEBIAN_VERSION}" == "buster" ]; then
 else
     unset pre_depends
     depends="unipi-os-configurator-data"
-    suggests="unipi-firmware"
+    #suggests="unipi-firmware"
+    unset suggests
 fi
 
 if [ ${BINARY_PKG_NAME} == "unipi-kernel-modules" ]; then
