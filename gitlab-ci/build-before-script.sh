@@ -9,13 +9,13 @@ ARCH="$(dpkg-architecture -q DEB_BUILD_ARCH)"
 if [ "$PRODUCT" == "axon" ]; then
     apt update
     apt install -y axon-kernel-headers
-    if [ "${DEBIAN_VERSION}" = "buster" ]; then
-        cat >/ci-scripts/repo_patch_table.txt <<EOF
-
-buster-axon-main    buster-main  bullseye-axon-main
-buster-axon-test    buster-test  bullseye-axon-test
-EOF
-    fi
+#    if [ "${DEBIAN_VERSION}" = "buster" ]; then
+#        cat >/ci-scripts/repo_patch_table.txt <<EOF
+#
+#buster-axon-main    buster-main  bullseye-axon-main
+#buster-axon-test    buster-test  bullseye-axon-test
+#EOF
+#    fi
 
 elif [ "$PRODUCT" == "neuron64" ]; then
     apt-get update
