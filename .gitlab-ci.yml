@@ -4,8 +4,8 @@ include:
 
 variables:
     package_name: "unipi-kernel-modules"
-    build_for_product: "all"
-    build_for_distribution: "all"
+    build_for_product: "neuron64"
+    build_for_distribution: "newstable"
     build_independent_for: "stable+oldstable newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
