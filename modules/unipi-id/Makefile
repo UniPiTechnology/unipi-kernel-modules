@@ -1,0 +1,44 @@
+# Note: Compiling kernel modules requires creating symlinks, which is not possible on certain 
+# filesystems (notably VirtualBox vmfs); therefore we allow using /run/ through the 'symlink' target,
+# if necessary.
+ 
+LINUX_DIR_PATH = /lib/modules/$(shell uname -r)/build
+ifdef CCPREFIX
+    CCPAR = CROSS_COMPILE=${CCPREFIX}
+endif
+ifdef ARCH
+    CCPAR += ARCH=${ARCH}
+endif
+
+EXTRA_CFLAGS=-I$(PWD)/../../unipi-hardware-id/include
+
+MODULE_MAKE_FILE = Makefile
+INSTALL = install
+
+C_SRC_FILES += src/unipi_id.c
+
+H_SRC_FILES += src/unipi_id.h
+
+OBJ_FILES  = $(C_SRC_FILES:.c=.o)
+
+obj-m += unipi_id.o
+
+UNIPI_KERNEL_MODULES = $(obj-m:.o=.ko)
+
+unipi_id-objs := ${OBJ_FILES}
+#unipi_id-objs := src/unipi_id.o
+
+.PHONY: default
+default: all ;
+
+all: 
+	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
+
+modules_install: 
+	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
+
+clean: 
+	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
+	rm -f ${UNIPI_KERNEL_MODULES} $(obj-m:.o=.mod.c) $(obj-m:.o=.mod) .*.cmd *.o modules.order Module.symvers
+	rm -rf .tmp_versions
+
