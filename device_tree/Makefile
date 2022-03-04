@@ -13,6 +13,7 @@ endif
 PWD := $(shell pwd)
 
 dtbo-y += neuron-spi-new.dtbo
+dtbo-y += unipi-id.dtbo
 
 targets += $(dtbo-y)
 always  := $(dtbo-y)
