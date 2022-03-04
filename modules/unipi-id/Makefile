@@ -37,6 +37,10 @@ all:
 modules_install: 
 	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
 
+dkms:
+	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
+	$(INSTALL) -D $(C_SRC_FILES) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
+
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
 	rm -f ${UNIPI_KERNEL_MODULES} $(obj-m:.o=.mod.c) $(obj-m:.o=.mod) .*.cmd *.o modules.order Module.symvers
