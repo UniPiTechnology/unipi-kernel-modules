@@ -47,6 +47,11 @@ EOF
 fi
 
 case "${PRODUCT}" in
+    unipi1 )
+        BINARY_PKG_NAME=unipi-kernel-modules
+        PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+        PKG_KERNEL_IMAGE=raspberrypi-kernel
+        ;;
     neuron )
         if [ "${DEBIAN_VERSION}" == "stretch" ]; then
             BINARY_PKG_NAME=neuron-kernel
