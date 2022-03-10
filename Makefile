@@ -3,7 +3,7 @@
 # if necessary.
 
 MODULES_DIR_PATH = ${PWD}/modules/
-MODULES_LIST = unipi/ rtc-unipi/ unipi-id/
+MODULES_LIST = unipi/ rtc-unipi/ unipi-id/ unipi-rfkill/
 
 .PHONY: default
 #default: symlink ;
