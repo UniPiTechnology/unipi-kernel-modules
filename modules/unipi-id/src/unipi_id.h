@@ -65,15 +65,8 @@ struct unipi_id_data
 	uniee_descriptor_area *loaded_descriptor[UNIPI_ID_MAX_IDS];
 };
 
-//int unipi_id_probe(struct i2c_adapter *adapter, uint32_t main_id, struct unipi_id_data * unipi_id_data);
-//int unipi_id_remove(struct unipi_id_data * unipi_id_data);
-
-//int unipi_id_add_group(struct device *dev, struct unipi_id_data *unipi_id);
 const char* unipi_id_get_family_name(struct unipi_id_data *unipi_id);
 
 #endif
-
-//int check_unipi1_eeprom(char *buf, int size, unipi_description* description);
-//int check_unipi_eeprom(char *buf, int size, unipi_description* description);
 
 #endif /* UNIPI_ID_H_*/
