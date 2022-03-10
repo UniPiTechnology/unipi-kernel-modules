@@ -98,65 +98,81 @@ const char* unipi_id_get_family_name(struct unipi_id_data *unipi_id)
 }
 EXPORT_SYMBOL_GPL(unipi_id_get_family_name);
 
+
 /*
-	loads content of nvmem (using name id_names[nvmem_index]) into buf
-	check unipi_id validity
-	returns descriptor if valid content 
-			NULL if content was read but not valid
-			ERR if couldnot read data
+    compare only start of string
 */
-uniee_descriptor_area* unipi_id_load_nvmem(struct device *dev, int nvmem_index, size_t *size, uint8_t *buf)
+int uniee_match_name(struct device *dev, const void *name)
 {
-	struct nvmem_device *nvmem;
-	int ret;
-
-	*size = 0;
-	nvmem = nvmem_device_get(dev, id_names[nvmem_index]);
-	//dev_info(dev, "Testing nvmem: %s = %p\n", labels[index][0], nvmem);
-	if (IS_ERR(nvmem))
-		return ERR_PTR(PTR_ERR(nvmem));
-	ret = nvmem_device_read(nvmem, 0, UNIEE_MIN_EE_SIZE, buf);
-	if (ret == UNIEE_MIN_EE_SIZE) {
-		*size = UNIEE_MIN_EE_SIZE;
-		ret = nvmem_device_read(nvmem, UNIEE_MIN_EE_SIZE, UNIEE_MIN_EE_SIZE, buf+UNIEE_MIN_EE_SIZE);
-		if (ret == UNIEE_MIN_EE_SIZE) {
-			if (memcmp(buf, buf+UNIEE_MIN_EE_SIZE, UNIEE_MIN_EE_SIZE) != 0)
-				*size += UNIEE_MIN_EE_SIZE;
-		}
-	}
-	//ret = nvmem_device_read(nvmem, 0, size, buf);
-	nvmem_device_put(nvmem);
-	//if (ret != size) 
-	//	return NULL;
-
-	if (*size == 0) return NULL;
-
-	return uniee_get_valid_descriptor(buf, *size);
+    return strncmp(dev_name(dev), name, strlen(name)) == 0;
 }
 
+
+struct nvmem_device * unipi_id_nvmem_get(struct device *dev, int nvmem_index)
+{
+	struct nvmem_device *nvmem;
+
+	if (dev->of_node) {
+		nvmem = of_nvmem_device_get(dev->of_node, id_names[nvmem_index]);
+		if (!IS_ERR(nvmem) || (PTR_ERR(nvmem) == -EPROBE_DEFER))
+			return nvmem;
+	}
+	nvmem = nvmem_device_find((void*)id_names[nvmem_index], uniee_match_name);
+	return nvmem;
+}
+
+/*
+	loads content of nvmem (using name id_names[nvmem_index]) into buf
+	returns size of data
+		or negative error
+*/
+int unipi_id_load_nvmem(struct device *dev, int nvmem_index, uint8_t *buf)
+{
+	struct nvmem_device *nvmem;
+	int size, ret;
+
+	nvmem = unipi_id_nvmem_get(dev, nvmem_index);
+	if (IS_ERR(nvmem))
+		return PTR_ERR(nvmem);
+
+	dev_info(dev, "Found nvmem %s\n", nvmem_dev_name(nvmem));
+
+	size = nvmem_device_read(nvmem, 0, UNIEE_MIN_EE_SIZE, buf);
+	if (size != UNIEE_MIN_EE_SIZE)
+		return -ENOENT;
+	ret = nvmem_device_read(nvmem, UNIEE_MIN_EE_SIZE, UNIEE_MIN_EE_SIZE, buf+UNIEE_MIN_EE_SIZE);
+	if (ret == UNIEE_MIN_EE_SIZE) {
+		if (memcmp(buf, buf+UNIEE_MIN_EE_SIZE, UNIEE_MIN_EE_SIZE) != 0)
+			size += UNIEE_MIN_EE_SIZE;
+	}
+	nvmem_device_put(nvmem);
+	return size;
+}
 
 static uniee_descriptor_area* unipi_id_load_boardmem(struct device *dev,
 				int nvmem_index, struct unipi_id_data * unipi_id, uint8_t *buf)
 {
 	uniee_descriptor_area *descriptor, *ndescriptor;
-	size_t size;
+	int size;
 	int i;
 
-	descriptor = unipi_id_load_nvmem(dev, nvmem_index, &size, buf);
-	if (IS_ERR(descriptor)) 
-		return ERR_PTR(-1);
+	size = unipi_id_load_nvmem(dev, nvmem_index, buf);
+	if (size < 0)
+		return ERR_PTR(size);
+
+	descriptor = uniee_get_valid_descriptor(buf, size);
 
 	if (nvmem_index==0) {
 		if (descriptor) {
 			uniee_fix_legacy_content(buf, size, descriptor);
+			unipi_id->family_data = get_family_data(descriptor->product_info.platform_id);
 		}
-		unipi_id->family_data = get_family_data(descriptor->product_info.platform_id);
 		ndescriptor = &unipi_id->descriptor;
 	} else {
 		if (!unipi_id->loaded_descriptor[nvmem_index]) {
 			ndescriptor = kmalloc(sizeof(uniee_descriptor_area), GFP_KERNEL);
 			if (!ndescriptor)
-				return ERR_PTR(-1);
+				return ERR_PTR(-ENOMEM);
 			unipi_id->loaded_descriptor[nvmem_index] = ndescriptor;
 		} else {
 			ndescriptor = unipi_id->loaded_descriptor[nvmem_index];
@@ -232,6 +248,7 @@ static ssize_t product_description_show(struct device *dev, struct device_attrib
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_3_t *bank3;
+
 	if (unipi_id == NULL)
 		return 0;
 	bank3 = &unipi_id->descriptor.product_info;
@@ -295,11 +312,18 @@ static ssize_t baseboard_description_show(struct device *dev, struct device_attr
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_2_t *bank2;
+	const char *nvname;
+	struct nvmem_device *nvmem;
+	int ret;
+
 	if (unipi_id == NULL)
 		return 0;
 	bank2 = &unipi_id->descriptor.board_info;
 
-	return scnprintf(buf, 2048,
+	nvmem = unipi_id_nvmem_get(dev, 0);
+	nvname = (IS_ERR(nvmem)) ? "" : nvmem_dev_name(nvmem);
+
+	ret = scnprintf(buf, 2048,
 				"Modul string:  Baseboard\n"
 				"Modul version: %u.%u\n"
 				"Modul serial:  %08u\n"
@@ -308,7 +332,9 @@ static ssize_t baseboard_description_show(struct device *dev, struct device_attr
 				bank2->board_version.major, bank2->board_version.minor,
 				bank2->board_serial,
 				bank2->board_model,
-				id_names[0]);
+				nvname);
+	nvmem_device_put(nvmem);
+	return ret;
 }
 DEVICE_ATTR_RO(baseboard_description);
 
@@ -390,13 +416,21 @@ static ssize_t module_description_show(struct device *dev, struct device_attribu
 	struct unipi_id_module_attribute *ea = to_unipi_id_attr(attr);
 	int nvmem_index;
 	uniee_descriptor_area *descriptor;
+	const char *nvname;
+	struct nvmem_device *nvmem;
+	int ret;
+
 	if (unipi_id == NULL)
 		return 0;
 	nvmem_index =  unipi_id->active_slot[ea->module_index]+1;
 	descriptor = unipi_id_get_descriptor(dev, nvmem_index, unipi_id);
 	if (IS_ERR(descriptor) || (!descriptor))
 		return 0;
-	return scnprintf(buf, 2048,
+
+	nvmem = unipi_id_nvmem_get(dev, nvmem_index);
+	nvname = (IS_ERR(nvmem)) ? "" : nvmem_dev_name(nvmem);
+
+	ret = scnprintf(buf, 2048,
 				"Modul string:  %.6s\n"
 				"Modul version: %u.%u\n"
 				"Modul serial:  %08u\n"
@@ -409,8 +443,10 @@ static ssize_t module_description_show(struct device *dev, struct device_attribu
 				descriptor->board_info.board_serial,
 				descriptor->board_info.board_model,
 				descriptor->product_info.sku,
-				id_names[nvmem_index],
+				nvname,
 				unipi_id->family_data->iogroup[unipi_id->active_slot[ea->module_index]]);
+	nvmem_device_put(nvmem);
+	return ret;
 }
 
 
@@ -472,8 +508,6 @@ int unipi_id_add_modules(struct device *dev, struct unipi_id_data *unipi_id)
 static int unipi_id_do_refresh(struct device *dev, struct unipi_id_data *unipi_id)
 {
 	int i;
-	size_t size;
-	const struct unipi_id_family_data *family_data;
 	uint8_t buf[UNIEE_MAX_EE_SIZE];
 	uniee_descriptor_area *descriptor;
 
@@ -485,16 +519,9 @@ static int unipi_id_do_refresh(struct device *dev, struct unipi_id_data *unipi_i
 		}
 	}
 	/* Read and analyze main id eprom */
-	descriptor = unipi_id_load_nvmem(dev, 0, &size, buf);
+	descriptor = unipi_id_load_boardmem(dev, 0, unipi_id, buf);
 	if (IS_ERR(descriptor))
 		return -EINVAL;
-	if (descriptor != NULL) {
-		uniee_fix_legacy_content(buf, size, descriptor);
-		memcpy(&unipi_id->descriptor, descriptor, sizeof(uniee_descriptor_area));
-	}
-
-	family_data = get_family_data(unipi_id->descriptor.product_info.platform_id);
-	unipi_id->family_data = family_data;
 	return 0;
 }
 
@@ -517,17 +544,16 @@ static int do_checksum(struct device *dev,struct unipi_id_data *unipi_id, unsign
 	//char *hash_alg_name = "sha1-padlock-nano";
 	char *hash_alg_name = "sha1"; // digest size = 20
 	struct shash_desc *sdesc;
-	size_t size;
+	int size;
 	int nvmem_index;
-	uniee_descriptor_area *desc;
 	uint8_t data[UNIEE_MAX_EE_SIZE];
-    int ret, i;
+	int ret, i;
 
-    alg = crypto_alloc_shash(hash_alg_name, CRYPTO_ALG_TYPE_SHASH, 0);
-    if (IS_ERR(alg)) {
+	alg = crypto_alloc_shash(hash_alg_name, CRYPTO_ALG_TYPE_SHASH, 0);
+	if (IS_ERR(alg)) {
             pr_info("can't alloc alg %s\n", hash_alg_name);
             return PTR_ERR(alg);
-    }
+	}
 
 	size = sizeof(struct shash_desc) + crypto_shash_descsize(alg);
 	sdesc = kmalloc(size, GFP_KERNEL);
@@ -538,17 +564,17 @@ static int do_checksum(struct device *dev,struct unipi_id_data *unipi_id, unsign
 	ret = crypto_shash_init(sdesc);
 	if(ret!=0) return ret;
 
-	desc = unipi_id_load_nvmem(dev, 0, &size, data);
-	if (IS_ERR(desc))
-		return PTR_ERR(desc);
+	size = unipi_id_load_nvmem(dev, 0, data);
+	if (size < 0 )
+		return size;
 
 	ret = crypto_shash_update(sdesc, data, size);
 	if(ret!=0) return ret;
 
 	for (i=0; i<unipi_id->slot_count; i++) {
 		nvmem_index = unipi_id->active_slot[i]+1;
-		desc = unipi_id_load_nvmem(dev, nvmem_index, &size, data);
-		if (!IS_ERR(desc)) {
+		size = unipi_id_load_nvmem(dev, nvmem_index, data);
+		if (size>0) {
 			ret = crypto_shash_update(sdesc, data, size);
 			if(ret!=0) return ret;
 		}
@@ -602,13 +628,13 @@ static const struct property_entry* label_props_arr[8] = {
 
 static struct i2c_client* unipi_id_load_client(struct i2c_adapter *adapter, unsigned int index, const char* eprom_type, unsigned short address)
 {
-	struct device *dev = &adapter->dev;
+	//struct device *dev = &adapter->dev;
 	union i2c_smbus_data dummy;
 	struct nvmem_device *nvmem;
 	int err;
 	struct i2c_board_info info;
 
-	nvmem = nvmem_device_get(dev, id_names[index]);
+	nvmem = nvmem_device_find((void*)id_names[index], uniee_match_name);
 	//dev_info(dev, "Testing nvmem: %s = %p\n", id_names[index], nvmem);
 	if (!IS_ERR(nvmem)) {
 		// id eprom already loaded
@@ -627,8 +653,8 @@ static struct i2c_client* unipi_id_load_client(struct i2c_adapter *adapter, unsi
 		return ERR_PTR(err);
 	
 	strncpy(info.type, eprom_type, I2C_NAME_SIZE);
-	//info.properties = label_props_arr[index];
-	dev_info(dev, "TRY %s,  %d %d", info.type, info.addr, index);
+	info.properties = label_props_arr[index];
+	//dev_info(dev, "TRY %s,  %d %d", info.type, info.addr, index);
 	return i2c_new_client_device(adapter, &info);
 }
 
@@ -640,13 +666,18 @@ int unipi_id_probe(struct platform_device *pdev)
 	struct device_node *np;
 	struct i2c_adapter *adapter;
 	struct i2c_client *client;
-	uint32_t main_id = 0x57;
 	const struct unipi_id_family_data *family_data;
 	uint8_t buf[UNIEE_MAX_EE_SIZE];
 	uniee_descriptor_area *descriptor;
 	struct unipi_id_data unipi_id;
 	//int ret;
 	int i, slot_count;
+
+	memset(&unipi_id, 0, sizeof(struct unipi_id_data));
+	descriptor = unipi_id_load_boardmem(dev, 0, &unipi_id, buf);
+	if (IS_ERR(descriptor)) {
+		return PTR_ERR(descriptor);
+	}
 
 	np = of_parse_phandle(dev->of_node, "id-channel", 0);
 	if (!np) 
@@ -657,23 +688,6 @@ int unipi_id_probe(struct platform_device *pdev)
 	of_node_put(np);
 	if (adapter == NULL) {
 		return -EPROBE_DEFER; //-ENOENT;
-	}
-	device_property_read_u32(dev, "id-main", &main_id);
-
-	memset(&unipi_id, 0, sizeof(struct unipi_id_data));
-
-	/* Try to load primary unipi_id eprom on main_id */
-	client = unipi_id_load_client(adapter, 0, "24c01", main_id);
-	if (IS_ERR(client)) {
-		put_device(&adapter->dev);
-		return PTR_ERR(client);
-	}
-	unipi_id.loaded_clients[0] = client;
-	/* Read and analyze main id eprom */
-	descriptor = unipi_id_load_boardmem(dev, 0, &unipi_id, buf);
-	if (IS_ERR(descriptor)) {
-		put_device(&adapter->dev);
-		return -EINVAL;
 	}
 
 	family_data = unipi_id.family_data;
@@ -695,7 +709,7 @@ int unipi_id_probe(struct platform_device *pdev)
 	put_device(&adapter->dev);
 	unipi_id.slot_count = slot_count;
 
-	//dev_info(dev, "Found PLC %s (family %s)\n", unipi_id_data->description.model, family_data->name);
+	dev_info(dev, "Found PLC %.6s (family %s)\n", unipi_id.descriptor.product_info.model_str, family_data->name);
 	if (slot_count > 0) {
 		char buf[256] = "";
 		for (i=0; i<slot_count; i++)

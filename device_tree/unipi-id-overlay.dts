@@ -1,0 +1,33 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+
+	fragment@0 {
+		target = <&i2c1>;
+
+		__overlay__ {
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			status = "okay";
+
+			unipi_mb:24c01@57 {
+				compatible = "atmel,24c01";
+				reg = <0x57>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			unipi_id: unipi-id {
+				compatible = "unipi,unipi-id";
+				nvmem = <&unipi_mb>;
+				nvmem-names = "plcid0";
+				id-channel = <&i2c1>;
+			};
+		};
+	};
+};
