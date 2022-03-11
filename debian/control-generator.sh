@@ -118,10 +118,6 @@ else
     LINUX_DIR_PATH=$(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*\/build$/p')
 fi
 
-#if [ "${PRODUCT}" = "axon" ] || [ "${DEBIAN_VERSION}" = "stretch" ] ; then
-#    USE_UNIPI_ID="DISABLE_UNIPI_ID=1"
-#fi
-
 #####################################################################
 ### Create changelog for binary packages with modified version string
 
@@ -188,8 +184,8 @@ override_dh_auto_install:
 override_dh_auto_build:
 		for LDP in ${LINUX_DIR_PATH}; do \
 			make clean || exit 1;\
-			dh_auto_build -- LINUX_DIR_PATH=\$\${LDP} ${USE_UNIPI_ID} || exit 1;\
-			dh_auto_install --destdir=debian/tempdest -- LINUX_DIR_PATH=\$\${LDP} ${USE_UNIPI_ID} || exit 1;\
+			dh_auto_build -- LINUX_DIR_PATH=\$\${LDP} || exit 1;\
+			dh_auto_install --destdir=debian/tempdest -- LINUX_DIR_PATH=\$\${LDP} || exit 1;\
 		done
 EOF
 
