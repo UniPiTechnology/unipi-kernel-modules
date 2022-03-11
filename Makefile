@@ -3,7 +3,12 @@
 # if necessary.
 
 MODULES_DIR_PATH = ${PWD}/modules/
+ifeq ($(DISABLE_UNIPI_ID), 1)
+MODULES_LIST = unipi/ rtc-unipi/
+else
 MODULES_LIST = unipi/ rtc-unipi/ unipi-id/ unipi-rfkill/
+endif
+
 
 .PHONY: default
 #default: symlink ;
