@@ -6,8 +6,10 @@ echo "Update package definition and install additional packages based on PLATFOR
 ARCH="$(dpkg-architecture -q DEB_BUILD_ARCH)"
 /ci-scripts/fix-product-repository.sh "${DEBIAN_VERSION}" "${PRODUCT}" "${ARCH}"
 
+apt update
+apt upgrade -y
+
 if [ "$PRODUCT" == "axon" ]; then
-    apt update
     apt install -y axon-kernel-headers
 #    if [ "${DEBIAN_VERSION}" = "buster" ]; then
 #        cat >/ci-scripts/repo_patch_table.txt <<EOF
@@ -18,15 +20,12 @@ if [ "$PRODUCT" == "axon" ]; then
 #    fi
 
 elif [ "$PRODUCT" == "neuron64" ]; then
-    apt-get update
     apt-get install -y raspberrypi-kernel-headers
 
 elif [ "$PRODUCT" == "g1" ]; then
-    apt update
     apt install -y g1-kernel-headers
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
-    apt update
     apt install -y zulu-kernel-headers
     # modify repo-patch-table
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
