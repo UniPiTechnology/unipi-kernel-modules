@@ -15,39 +15,26 @@ EXTRA_CFLAGS=-I$(PWD)/../../unipi-hardware-id/include
 MODULE_MAKE_FILE = Makefile
 INSTALL = install
 
+#### skip making for old kernel 4.x 
+DOIT = $(shell grep -qse "^4\." include/config/kernel.release || echo 1)
+ifeq ($(DOIT), 1)
+
 C_SRC_FILES += src/unipi_id.c
-
 H_SRC_FILES += src/unipi_id.h
-
 OBJ_FILES  = $(C_SRC_FILES:.c=.o)
-
 obj-m += unipi_id.o
-
 UNIPI_KERNEL_MODULES = $(obj-m:.o=.ko)
-
 unipi_id-objs := ${OBJ_FILES}
-#unipi_id-objs := src/unipi_id.o
+endif
 
 .PHONY: default
 default: all ;
 
-#### skip making for old kernel 4.x 
-DOIT = $(shell grep -qse "^4\." $(LINUX_DIR_PATH)/include/config/kernel.release || echo 1)
-ifeq ($(DOIT), 1)
 all: 
 	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
 
 modules_install: 
 	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
-
-else
-all:
-	@true
-
-modules_install:
-	@true
-
-endif
 
 dkms:
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
