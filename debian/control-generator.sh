@@ -47,6 +47,11 @@ EOF
 fi
 
 case "${PRODUCT}" in
+    unipi1 )
+        BINARY_PKG_NAME=unipi-kernel-modules
+        PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+        PKG_KERNEL_IMAGE=raspberrypi-kernel
+        ;;
     neuron )
         if [ "${DEBIAN_VERSION}" == "stretch" ]; then
             BINARY_PKG_NAME=neuron-kernel
@@ -105,7 +110,7 @@ echo "PKG_KERNEL_VER = ${PKG_KERNEL_VER}"
 PKG_KERNEL_VER_STRIPPED="$(echo ${PKG_KERNEL_VER} | cut -d":" -f 2-)"
 echo "PKG_KERNEL_VER_STRIPPED = ${PKG_KERNEL_VER_STRIPPED}"
 
-if [ "${PRODUCT}" = "neuron" ]; then
+if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
     # in raspberrypi-kernel-headers can be more than one kernels for different SoC
     LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*-v7.*\/build$/p'))
     LINUX_DIR_PATH="${LINUX_DIR_ARR[*]}"
@@ -184,6 +189,12 @@ override_dh_auto_build:
 		done
 EOF
 
-#cat debian/rules.in
-#cat debian/unipi-kernel-modules.changelog
-#cat debian/control
+echo "==============================================================================================================="
+echo "debian/rules"
+echo "==============================================================================================================="
+cat debian/rules.in
+
+echo "==============================================================================================================="
+echo "debian/control"
+echo "==============================================================================================================="
+cat debian/control
