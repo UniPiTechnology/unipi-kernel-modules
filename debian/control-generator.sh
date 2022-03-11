@@ -118,9 +118,9 @@ else
     LINUX_DIR_PATH=$(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*\/build$/p')
 fi
 
-if [ "${PRODUCT}" = "axon" ] || [ "${DEBIAN_VERSION}" = "stretch" ] ; then
-    USE_UNIPI_ID="DISABLE_UNIPI_ID=1"
-fi
+#if [ "${PRODUCT}" = "axon" ] || [ "${DEBIAN_VERSION}" = "stretch" ] ; then
+#    USE_UNIPI_ID="DISABLE_UNIPI_ID=1"
+#fi
 
 #####################################################################
 ### Create changelog for binary packages with modified version string

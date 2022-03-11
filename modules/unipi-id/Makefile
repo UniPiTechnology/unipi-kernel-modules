@@ -31,6 +31,9 @@ unipi_id-objs := ${OBJ_FILES}
 .PHONY: default
 default: all ;
 
+#### skip making for old kernel 4.x 
+DOIT = $(shell grep -qse "^4\." $(LINUX_DIR_PATH)/include/config/kernel.release || echo 1)
+ifeq ($(DOIT), 1)
 all: 
 	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules
 
@@ -40,6 +43,18 @@ modules_install:
 dkms:
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
 	$(INSTALL) -D $(C_SRC_FILES) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
+
+else
+all:
+	@true
+
+modules_install:
+	@true
+
+dkms:
+	@true
+
+endif
 
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
