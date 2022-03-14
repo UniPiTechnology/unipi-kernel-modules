@@ -61,7 +61,7 @@ case "${PRODUCT}" in
         PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
         PKG_KERNEL_IMAGE=raspberrypi-kernel
         ;;
-    neuron64 )
+    neuron64 | unipi1x64)
         BINARY_PKG_NAME=unipi-kernel-modules
         PKG_KERNEL_IMAGE=raspberrypi-kernel
         PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
