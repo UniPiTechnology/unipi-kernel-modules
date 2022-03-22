@@ -19,7 +19,7 @@ if [ "$PRODUCT" == "axon" ]; then
 #EOF
 #    fi
 
-elif [ "$PRODUCT" == "neuron64" ]; then
+elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ] || [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ]; then
     apt-get install -y raspberrypi-kernel-headers
 
 elif [ "$PRODUCT" == "g1" ]; then
