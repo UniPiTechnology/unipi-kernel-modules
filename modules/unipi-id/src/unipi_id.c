@@ -577,7 +577,9 @@ static int do_checksum(struct device *dev,struct unipi_id_data *unipi_id, unsign
 		if (size>0) {
 			ret = crypto_shash_update(sdesc, data, size);
 			if(ret!=0) return ret;
-			ret = crypto_shash_update(sdesc, (const u8 *)&i, sizeof(i));
+			//memcpy(data, nvmem_index, sizeof(nvmem_index));
+			//ret = crypto_shash_update(sdesc, data, size);
+			ret = crypto_shash_update(sdesc, (const u8 *)&nvmem_index, sizeof(nvmem_index));
 			if(ret!=0) return ret;
 		}
 	}
