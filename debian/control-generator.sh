@@ -15,11 +15,11 @@ if [ -z "${PRODUCT}" ]; then
     ################## dkms #################333
     BINARY_PKG_NAME=unipi-kernel-modules-dkms
     if [ "${DEBIAN_VERSION}" == "stretch" -o "${DEBIAN_VERSION}" == "buster" ]; then
-        pre_depends="raspberrypi-kernel-headers | axon-kernel-headers | linux-headers(>=4.0), unipi-common"
+        pre_depends="raspberrypi-kernel-headers | axon-kernel-headers | g1-kernel-headers | zulu-kernel-headers, unipi-common"
         depends="unipi-firmware (>=5.50)"
     else
         unset pre_depends
-        depends="linux-headers(>=4.0), unipi-os-configurator-data"
+        depends="raspberrypi-kernel-headers | unipi-kernel-headers, unipi-os-configurator-data"
         #suggests="unipi-firmware"
         unset suggests
     fi
