@@ -23,10 +23,18 @@ elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ] || [ "$PRODUCT" 
     apt-get install -y raspberrypi-kernel-headers
 
 elif [ "$PRODUCT" == "g1" ]; then
-    apt install -y g1-kernel-headers
+    if [ "$DEBIAN_VERSION" = "buster" ]; then
+        apt install -y g1-kernel-headers
+    else
+        apt install -y unipi-kernel-headers
+    fi
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
-    apt install -y zulu-kernel-headers
+    if [ "$DEBIAN_VERSION" = "buster" ]; then
+        apt install -y zulu-kernel-headers
+    else
+        apt install -y unipi-kernel-headers
+    fi
     # modify repo-patch-table
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
