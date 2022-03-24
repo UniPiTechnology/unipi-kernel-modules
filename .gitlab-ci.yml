@@ -9,4 +9,5 @@ variables:
     build_independent_for: "stable+oldstable newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
-    disable_for: "newstable-axon newstable-g1"
+    # iris and patron are symlinked from zulu builed via repo patch table in before script
+    disable_for: "newstable-axon newstable-patron newstable-iris newstable-g1"

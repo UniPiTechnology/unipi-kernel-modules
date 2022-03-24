@@ -36,11 +36,11 @@ elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "
         apt install -y unipi-kernel-headers
     fi
     # modify repo-patch-table
-#    cat >>/ci-scripts/repo_patch_table.txt <<EOF
-#
-#bullseye-zulu-main    bullseye-zulu-main  bullseye-patron-main  bullseye-iris-main
-#bullseye-zulu-test    bullseye-zulu-test  bullseye-patron-test  bullseye-iris-test
-#EOF
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+bullseye-zulu-main    bullseye-zulu-main  bullseye-patron-main  bullseye-iris-main
+bullseye-zulu-test    bullseye-zulu-test  bullseye-patron-test  bullseye-iris-test
+EOF
 fi
 
 if [ -n "$PLATFORM" ]; then
