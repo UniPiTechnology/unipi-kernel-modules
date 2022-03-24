@@ -79,7 +79,7 @@ case "${PRODUCT}" in
         else
             BINARY_PKG_NAME=unipi-kernel-modules
             PKG_KERNEL_HEADERS=unipi-kernel-headers
-            PKG_KERNEL_IMAGE=unipi-kernel-image
+            PKG_KERNEL_IMAGE=unipi-kernel
         fi
         ;;
     zulu )
@@ -90,20 +90,20 @@ case "${PRODUCT}" in
         else
             BINARY_PKG_NAME=unipi-kernel-modules
             PKG_KERNEL_HEADERS=unipi-kernel-headers
-            PKG_KERNEL_IMAGE=unipi-kernel-image
+            PKG_KERNEL_IMAGE=unipi-kernel
         fi
         ;;
     iris )
         # build for >=bullseye
         BINARY_PKG_NAME=unipi-kernel-modules
         PKG_KERNEL_HEADERS=unipi-kernel-headers
-        PKG_KERNEL_IMAGE=unipi-kernel-image
+        PKG_KERNEL_IMAGE=unipi-kernel
         ;;
     patron )
         # build for >=bullseye
         BINARY_PKG_NAME=unipi-kernel-modules
         PKG_KERNEL_HEADERS=unipi-kernel-headers
-        PKG_KERNEL_IMAGE=unipi-kernel-image
+        PKG_KERNEL_IMAGE=unipi-kernel
         ;;
 esac
 
