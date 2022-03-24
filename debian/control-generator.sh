@@ -74,30 +74,36 @@ case "${PRODUCT}" in
     g1 )
         if [ "${DEBIAN_VERSION}" == "buster" ]; then
             BINARY_PKG_NAME=g1-unipi-kernel-modules
+            PKG_KERNEL_HEADERS=g1-kernel-headers
+            PKG_KERNEL_IMAGE=g1-kernel-image
         else
             BINARY_PKG_NAME=unipi-kernel-modules
+            PKG_KERNEL_HEADERS=unipi-kernel-headers
+            PKG_KERNEL_IMAGE=unipi-kernel-image
         fi
-        PKG_KERNEL_HEADERS=g1-kernel-headers
-        PKG_KERNEL_IMAGE=g1-kernel-image
         ;;
     zulu )
         if [ "${DEBIAN_VERSION}" == "buster" ]; then
             BINARY_PKG_NAME=zulu-unipi-kernel-modules
+            PKG_KERNEL_HEADERS=zulu-kernel-headers
+            PKG_KERNEL_IMAGE=zulu-kernel-image
         else
             BINARY_PKG_NAME=unipi-kernel-modules
+            PKG_KERNEL_HEADERS=unipi-kernel-headers
+            PKG_KERNEL_IMAGE=unipi-kernel-image
         fi
-        PKG_KERNEL_HEADERS=zulu-kernel-headers
-        PKG_KERNEL_IMAGE=zulu-kernel-image
         ;;
     iris )
+        # build for >=bullseye
         BINARY_PKG_NAME=unipi-kernel-modules
-        PKG_KERNEL_HEADERS=zulu-kernel-headers
-        PKG_KERNEL_IMAGE=zulu-kernel-image
+        PKG_KERNEL_HEADERS=unipi-kernel-headers
+        PKG_KERNEL_IMAGE=unipi-kernel-image
         ;;
     patron )
+        # build for >=bullseye
         BINARY_PKG_NAME=unipi-kernel-modules
-        PKG_KERNEL_HEADERS=zulu-kernel-headers
-        PKG_KERNEL_IMAGE=zulu-kernel-image
+        PKG_KERNEL_HEADERS=unipi-kernel-headers
+        PKG_KERNEL_IMAGE=unipi-kernel-image
         ;;
 esac
 
