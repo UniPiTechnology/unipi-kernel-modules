@@ -25,6 +25,9 @@ OBJ_FILES  = $(C_SRC_FILES:.c=.o)
 obj-m += unipi_id.o
 UNIPI_KERNEL_MODULES = $(obj-m:.o=.ko)
 unipi_id-objs := ${OBJ_FILES}
+
+H_EXTRA_FILES += $(PWD)/../../unipi-hardware-id/include/uniee.h
+H_EXTRA_FILES += $(PWD)/../../unipi-hardware-id/include/uniee_values.h
 endif
 
 .PHONY: default
@@ -39,6 +42,7 @@ modules_install:
 dkms:
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
 	$(INSTALL) -D $(C_SRC_FILES) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
+	$(INSTALL) -D $(H_EXTRA_FILES) -t $(INSTALL_MOD_PATH)/src
 
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
