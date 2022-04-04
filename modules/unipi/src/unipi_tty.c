@@ -1029,14 +1029,14 @@ void __exit unipi_tty_exit(void)
 
 struct tty_ldisc_ops unipi_tty_ldisc;
 static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
-			      char *fp, int count);
+			      const char *fp, int count);
 static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
-			      char *fp, int count);
+			      const char *fp, int count);
 static int (*alias_n_tty_ioctl)(struct tty_struct *tty, struct file *file,
                unsigned int cmd, unsigned long arg);
 
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
-			      char *fp, int count)
+			      const char *fp, int count)
 {
     int is_parmrk = I_PARMRK(tty);
     if (is_parmrk) {
@@ -1050,7 +1050,7 @@ static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *c
 }
 
 static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
-			      char *fp, int count)
+			      const char *fp, int count)
 {
     int ret;
     int is_parmrk = I_PARMRK(tty);
@@ -1120,6 +1120,10 @@ int __init unipi_tty_init(void)
 
 void __exit unipi_tty_exit(void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+     tty_unregister_ldisc(&unipi_tty_ldisc);
+#else
      tty_unregister_ldisc(N_PROFIBUS_FDL);
+#endif
 }
 #endif

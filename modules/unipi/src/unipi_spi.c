@@ -1243,7 +1243,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0) && LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
     struct spi_delay inactive_delay;
 #endif
 
