@@ -671,16 +671,27 @@ read_rtc:
 
 		rtc_unipi->rtc->nvmem_config = &rtc_unipi->nvmem_cfg;
 		rtc_unipi->rtc->nvram_old_abi = true;
+		rtc_unipi->rtc->ops = &mcp794xx_rtc_ops; /*chip->rtc_ops ?: &ds13xx_rtc_ops;*/
+		err = rtc_register_device(rtc_unipi->rtc);
+		if (err)
+			return err;
 #else
-		nvmem_cfg.priv = rtc_unipi;
-	    rtc_unipi->rtc->nvram_old_abi = true;
-	    rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
 
-#endif
 	rtc_unipi->rtc->ops = &mcp794xx_rtc_ops; /*chip->rtc_ops ?: &ds13xx_rtc_ops;*/
+	nvmem_cfg.priv = rtc_unipi;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+	rtc_unipi->rtc->nvram_old_abi = true;
+	rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
 	err = rtc_register_device(rtc_unipi->rtc);
 	if (err)
 		return err;
+#else
+	err = devm_rtc_register_device(rtc_unipi->rtc);
+	if (err)
+		return err;
+	devm_rtc_nvmem_register(rtc_unipi->rtc, &nvmem_cfg);
+#endif
+#endif
 
 	return 0;
 
