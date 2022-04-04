@@ -329,7 +329,12 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
     s_trans = (struct spi_transfer *)(context + 1);
     spi_message_init_with_transfers(&context->message, s_trans, trans_count);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+	s_trans[0].delay.value = NEURONSPI_EDGE_DELAY;
+	s_trans[0].delay.unit = SPI_DELAY_UNIT_USECS;
+#else
 	s_trans[0].delay_usecs = NEURONSPI_EDGE_DELAY;
+#endif
 	s_trans[0].bits_per_word = 8;
 	s_trans[0].speed_hz = freq;
 
@@ -341,7 +346,12 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
             packet_crc = neuronspi_spi_crc(send_buf->first_message, 4, 0);
             *((u16*)(send_buf->first_message+4)) = packet_crc;
         }
-        s_trans[1].delay_usecs = delay;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+        s_trans[1].delay.value = delay;
+        s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+#else
+        s_trans[1].delay_usecs = NEURONSPI_EDGE_DELAY;
+#endif
         s_trans[1].len = NEURONSPI_FIRST_MESSAGE_LENGTH;
         s_trans[1].tx_buf = send_buf->first_message;
         s_trans[1].rx_buf = recv_buf->first_message;
@@ -355,7 +365,12 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
 		unipi_spi_trace_1(KERN_INFO "UNIPISPI: SPI Master Write(%3d) %32ph\n", len, send_buf->second_message);
 		remain = len;
 		for (i = 2; i < trans_count; i++) {
-			s_trans[i].delay_usecs = 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+			s_trans[i].delay.value = 0;
+			s_trans[i].delay.unit = SPI_DELAY_UNIT_USECS;
+#else
+			s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
+#endif
 			s_trans[i].bits_per_word = 8;
 			s_trans[i].speed_hz = freq;
 			s_trans[i].tx_buf = send_buf->second_message + (NEURONSPI_MAX_TX * (i - 2));
@@ -1228,7 +1243,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	u32 always_create_uart = 0;
     struct kthread_worker   *worker;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0) && LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
     struct spi_delay inactive_delay;
 #endif
 
@@ -1358,10 +1373,13 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
     if (gpio_is_valid(spi->cs_gpio)) {
         spi->cs_gpio = -spi->cs_gpio;
     }
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(5,13,0)
     inactive_delay.value = 40;
     inactive_delay.unit = SPI_DELAY_UNIT_USECS;
 	spi_set_cs_timing(spi, NULL, NULL, &inactive_delay);
+#else
+    spi->cs_inactive.value = 40;
+    spi->cs_inactive.unit  = SPI_DELAY_UNIT_USECS;
 #endif
 
     // Prepare worker for interrupt, LEDs, UARTs
