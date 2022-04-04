@@ -662,7 +662,7 @@ static struct i2c_client* unipi_id_load_client(struct i2c_adapter *adapter, unsi
 //	info.properties = label_props_arr[index];
 //#else
 	info.fwnode = fwnode_create_software_node(label_props_arr[index], NULL);
-	if IS_ERR(info.fwnode)
+	if (IS_ERR(info.fwnode))
 		return ERR_PTR(PTR_ERR(info.fwnode));
 //#endif
 	//dev_info(dev, "TRY %s,  %d %d", info.type, info.addr, index);

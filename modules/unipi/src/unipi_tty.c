@@ -1048,7 +1048,7 @@ static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *c
 			      const char *fp, int count)
 #else
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
-			      const char *fp, int count)
+			      char *fp, int count)
 #endif
 {
     int is_parmrk = I_PARMRK(tty);
