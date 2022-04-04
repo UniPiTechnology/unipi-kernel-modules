@@ -1090,7 +1090,11 @@ int __init unipi_tty_init(void)
 
     memset(&unipi_tty_ldisc, 0, sizeof(unipi_tty_ldisc));
     n_tty_inherit_ops(&unipi_tty_ldisc);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+    unipi_tty_ldisc.num             = N_PROFIBUS_FDL;
+#else
     unipi_tty_ldisc.magic           = TTY_LDISC_MAGIC;
+#endif
     unipi_tty_ldisc.name            = "unipi_tty";
     unipi_tty_ldisc.owner           = THIS_MODULE;
 
@@ -1102,7 +1106,11 @@ int __init unipi_tty_init(void)
 	unipi_tty_ldisc.receive_buf2	= unipi_tty_receive_buf2;
 	unipi_tty_ldisc.ioctl	        = unipi_tty_ioctl;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+    err = tty_register_ldisc(&unipi_tty_ldisc);
+#else
     err = tty_register_ldisc(N_PROFIBUS_FDL, &unipi_tty_ldisc);
+#endif
     if (err) {
         printk(KERN_INFO "UniPi line discipline registration failed. (%d)", err);
         return err;
