@@ -657,7 +657,12 @@ static struct i2c_client* unipi_id_load_client(struct i2c_adapter *adapter, unsi
 		return ERR_PTR(err);
 	
 	strncpy(info.type, eprom_type, I2C_NAME_SIZE);
-	info.properties = label_props_arr[index];
+
+//#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+//	info.properties = label_props_arr[index];
+//#else
+	info.fwnode_handle = fwnode_create_software_node(label_props_arr[index], NULL);
+//#endif
 	//dev_info(dev, "TRY %s,  %d %d", info.type, info.addr, index);
 	return i2c_new_client_device(adapter, &info);
 }
