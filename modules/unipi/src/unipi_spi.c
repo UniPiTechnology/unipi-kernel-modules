@@ -330,8 +330,8 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
     spi_message_init_with_transfers(&context->message, s_trans, trans_count);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
-	s_trans[0].delay = NEURONSPI_EDGE_DELAY;
-	s_trans[0].unit = SPI_DELAY_UNIT_USECS;
+	s_trans[0].delay.value = NEURONSPI_EDGE_DELAY;
+	s_trans[0].delay.unit = SPI_DELAY_UNIT_USECS;
 #else
 	s_trans[0].delay_usecs = NEURONSPI_EDGE_DELAY;
 #endif
@@ -347,8 +347,8 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
             *((u16*)(send_buf->first_message+4)) = packet_crc;
         }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
-        s_trans[1].delay = delay;
-        s_trans[1].unit = SPI_DELAY_UNIT_USECS;
+        s_trans[1].delay.value = delay;
+        s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
 #else
         s_trans[1].delay_usecs = NEURONSPI_EDGE_DELAY;
 #endif
@@ -366,8 +366,8 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
 		remain = len;
 		for (i = 2; i < trans_count; i++) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
-			s_trans[i].delay = 0;
-			s_trans[i].unit = SPI_DELAY_UNIT_USECS;
+			s_trans[i].delay.value = 0;
+			s_trans[i].delay.unit = SPI_DELAY_UNIT_USECS;
 #else
 			s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
 #endif
