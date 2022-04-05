@@ -135,7 +135,7 @@ int unipi_id_load_nvmem(struct device *dev, int nvmem_index, uint8_t *buf)
 	if (IS_ERR(nvmem))
 		return PTR_ERR(nvmem);
 
-	dev_info(dev, "Found nvmem %s\n", nvmem_dev_name(nvmem));
+	//dev_info(dev, "Found nvmem %s\n", nvmem_dev_name(nvmem));
 
 	size = nvmem_device_read(nvmem, 0, UNIEE_MIN_EE_SIZE, buf);
 	if (size != UNIEE_MIN_EE_SIZE)

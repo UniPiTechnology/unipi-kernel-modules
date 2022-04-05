@@ -77,13 +77,6 @@ static const u16 NEURONSPI_CRC16TABLE[NEURONSPI_CRC16TABLE_LEN] = {
  3458,  1922,   514
 };
 
-static const struct of_device_id neuronspi_id_match[] = {
-		{.compatible = "unipi,neuron"},
-		{.compatible = "unipi,axon"},
-		{.compatible = NEURON_DEVICE_NAME},
-		{}
-};
-
 /***************
  * Definitions *
  ***************/
