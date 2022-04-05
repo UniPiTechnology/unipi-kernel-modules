@@ -1221,6 +1221,24 @@ void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port)
     }
 }
 
+
+static const struct spi_device_id unipi_spi_ids[] = {
+	{ .name = "neuron" },
+	{ .name = "axon" },
+	{ .name = NEURON_DEVICE_NAME },
+	{},
+};
+MODULE_DEVICE_TABLE(spi, unipi_spi_ids);
+
+static const struct of_device_id neuronspi_id_match[] = {
+		{.compatible = "unipi,neuron"},
+		{.compatible = "unipi,axon"},
+		{.compatible = NEURON_DEVICE_NAME},
+		{}
+};
+MODULE_DEVICE_TABLE(of, neuronspi_id_match);
+
+
 #define REG1000(first_probe,reg)    ((u16)(first_probe[4+2*(reg-1000)] | (first_probe[5+2*(reg-1000)] << 8)))
 #define REG1000_lo(first_probe,reg) (first_probe[4+2*(reg-1000)])
 #define REG1000_hi(first_probe,reg) (first_probe[5+2*(reg-1000)])
@@ -1586,8 +1604,8 @@ struct spi_driver neuronspi_spi_driver =
 	},
 	.probe				= neuronspi_spi_probe,
 	.remove				= neuronspi_spi_remove,
+	.id_table			= unipi_spi_ids,
 };
-
 
 MODULE_ALIAS("spi:unipispi");
 
