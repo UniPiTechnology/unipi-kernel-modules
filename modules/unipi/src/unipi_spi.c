@@ -350,7 +350,7 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
         s_trans[1].delay.value = delay;
         s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
 #else
-        s_trans[1].delay_usecs = NEURONSPI_EDGE_DELAY;
+        s_trans[1].delay_usecs = delay;
 #endif
         s_trans[1].len = NEURONSPI_FIRST_MESSAGE_LENGTH;
         s_trans[1].tx_buf = send_buf->first_message;
@@ -369,7 +369,7 @@ struct unipi_spi_context* unipi_spi_setup_context(struct spi_device* spi_dev, st
 			s_trans[i].delay.value = 0;
 			s_trans[i].delay.unit = SPI_DELAY_UNIT_USECS;
 #else
-			s_trans[i].delay_usecs = NEURONSPI_EDGE_DELAY;
+			s_trans[i].delay_usecs = 0;
 #endif
 			s_trans[i].bits_per_word = 8;
 			s_trans[i].speed_hz = freq;
