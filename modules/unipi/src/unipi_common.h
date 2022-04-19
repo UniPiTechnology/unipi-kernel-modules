@@ -52,7 +52,7 @@
 #if NEURONSPI_SCHED_REQUIRED > 0
 	#include <uapi/linux/sched/types.h>
 #endif
-#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.98:2022:03:11"
+#define NEURONSPI_MAJOR_VERSIONSTRING "Version 1.110:2022:04:19"
 
 #define NEURONSPI_MAX_DEVS				7	//Maximal SPI card count
 #define NEURONSPI_MAX_UART				16
