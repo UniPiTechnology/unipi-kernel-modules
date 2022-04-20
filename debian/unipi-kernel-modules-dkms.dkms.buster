@@ -1,0 +1,16 @@
+PACKAGE_NAME="unipi"
+PACKAGE_VERSION="MODULE_VERSION#"
+
+BUILT_MODULE_NAME[0]="unipi"
+BUILT_MODULE_LOCATION[0]="unipi"
+DEST_MODULE_LOCATION[0]="/extra"
+BUILT_MODULE_NAME[1]="rtc-unipi"
+BUILT_MODULE_LOCATION[1]="rtc-unipi"
+DEST_MODULE_LOCATION[1]="/extra"
+
+AUTOINSTALL=yes
+REMAKE_INITRD=yes
+
+MAKE[0]="make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi modules;\
+	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/rtc-unipi modules"
+CLEAN="make -C ${dkms_tree}/unipi/${module_version} clean; rm -rf ${dkms_tree}/unipi/${module_version}/build/{Module.*,modules.order,OBJ.*}"
