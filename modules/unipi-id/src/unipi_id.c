@@ -166,6 +166,8 @@ static uniee_descriptor_area* unipi_id_load_boardmem(struct device *dev,
 		if (descriptor) {
 			uniee_fix_legacy_content(buf, size, descriptor);
 			unipi_id->family_data = get_family_data(descriptor->product_info.platform_id);
+		} else {
+			unipi_id->family_data = get_family_data((platform_id_t){.raw_id = 0 });
 		}
 		ndescriptor = &unipi_id->descriptor;
 	} else {
