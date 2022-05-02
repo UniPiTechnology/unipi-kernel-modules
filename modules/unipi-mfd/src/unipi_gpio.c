@@ -1,0 +1,216 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Unipi GPIO Driver
+ *
+ * Copyright (c) 2021, Unipi Technology
+ * Author: Miroslav Ondra <ondra@faster.cz>
+ */
+
+#include <linux/err.h>
+#include <linux/gpio/driver.h>
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/platform_device.h>
+#include <linux/regmap.h>
+#include <linux/mfd/syscon.h>
+
+#include "unipi_common.h"
+#include "unipi_mfd.h"
+#include "unipi_plc.h"
+#include "unipi_mfd_iogroup.h"
+
+#define UNIPI_GPIO_IN	BIT(0)
+#define UNIPI_GPIO_OUT	BIT(1)
+
+
+struct unipi_gpio_data {
+	char*			regmap_name;
+	int				is_coil_map;
+	char*			dt_value_reg_name;
+	unsigned int	flags;  /* UNIPI_GPIO_IN | UNIPI_GPIO_OUT */
+	int				to_reg_shift;
+	int				to_bit_mask;
+};
+
+struct unipi_gpio_device {
+	struct gpio_chip		chip;
+	struct regmap*			map;
+	const struct unipi_gpio_data	*data;
+	u32						ngpio;
+	u32						value_reg;
+	int						debounce_reg;
+	int						counter_reg;
+};
+
+static int unipi_gpio_get(struct gpio_chip *chip, unsigned offset)
+{
+	struct unipi_gpio_device *priv = gpiochip_get_data(chip);
+	unsigned int val, offs;
+	int ret;
+
+	offs = priv->value_reg + (offset >> priv->data->to_reg_shift);
+	printk("gpio get %d, %d", offset, offs);
+
+	ret = regmap_read(priv->map, offs, &val);
+	if (ret)
+		return ret;
+
+	return !!(val & BIT(offset & priv->data->to_bit_mask));
+}
+
+static void unipi_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+{
+	/* using coils to update */
+	struct unipi_gpio_device *priv = gpiochip_get_data(chip);
+	printk("gpio set %d, %d", offset, val);
+
+	regmap_write(priv->map, priv->value_reg + offset, !!val);
+}
+
+/* ToDo
+static void unipi_gpio_set_multiple(struct gpio_chip *chip, unsigned long *mask, unsigned long *bits)
+{
+
+}
+
+static int unipi_gpio_get_multiple(struct gpio_chip *chip, unsigned long *mask, unsigned long *bit)
+{
+	return 0; // OK
+}
+*/
+
+static int unipi_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+{
+	/* 0=out, 1=in */
+	struct unipi_gpio_device *priv = gpiochip_get_data(chip);
+	return (priv->data->flags & UNIPI_GPIO_OUT)? 0 : 1;
+}
+
+static const struct unipi_gpio_data unipi_gpio_data_di = {
+	.regmap_name = "registers",
+	.is_coil_map = 0,
+	.dt_value_reg_name = "value-reg",
+	.flags		= UNIPI_GPIO_IN,
+	.to_reg_shift = 4,
+	.to_bit_mask = 0xf,
+};
+
+static const struct unipi_gpio_data unipi_gpio_data_do = {
+	.regmap_name = "coils",
+	.is_coil_map = 1,
+	.dt_value_reg_name = "value-coil",
+	.flags		= UNIPI_GPIO_OUT,
+	.to_reg_shift = 0,
+	.to_bit_mask = 0,
+};
+
+
+static struct dev_mfd_attribute dev_attr_di_debounce = {
+	__ATTR(debounce, 0664, unipi_mfd_show_reg, unipi_mfd_store_reg),
+	0
+};
+
+static struct dev_mfd_attribute dev_attr_di_counter = {
+	__ATTR(counter, 0444, unipi_mfd_show_int, NULL),
+	0
+};
+
+static struct dev_mfd_attribute dev_attr_di_value = {
+	__ATTR(value, 0444, unipi_mfd_show_reg, unipi_mfd_store_reg),
+	0
+};
+
+static struct attribute *unipi_mfd_di_attrs[] = {
+	&dev_attr_di_debounce.attr.attr,
+	&dev_attr_di_counter.attr.attr,
+	&dev_attr_di_value.attr.attr,
+};
+
+
+static int unipi_gpio_probe(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	//struct device *parent = dev->parent;
+	struct unipi_gpio_device *priv;
+	struct device_node *np = dev->of_node;
+	char name[30];
+	int ret, i;
+
+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+
+	priv->data = of_device_get_match_data(dev);
+	priv->debounce_reg = priv->counter_reg = -1;
+	priv->map = unipi_mfd_get_regmap(dev->parent, priv->data->regmap_name);
+	if (IS_ERR(priv->map) || priv->map == NULL) {
+		devm_kfree(dev, priv);
+		dev_err(dev, "No %s regmap for Unipi device\n", priv->data->regmap_name);
+		return PTR_ERR(priv->map);
+	}
+
+	ret = of_property_read_u32(np, "ngpio", &priv->ngpio);
+	if (ret) {
+		devm_kfree(dev, priv);
+		dev_err(dev, "Invalid ngpio property in devicetree\n");
+		return -EINVAL;
+	}
+	ret = of_property_read_u32(np, priv->data->dt_value_reg_name, &priv->value_reg);
+	if (ret) {
+		devm_kfree(dev, priv);
+		dev_err(dev, "Invalid %s property in devicetree\n", priv->data->dt_value_reg_name);
+		return -EINVAL;
+	}
+
+	priv->chip.parent = dev;
+	priv->chip.owner = THIS_MODULE;
+	priv->chip.label = dev_name(dev);
+	priv->chip.base = -1;
+	priv->chip.ngpio = priv->ngpio;
+	priv->chip.get = unipi_gpio_get;
+	priv->chip.get_direction = unipi_gpio_get_direction;
+	/* ToDo
+	priv->chip.get_multiple = unipi_gpio_get_multiple;
+	priv->chip.set_multiple = unipi_gpio_set_multiple;
+	*/
+	if (priv->data->flags & UNIPI_GPIO_OUT) {
+		priv->chip.set = unipi_gpio_set;
+	}
+
+	platform_set_drvdata(pdev, priv);
+	
+	ret = of_property_read_u32(np, "debounce-reg", &priv->debounce_reg);
+	ret = of_property_read_u32(np, "counter-reg", &priv->counter_reg);
+
+	if (priv->counter_reg>=0) {
+		for (i=0; i<priv->ngpio; i++) {
+			snprintf(name, sizeof(name), "DI1.%d", i+1);
+			unipi_mfd_add_group(dev->parent, name, unipi_mfd_di_attrs, 3,
+			            (u32) priv->debounce_reg+i, (u32) priv->counter_reg+2*i, (u32) priv->value_reg+i);
+		}
+	}
+
+	return devm_gpiochip_add_data(&pdev->dev, &priv->chip, priv);
+}
+
+static const struct of_device_id of_unipi_gpio_match[] = {
+	{ .compatible = "unipi,gpio-di", .data = &unipi_gpio_data_di },
+	{ .compatible = "unipi,gpio-do", .data = &unipi_gpio_data_do },
+	{},
+};
+MODULE_DEVICE_TABLE(of, of_unipi_gpio_match);
+
+static struct platform_driver unipi_gpio_driver = {
+	.probe		= unipi_gpio_probe,
+	.driver		= {
+		.name	= "unipi-gpio",
+		.of_match_table = of_unipi_gpio_match,
+	},
+};
+
+module_platform_driver(unipi_gpio_driver);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Miroslav Ondra <ondra@faster.cz>");
+MODULE_DESCRIPTION("Unipi GPIO Driver");
