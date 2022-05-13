@@ -1221,15 +1221,16 @@ void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port)
     }
 }
 
-/*
+
 static const struct spi_device_id unipi_spi_ids[] = {
+	{ .name = "unipi-spi" },
 	{ .name = "neuron" },
 	{ .name = "axon" },
 	{ .name = NEURON_DEVICE_NAME },
 	{},
 };
 MODULE_DEVICE_TABLE(spi, unipi_spi_ids);
-*/
+
 
 static const struct of_device_id neuronspi_id_match[] = {
 		{.compatible = "unipi,neuron"},
@@ -1247,7 +1248,7 @@ MODULE_DEVICE_TABLE(of, neuronspi_id_match);
 #define hi(x) (x >> 8)
 const char name_unknown[] = "UNKNOWN\0";
 
-s32 neuronspi_spi_probe(struct spi_device *spi)
+int neuronspi_spi_probe(struct spi_device *spi)
 {
 	//const struct neuronspi_devtype *devtype;
 	struct neuronspi_driver_data *n_spi;
@@ -1484,7 +1485,7 @@ s32 neuronspi_spi_probe(struct spi_device *spi)
 	return ret;
 }
 
-s32 neuronspi_spi_remove(struct spi_device *spi)
+int neuronspi_spi_remove(struct spi_device *spi)
 {
     int neuron_index;
 	struct neuronspi_driver_data *n_spi = spi_get_drvdata(spi);
@@ -1604,14 +1605,14 @@ struct spi_driver neuronspi_spi_driver =
 	},
 	.probe				= neuronspi_spi_probe,
 	.remove				= neuronspi_spi_remove,
-	/*.id_table			= unipi_spi_ids,*/
+	.id_table			= unipi_spi_ids,
 };
 
 MODULE_ALIAS("spi:unipispi");
 
 
 
-static s32 __init neuronspi_init(void)
+static int __init neuronspi_init(void)
 {
 	s32 ret = 0;
 
