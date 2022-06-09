@@ -121,7 +121,7 @@ struct neuronspi_gpio_driver * neuronspi_di_probe(int io_count, int neuron_index
 		pdi_driver->plat_dev = platform_device_alloc(buf, -1);
 		pdi_driver->plat_dev->dev.parent = &(board_device->dev);
 		pdi_driver->plat_dev->dev.groups = neuron_gpio_di_attr_groups;
-		pdi_driver->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
+		/*pdi_driver->plat_dev->dev.driver = &neuronspi_spi_driver.driver;*/
 		platform_device_add(pdi_driver->plat_dev);
 
 		platform_set_drvdata(pdi_driver->plat_dev, pdi_driver);
@@ -159,7 +159,7 @@ struct neuronspi_gpio_driver * neuronspi_ro_probe(int io_count, int neuron_index
 		gpio_port->plat_dev = platform_device_alloc(buf, -1);
 		gpio_port->plat_dev->dev.parent = &(board_device->dev);
 		gpio_port->plat_dev->dev.groups = neuron_gpio_ro_attr_groups;
-		gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
+		/*gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;*/
 		platform_device_add(gpio_port->plat_dev);
 
 		platform_set_drvdata(gpio_port->plat_dev, gpio_port);
@@ -198,7 +198,7 @@ struct neuronspi_gpio_driver * neuronspi_do_probe(int io_count, int neuron_index
 		gpio_port->plat_dev = platform_device_alloc(buf, -1);
 		gpio_port->plat_dev->dev.parent = &(board_device->dev);
 		gpio_port->plat_dev->dev.groups = neuron_gpio_do_attr_groups;
-		gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;
+		/*gpio_port->plat_dev->dev.driver = &neuronspi_spi_driver.driver;*/
 		platform_device_add(gpio_port->plat_dev);
 
 		platform_set_drvdata(gpio_port->plat_dev, gpio_port);

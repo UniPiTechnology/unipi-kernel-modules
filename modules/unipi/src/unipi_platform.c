@@ -2362,7 +2362,7 @@ struct platform_device * neuronspi_board_device_probe(struct neuronspi_driver_da
 		board_device->dev.groups = neuron_board_attr_groups;
 	}
 
-	board_device->dev.driver = &neuronspi_spi_driver.driver;
+	/*board_device->dev.driver = &neuronspi_spi_driver.driver; */
 
     board_data->n_spi = n_spi;
 	platform_device_add(board_device);
