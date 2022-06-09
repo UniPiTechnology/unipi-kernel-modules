@@ -16,16 +16,27 @@
 
 #include <linux/version.h>
 #include "unipi_common.h"
+#include "unipi_channel.h"
 
 #define UNIPI_MODBUS_DEVICE_NAME		"unipichannel"
 #define UNIPI_MODBUS_DEVICE_NAME_T		"unipichannel%d"
 #define UNIPI_MODBUS_DEVICE_CLASS		"unipi_modbus"
 #define UNIPI_MODBUS_BUFFER_MAX			1152
+#define UNIPI_MODBUS_HEADER_SIZE		4
 
-struct device* unipi_modbus_classdev_register(struct spi_device *spi_dev, u8 address);
+enum UNIPI_MODBUS_OP
+{
+	UNIPI_MODBUS_OP_READBIT   = 0x01,
+	UNIPI_MODBUS_OP_READREG   = 0x04,
+	UNIPI_MODBUS_OP_WRITEBIT  = 0x05,
+	UNIPI_MODBUS_OP_WRITEREG  = 0x06,
+	UNIPI_MODBUS_OP_WRITEBITS = 0x0F,
+};
+
+struct device* unipi_modbus_classdev_register(struct unipi_channel *channel, u8 address);
 void unipi_modbus_classdev_unregister(struct device *dev);
 
-struct spi_device * unipi_modbus_dev_by_address(u8 modbus_address);
+struct unipi_channel * unipi_modbus_dev_by_address(u8 modbus_address);
 
 int __init unipi_modbus_init(void);
 void __exit unipi_modbus_exit(void);

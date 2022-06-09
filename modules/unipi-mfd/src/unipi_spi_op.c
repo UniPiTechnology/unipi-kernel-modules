@@ -29,367 +29,7 @@
 
 #define roundup_block(count, blocksize) (1+((count)-1)/(blocksize))
 
-struct unipi_spi_context
-{
-	struct spi_message message;
-	void * operation_callback_data;
-	OperationCallback operation_callback;
-	int len;
-	u8 tx_header[UNIPI_SPI_FIRST_MESSAGE_ALLOC];
-	u8 rx_header[UNIPI_SPI_FIRST_MESSAGE_ALLOC];
-	u8 tx_header2[UNIPI_MODBUS_HEADER_SIZE+2*2+4];
-	u8 rx_header2[UNIPI_MODBUS_HEADER_SIZE+2*2+4];
-	int simple_read;
-	int simple_len;
-	u8* data;
-	u16 packet_crc;
-
-};
-
 /* bottom part of all async op */
-int unipi_spi_exec_context(struct spi_device* spi_dev, struct unipi_spi_context *context,
-                           void* cb_data, OperationCallback cb_function);
-
-/* upper part of all async opertations
- * - create context with space for 2+add_trans transactions
- * - setup data of first part */
-struct unipi_spi_context *unipi_spi_alloc_context(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op, 
-                                                   unsigned int len, unsigned int reg, int add_trans)
-{
-	int trans_count, freq;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
-
-	trans_count = 2 + add_trans;
-	context = kzalloc(sizeof(struct unipi_spi_context) + trans_count * sizeof(struct spi_transfer), GFP_ATOMIC);
-	if (! context) {
-		return NULL;
-	}
-	freq = n_spi->frequency;
-	context->tx_header[0] = op;
-	context->tx_header[1] = len;
-	context->tx_header[2] = lo(reg);
-	context->tx_header[3] = hi(reg);
-	context->packet_crc = unipi_spi_crc_set(context->tx_header, UNIPI_SPI_MESSAGE_HEADER_LENGTH, 0);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	spi_message_init_with_transfers(&context->message, s_trans, trans_count);
-
-	s_trans[0].delay.value = UNIPI_SPI_EDGE_DELAY;
-	s_trans[0].delay.unit = SPI_DELAY_UNIT_USECS;
-	s_trans[0].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[0].speed_hz = freq;
-	s_trans[1].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[1].speed_hz = freq;
-	s_trans[1].len = UNIPI_SPI_FIRST_MESSAGE_LENGTH;
-	s_trans[1].tx_buf = context->tx_header;
-	s_trans[1].rx_buf = context->rx_header;
-	unipi_spi_trace_1(spi_dev, "Write(op1) %6ph\n", context->tx_header);
- 
-	context->message.context = context;
-	context->message.spi = spi_dev;
-	return context;
-}
-
-
-/*  Async op for WRITEREGS, WRITEBITS using own buffer 
- * 		data buffer can be unstable (on-stack)
- * 		regcount = 1..2   pro WRITEREGS
- *		         = 1..32  pro WRITEBITS
- */ 
-int unipi_spi_write_simple(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op,
-                           unsigned int reg, unsigned int count, u8* data,
-                           void* cb_data, OperationCallback cb_function)
-{
-	int len;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-
-	len  = ((op==UNIPI_MODBUS_OP_WRITEREG)? count : roundup_block(count, 16)) * 2;
-	len += UNIPI_MODBUS_HEADER_SIZE;
-	context = unipi_spi_alloc_context(spi_dev, op, len, reg, 1);
-	if (context == NULL) return -ENOMEM;
-
-	unipi_spi_trace_1(spi_dev, "A %6phC len=%d\n", context->tx_header, len);
-
-	context->tx_header2[0] = op;
-	context->tx_header2[1] = count;
-	context->tx_header2[2] = lo(reg);
-	context->tx_header2[3] = hi(reg);
-	memmove(context->tx_header2+UNIPI_MODBUS_HEADER_SIZE, data,\
-	        (op==UNIPI_MODBUS_OP_WRITEREG)? count*2 : roundup_block(count, 8));
-	context->packet_crc = unipi_spi_crc_set(context->tx_header2, len, context->packet_crc);
-
-	unipi_spi_trace_1(spi_dev, "B %6phC\n", context->tx_header);
-	unipi_spi_trace_1(spi_dev, "B %6phC\n", context->tx_header2);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	s_trans[1].delay.value = 25;
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[2].speed_hz = s_trans[1].speed_hz;
-	s_trans[2].len = len+UNIPI_SPI_CRC_LENGTH;
-	s_trans[2].tx_buf = context->tx_header2;
-	s_trans[2].rx_buf = context->rx_header2;
-
-	context->len = len;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-/*  Async op for READREG, READBITS using own data buffer 
- * 		regcount = 1..2   pro READREG
- *		         = 1..32  pro READBIT
- */ 
-int unipi_spi_read_simple(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op,
-                           unsigned int reg, unsigned int count, u8 *data,
-                           void* cb_data, OperationCallback cb_function)
-{
-	int len;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-
-	len  = ((op==UNIPI_MODBUS_OP_READREG)? count : roundup_block(count, 16)) * 2;
-	len += UNIPI_MODBUS_HEADER_SIZE;
-	context = unipi_spi_alloc_context(spi_dev, op, len, reg, 1);
-	if (context == NULL) return -ENOMEM;
-
-	/* crc must be calculated due to firmware behavior */
-	context->packet_crc = unipi_spi_crc_set(context->tx_header2, len, context->packet_crc);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	s_trans[1].delay.value = 25;
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[2].speed_hz = s_trans[1].speed_hz;
-	s_trans[2].len = len+UNIPI_SPI_CRC_LENGTH;
-	s_trans[2].rx_buf = context->rx_header2;
-	s_trans[2].tx_buf = context->tx_header2; /* firmware misbehave else can be NULL*/
-
-	context->len = len;
-	context->simple_read = 1;
-	context->simple_len = (op==UNIPI_MODBUS_OP_READREG) ? count*2 : roundup_block(count, 8);
-	context->data = data;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-
-/*  Async op for READREG */
-int unipi_spi1_read_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function)
-{
-	int len, data_trans, remain, i;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-
-	if (count<=2) {
-		return unipi_spi_read_simple(spi_dev, UNIPI_MODBUS_OP_READREG, reg, count, data,
-		                             cb_data, cb_function);
-	}
-	len = (count * 2);
-	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_READREG, len+UNIPI_MODBUS_HEADER_SIZE, reg, 1+data_trans);
-	if (context == NULL) return -ENOMEM;
-
-	/* crc must be calculated due to firmware behavior */
-	context->packet_crc = unipi_spi_crc(context->tx_header2, UNIPI_MODBUS_HEADER_SIZE, context->packet_crc);
-	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	s_trans[1].delay.value = 25 + ((count>27)?(count-27):0);
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[2].speed_hz = s_trans[1].speed_hz;
-	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
-	s_trans[2].rx_buf = context->rx_header2;
-	s_trans[2].tx_buf = context->tx_header2; /* firmware misbehave else can be NULL*/
-
-	remain = len + UNIPI_SPI_CRC_LENGTH;
-	for ( i=0; i < data_trans; i++) {
-		s_trans[3+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
-		s_trans[3+i].speed_hz = s_trans[1].speed_hz;
-		s_trans[3+i].rx_buf = data + (NEURONSPI_MAX_TX * i);
-		s_trans[3+i].tx_buf = data + (NEURONSPI_MAX_TX * i);  /* firmware misbehave else can be NULL*/
-		s_trans[3+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
-		remain -= NEURONSPI_MAX_TX;
-	}
-
-	context->len = len;
-	context->data = data;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-/*  Async op for WRITEREG */
-int unipi_spi_write_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                               void* cb_data, OperationCallback cb_function)
-{
-	int len, remain, i, data_trans;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-
-	if (count<=2) {
-		return unipi_spi_write_simple(spi_dev, UNIPI_MODBUS_OP_WRITEREG, reg, count, data,
-		                             cb_data, cb_function);
-	}
-	len = (count * 2);
-	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_WRITEREG, len+UNIPI_MODBUS_HEADER_SIZE, reg, 1+data_trans);
-	if (context == NULL) return -ENOMEM;
-
-	context->tx_header2[0] = UNIPI_MODBUS_OP_WRITEREG;
-	context->tx_header2[1] = count;
-	context->tx_header2[2] = lo(reg);
-	context->tx_header2[3] = hi(reg);
-	context->packet_crc = unipi_spi_crc(context->tx_header2, UNIPI_MODBUS_HEADER_SIZE, context->packet_crc);
-	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	s_trans[1].delay.value = 25;
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[2].speed_hz = s_trans[1].speed_hz;
-	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
-	s_trans[2].tx_buf = context->tx_header2;
-	s_trans[2].rx_buf = context->rx_header2;
-
-	remain = len + UNIPI_SPI_CRC_LENGTH;
-	for ( i=0; i < data_trans; i++) {
-		s_trans[3+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
-		s_trans[3+i].speed_hz = s_trans[1].speed_hz;
-		s_trans[3+i].tx_buf = data + (NEURONSPI_MAX_TX * i);
-		s_trans[3+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
-		remain -= NEURONSPI_MAX_TX;
-	}
-
-	context->len = len;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-int unipi_spi_write_str_async(void* spi, unsigned int port, u8* data, unsigned int count, 
-                              void* cb_data, OperationCallback cb_function)
-{
-	int len, data_trans, i, remain;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-	struct spi_device* spi_dev = (struct spi_device*) spi;
-
-	if (count == 1) {
-		context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_WRITECHAR, data[0], port << 8, 0);
-		if (context==NULL)
-			return -ENOMEM;
-		return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-	}
-
-	len = (count & 1) ? count+1 : count;
-	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_WRITESTR, (count & 0xff), port << 8, data_trans);
-	if (context == NULL) return -ENOMEM;
-
-	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
-
-	s_trans = (struct spi_transfer *)(context + 1);
-	s_trans[1].delay.value = 25;
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	remain = len + UNIPI_SPI_CRC_LENGTH;
-	for ( i=0; i < data_trans; i++) {
-		s_trans[2+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
-		s_trans[2+i].speed_hz = s_trans[1].speed_hz;
-		s_trans[2+i].tx_buf = data + (NEURONSPI_MAX_TX * i );
-		s_trans[2+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
-		remain -= NEURONSPI_MAX_TX;
-	}
-
-	context->len = len;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-int unipi_spi_read_str_async(void* spi, unsigned int port, u8* data, unsigned int count, 
-                             void* cb_data, OperationCallback cb_function)
-{
-	int len, data_trans, i, remain;
-	struct unipi_spi_context *context;
-	struct spi_transfer * s_trans;
-	struct spi_device* spi_dev = (struct spi_device*) spi;
-
-	len = count;
-	if (len < 246) {
-		len += 4;
-		len = (len & 1 ? len+1 : len);  // transmit_length must be even
-	} else {
-		len = 250;
-	}
-
-	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_READSTR, len, port <<8, 1+data_trans);
-	if (context == NULL) return -ENOMEM;
-
-	s_trans[1].delay.value = 25;
-	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
-
-	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
-	s_trans[2].speed_hz = s_trans[1].speed_hz;
-	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
-	s_trans[2].tx_buf = NULL;
-	s_trans[2].rx_buf = context->rx_header2;
-
-	remain = len + UNIPI_SPI_CRC_LENGTH;
-	for ( i=0; i < data_trans; i++) {
-		s_trans[i+3].bits_per_word = UNIPI_SPI_B_PER_WORD;
-		s_trans[i+3].speed_hz = s_trans[1].speed_hz;
-		s_trans[i+3].rx_buf = data + (NEURONSPI_MAX_TX * i);
-		s_trans[i+3].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
-		remain -= NEURONSPI_MAX_TX;
-	}
-
-	context->len = len;
-	context->data = data;
-	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
-}
-
-
-/**************************************************************
- * 
- * Asynchronous operations
- * 
- * ***********************************************************/
-
-/* callback of inter-frame timer. Try to insert waiting messages from n_spi->queue */
-enum hrtimer_restart unipi_spi_timer_func(struct hrtimer *timer)
-{
-	struct unipi_spi_device* n_spi = ((container_of((timer), struct unipi_spi_device, frame_timer)));
-	struct spi_message *msg;
-	struct unipi_spi_context* context;
-	unsigned long flags;
-	int ret;
-
-	spin_lock_irqsave(&n_spi->busy_lock, flags);
-	while (!list_empty(&n_spi->queue)) {
-		/* Extract head of queue and try to insert into spi_async queue*/
-		msg = list_first_entry(&n_spi->queue, struct spi_message, queue);
-		list_del_init(&msg->queue);
-		ret = spi_async(n_spi->spi_dev, msg);
-		if (ret == 0) {
-			/* message inserted, busy remains set */
-			spin_unlock_irqrestore(&n_spi->busy_lock, flags);
-			return HRTIMER_NORESTART;
-		}
-		/* if error -> inform caller by callback and try next */
-		context = ((container_of((msg), struct unipi_spi_context, message)));
-		if (context->operation_callback) 
-			context->operation_callback(context->operation_callback_data, ret, context->data);
-		kfree(context);
-	}
-	n_spi->busy = 0;
-	spin_unlock_irqrestore(&n_spi->busy_lock, flags);
-	return HRTIMER_NORESTART;
-}
-
-
 int unipi_spi_check_message(struct spi_device* spi, struct unipi_spi_context* context)
 {
 	u16 recv_crc;
@@ -434,218 +74,416 @@ int unipi_spi_check_message(struct spi_device* spi, struct unipi_spi_context* co
 	return 0;
 }
 
-static void unipi_spi_op_complete(void *arg)
+int unipi_spi_parse_frame(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
 {
-	u8 opcode, int_status;
-	int remain, ret = 0;
+	u16 recv_crc;
+	//struct unipi_spi_device *n_spi;
+	//struct spi_device* spi = context->message.spi;
 
-	struct unipi_spi_context* context = (struct unipi_spi_context*) arg;
-	struct spi_device* spi = context->message.spi;
-	struct unipi_spi_device *n_spi = spi_get_drvdata(spi);
-	int len = context->len;
+	unipi_spi_trace_1(context->message.spi, "RESP(rqop=%02x)   %6phC\n", context->tx_header[0], context->rx_header);
+	recv_crc = unipi_spi_crc(context->rx_header, UNIPI_SPI_MESSAGE_HEADER_LENGTH, 0);
+	context->packet_crc = *((u16*)(context->rx_header+UNIPI_SPI_MESSAGE_HEADER_LENGTH));
+	if (recv_crc != context->packet_crc) {
+		return -1;
+	}
+	/*if (unipi_spi_check_message(context) != 0) {
+		return -1;
+	}*/
 
-	// schedule timer to unblock busy flag
-	hrtimer_start_range_ns(&n_spi->frame_timer, UNIPI_SPI_INTER_FRAME_NS, 10000, HRTIMER_MODE_REL);
+	devstatus->opcode = context->rx_header[0];
+	devstatus->interrupt = context->rx_header[1];
+	if (devstatus->opcode >= 0x41 && devstatus->opcode <= 0x44) {
+		devstatus->remain = (context->rx_header[2]==0  ? 256 : context->rx_header[2]) - 1;
+		devstatus->port = devstatus->opcode - 0x41;
+		devstatus->opcode = 0x41;
+		devstatus->ch = context->rx_header[3];
+	}
 
-	if ((context->message.status == 0)
-		&& (unipi_spi_check_message(spi, context) == 0)){
-		// process valid rx_header with out-of-order data
-		n_spi->stat.bytes += len + UNIPI_SPI_MESSAGE_HEADER_LENGTH;
-		opcode = context->rx_header[0];
-		int_status = context->rx_header[1];
-		switch (opcode) {
-			case 0x41:
-			case 0x42:
-			case 0x43:
-			case 0x44:
-				n_spi->stat.messages_prio++;
-				// Signal the UART about received char
-				remain = (context->rx_header[2]==0  ? 256 : context->rx_header[2]) - 1;
-				unipi_mfd_rx_char(&n_spi->mfd, opcode-0x41, context->rx_header[3], remain);
-				fallthrough;
-			case UNIPI_MODBUS_OP_IDLE:
-				if (int_status != 0) {
-					unipi_mfd_int_status(&n_spi->mfd, int_status);
-				}
-				break;
-			default:
-				n_spi->stat.errors_opcode1++;
-				break;
+	if ((devstatus->opcode==0xfa) && (context->rx_header[3]==0x2e))
+		unipi_spi_try_v2(context->message.spi);
+
+	reply->opcode = context->tx_header[0];
+	if (context->len) {
+		/* ToDo: check second crc  */ 
+		if (reply->opcode == context->rx_header2[0]) {
+			reply->ret = context->rx_header2[1];
+			reply->data = context->rx_header2+UNIPI_SPI_MESSAGE_HEADER_LENGTH;
+		} else {
+			reply->ret = -EIO;
 		}
 	} else {
-		// sending unsuccessfull - reason unknown
-		n_spi->stat.errors_tx++;
-		unipi_spi_trace(spi, "Unsuccessful spi transaction: opcode:%d\n", context->tx_header[0]);
-		ret = -EIO;
+		reply->ret = 0;
 	}
-		
-	if (context->operation_callback) {
-		if (context->len) {
-			if (context->tx_header[0] == context->rx_header2[0]) {
-
-				ret = context->rx_header2[1];
-				if (context->simple_read) {
-					if (context->data)
-						memmove(context->data, context->rx_header2+UNIPI_SPI_MESSAGE_HEADER_LENGTH,
-						        context->simple_len);
-					else
-						context->data = context->rx_header2+UNIPI_SPI_MESSAGE_HEADER_LENGTH;
-
-				} else if (context->tx_header[0] == UNIPI_MODBUS_OP_READSTR) {
-					/* combine len + remain */
-					ret = ret | (context->rx_header2[3] << 8);
-				}
-			} else {
-				ret = -EIO;
-			}
-		}
-		context->operation_callback(context->operation_callback_data, ret, context->data);
-	}
-	kfree(context);
+	return 0;
 }
 
 
-/* bottom part of all async op */
+/* upper part of all async opertations
+ * - create context with space for 2+add_trans transactions
+ * - setup data of first part */
+struct unipi_spi_context *unipi_spi_alloc_context(struct spi_device* spi_dev, enum UNIPI_SPI_OP op, 
+                                                   unsigned int len, unsigned int reg, int add_trans)
+{
+	int trans_count, freq;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
+	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
 
-int unipi_spi_exec_context(struct spi_device* spi_dev, struct unipi_spi_context *context,
+	trans_count = 2 + add_trans;
+	context = kzalloc(sizeof(struct unipi_spi_context) + trans_count * sizeof(struct spi_transfer), GFP_ATOMIC);
+	if (! context) {
+		return NULL;
+	}
+	freq = n_spi->frequency;
+	context->parse_frame = unipi_spi_parse_frame;
+	context->tx_header[0] = op;
+	context->tx_header[1] = len;
+	context->tx_header[2] = lo(reg);
+	context->tx_header[3] = hi(reg);
+	context->packet_crc = unipi_spi_crc_set(context->tx_header, UNIPI_SPI_MESSAGE_HEADER_LENGTH, 0);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	spi_message_init_with_transfers(&context->message, s_trans, trans_count);
+
+	s_trans[0].delay.value = UNIPI_SPI_EDGE_DELAY;
+	s_trans[0].delay.unit = SPI_DELAY_UNIT_USECS;
+	s_trans[0].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[0].speed_hz = freq;
+	s_trans[1].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[1].speed_hz = freq;
+	s_trans[1].len = UNIPI_SPI_FIRST_MESSAGE_LENGTH;
+	s_trans[1].tx_buf = context->tx_header;
+	s_trans[1].rx_buf = context->rx_header;
+	unipi_spi_trace_1(spi_dev, "Write(op1) %6phC\n", context->tx_header);
+ 
+	context->message.context = context;
+	context->message.spi = spi_dev;
+	context->interframe_nsec = UNIPI_SPI_INTER_FRAME_NS;
+	return context;
+}
+
+/**************************************************************
+ * 
+ * Asynchronous operations
+ * 
+ * ***********************************************************/
+
+/*  Async op for WRITEREGS, WRITEBITS using own buffer 
+ * 		data buffer can be unstable (on-stack)
+ * 		regcount = 1..2   pro WRITEREGS
+ *		         = 1..32  pro WRITEBITS
+ */ 
+int unipi_spi_write_simple(struct spi_device* spi_dev, enum UNIPI_SPI_OP op,
+                           unsigned int reg, unsigned int count, u8* data,
                            void* cb_data, OperationCallback cb_function)
 {
-	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
-	unsigned long flags, bflags;
-	int ret;
+	int len;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
 
-	context->operation_callback_data = cb_data;
-	context->operation_callback = cb_function;
-	context->message.complete = unipi_spi_op_complete;
+	len  = ((op==UNIPI_SPI_OP_WRITEREG)? count : roundup_block(count, 16)) * 2;
+	len += UNIPI_MODBUS_HEADER_SIZE;
+	context = unipi_spi_alloc_context(spi_dev, op, len, reg, 1);
+	if (context == NULL) return -ENOMEM;
 
-	spin_lock_irqsave(&n_spi->firmware_lock, flags);
-	if (n_spi->firmware_in_progress) {
-		spin_unlock_irqrestore(&n_spi->firmware_lock, flags);
-		kfree(context);
-		return -EACCES;
-	}
-	n_spi->stat.messages++;
-	spin_lock_irqsave(&n_spi->busy_lock, bflags);
-	if (n_spi->busy) {
-		list_add_tail(&context->message.queue, &n_spi->queue);
-		spin_unlock_irqrestore(&n_spi->busy_lock, bflags);
-		spin_unlock_irqrestore(&n_spi->firmware_lock, flags);
-		return 0;
-	}
-	n_spi->busy = 1;
-	spin_unlock_irqrestore(&n_spi->busy_lock, bflags);
+	//unipi_spi_trace_1(spi_dev, "A %6phC len=%d\n", context->tx_header, len);
 
-	ret = spi_async(spi_dev, &context->message);
-	spin_unlock_irqrestore(&n_spi->firmware_lock, flags);
-	if (ret != 0) {
-		n_spi->stat.errors_tx++;
-		unipi_spi_trace(spi_dev, "Err=3 txopcode:%d\n", context->tx_header[0]);
-		kfree(context);
-	}
-	return ret;
+	context->tx_header2[0] = op;
+	context->tx_header2[1] = count;
+	context->tx_header2[2] = lo(reg);
+	context->tx_header2[3] = hi(reg);
+	memmove(context->tx_header2+UNIPI_MODBUS_HEADER_SIZE, data,\
+	        (op==UNIPI_SPI_OP_WRITEREG)? count*2 : roundup_block(count, 8));
+	context->packet_crc = unipi_spi_crc_set(context->tx_header2, len, context->packet_crc);
+
+	unipi_spi_trace_1(spi_dev, "Write(op2) %6phC\n", context->tx_header2);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	s_trans[1].delay.value = 25;
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[2].speed_hz = s_trans[1].speed_hz;
+	s_trans[2].len = len+UNIPI_SPI_CRC_LENGTH;
+	s_trans[2].tx_buf = context->tx_header2;
+	s_trans[2].rx_buf = context->rx_header2;
+
+	context->len = len;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
-/*  Async op for WRITEBIT */
-int unipi_spi_write_bits_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
+/*  Async op for READREG, READBITS using own data buffer 
+ * 		regcount = 1..2   pro READREG
+ *		         = 1..32  pro READBIT
+ */ 
+int unipi_spi_read_simple(struct spi_device* spi_dev, enum UNIPI_SPI_OP op,
+                           unsigned int reg, unsigned int count, u8 *data,
+                           void* cb_data, OperationCallback cb_function)
+{
+	int len;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
+
+	len  = ((op==UNIPI_SPI_OP_READREG)? count : roundup_block(count, 16)) * 2;
+	len += UNIPI_MODBUS_HEADER_SIZE;
+	context = unipi_spi_alloc_context(spi_dev, op, len, reg, 1);
+	if (context == NULL) return -ENOMEM;
+
+	/* crc must be calculated due to firmware behavior */
+	context->packet_crc = unipi_spi_crc_set(context->tx_header2, len, context->packet_crc);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	s_trans[1].delay.value = 25;
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[2].speed_hz = s_trans[1].speed_hz;
+	s_trans[2].len = len+UNIPI_SPI_CRC_LENGTH;
+	s_trans[2].rx_buf = context->rx_header2;
+	s_trans[2].tx_buf = context->tx_header2; /* firmware misbehave else can be NULL*/
+
+	context->len = len;
+	context->simple_read = 1;
+	context->simple_len = (op==UNIPI_SPI_OP_READREG) ? count*2 : roundup_block(count, 8);
+	context->data = data;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+}
+
+
+/*  Async op for READREG */
+int unipi_spi_read_regs_async(void *proto_self, unsigned int reg, unsigned int count, u8* data,
                               void* cb_data, OperationCallback cb_function)
 {
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
+	int len, data_trans, remain, i;
 	struct unipi_spi_context *context;
-	if (count==0 || count > 32) return -EINVAL;
+	struct spi_transfer * s_trans;
+
+	if (count<=2) {
+		return unipi_spi_read_simple(spi_dev, UNIPI_SPI_OP_READREG, reg, count, data,
+		                             cb_data, cb_function);
+	}
+	len = (count * 2);
+	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_READREG, len+UNIPI_MODBUS_HEADER_SIZE, reg, 1+data_trans);
+	if (context == NULL) return -ENOMEM;
+
+	/* crc must be calculated due to firmware behavior */
+	context->packet_crc = unipi_spi_crc(context->tx_header2, UNIPI_MODBUS_HEADER_SIZE, context->packet_crc);
+	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	s_trans[1].delay.value = 25 + ((count>27)?(count-27):0);
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[2].speed_hz = s_trans[1].speed_hz;
+	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
+	s_trans[2].rx_buf = context->rx_header2;
+	s_trans[2].tx_buf = context->tx_header2; /* firmware misbehave else can be NULL*/
+
+	remain = len + UNIPI_SPI_CRC_LENGTH;
+	for ( i=0; i < data_trans; i++) {
+		s_trans[3+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
+		s_trans[3+i].speed_hz = s_trans[1].speed_hz;
+		s_trans[3+i].rx_buf = data + (NEURONSPI_MAX_TX * i);
+		s_trans[3+i].tx_buf = data + (NEURONSPI_MAX_TX * i);  /* firmware misbehave else can be NULL*/
+		s_trans[3+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
+		remain -= NEURONSPI_MAX_TX;
+	}
+
+	context->len = len;
+	context->data = data;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+}
+
+/*  Async op for WRITEREG */
+int unipi_spi_write_regs_async(void *proto_self, unsigned int reg, unsigned int count, u8* data,
+                               void* cb_data, OperationCallback cb_function)
+{
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
+	int len, remain, i, data_trans;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
+
+	if (count<=2) {
+		return unipi_spi_write_simple(spi_dev, UNIPI_SPI_OP_WRITEREG, reg, count, data,
+		                             cb_data, cb_function);
+	}
+	len = (count * 2);
+	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_WRITEREG, len+UNIPI_MODBUS_HEADER_SIZE, reg, 1+data_trans);
+	if (context == NULL) return -ENOMEM;
+
+	context->tx_header2[0] = UNIPI_SPI_OP_WRITEREG;
+	context->tx_header2[1] = count;
+	context->tx_header2[2] = lo(reg);
+	context->tx_header2[3] = hi(reg);
+	context->packet_crc = unipi_spi_crc(context->tx_header2, UNIPI_MODBUS_HEADER_SIZE, context->packet_crc);
+	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	s_trans[1].delay.value = 25;
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[2].speed_hz = s_trans[1].speed_hz;
+	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
+	s_trans[2].tx_buf = context->tx_header2;
+	s_trans[2].rx_buf = context->rx_header2;
+
+	remain = len + UNIPI_SPI_CRC_LENGTH;
+	for ( i=0; i < data_trans; i++) {
+		s_trans[3+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
+		s_trans[3+i].speed_hz = s_trans[1].speed_hz;
+		s_trans[3+i].tx_buf = data + (NEURONSPI_MAX_TX * i);
+		s_trans[3+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
+		remain -= NEURONSPI_MAX_TX;
+	}
+
+	context->len = len;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+}
+
+int unipi_spi_write_str_async(void* spi, unsigned int port, u8* data, unsigned int count, 
+                              void* cb_data, OperationCallback cb_function)
+{
+	int len, data_trans, i, remain;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
+	struct spi_device* spi_dev = (struct spi_device*) spi;
 
 	if (count == 1) {
-		context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_WRITEBIT, data[0], reg, 0);
+		context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_WRITECHAR, data[0], port << 8, 0);
 		if (context==NULL)
 			return -ENOMEM;
 		return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 	}
-	return unipi_spi_write_simple(spi_dev, UNIPI_MODBUS_OP_WRITEBITS, reg, count, data,
+
+	len = (count & 1) ? count+1 : count;
+	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_WRITESTR, (count & 0xff), port << 8, data_trans);
+	if (context == NULL) return -ENOMEM;
+
+	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
+
+	s_trans = (struct spi_transfer *)(context + 1);
+	s_trans[1].delay.value = 25;
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	remain = len + UNIPI_SPI_CRC_LENGTH;
+	for ( i=0; i < data_trans; i++) {
+		s_trans[2+i].bits_per_word = UNIPI_SPI_B_PER_WORD;
+		s_trans[2+i].speed_hz = s_trans[1].speed_hz;
+		s_trans[2+i].tx_buf = data + (NEURONSPI_MAX_TX * i );
+		s_trans[2+i].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
+		remain -= NEURONSPI_MAX_TX;
+	}
+
+	context->len = len;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+}
+
+int unipi_spi_read_str_async(void* spi, unsigned int port, u8* data, unsigned int count, 
+                             void* cb_data, OperationCallback cb_function)
+{
+	int len, data_trans, i, remain;
+	struct unipi_spi_context *context;
+	struct spi_transfer * s_trans;
+	struct spi_device* spi_dev = (struct spi_device*) spi;
+
+	len = count;
+	if (len < 246) {
+		len += 4;
+		len = (len & 1 ? len+1 : len);  // transmit_length must be even
+	} else {
+		len = 250;
+	}
+
+	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_READSTR, len, port <<8, 1+data_trans);
+	if (context == NULL) return -ENOMEM;
+
+	s_trans[1].delay.value = 25;
+	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
+
+	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
+	s_trans[2].speed_hz = s_trans[1].speed_hz;
+	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
+	s_trans[2].tx_buf = NULL;
+	s_trans[2].rx_buf = context->rx_header2;
+
+	remain = len + UNIPI_SPI_CRC_LENGTH;
+	for ( i=0; i < data_trans; i++) {
+		s_trans[i+3].bits_per_word = UNIPI_SPI_B_PER_WORD;
+		s_trans[i+3].speed_hz = s_trans[1].speed_hz;
+		s_trans[i+3].rx_buf = data + (NEURONSPI_MAX_TX * i);
+		s_trans[i+3].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
+		remain -= NEURONSPI_MAX_TX;
+	}
+
+	context->len = len;
+	context->data = data;
+	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+}
+
+
+
+/*  Async op for WRITEBIT */
+int unipi_spi_write_bits_async(void *proto_self, unsigned int reg, unsigned int count, u8* data,
+                              void* cb_data, OperationCallback cb_function)
+{
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
+	struct unipi_spi_context *context;
+	if (count==0 || count > 32) return -EINVAL;
+
+	if (count == 1) {
+		context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_WRITEBIT, data[0], reg, 0);
+		if (context==NULL)
+			return -ENOMEM;
+		return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
+	}
+	return unipi_spi_write_simple(spi_dev, UNIPI_SPI_OP_WRITEBITS, reg, count, data,
 	                              cb_data, cb_function);
 }
 
 /*  Async op for READBIT */
-int unipi_spi_read_bits_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
+int unipi_spi_read_bits_async(void *proto_self, unsigned int reg, unsigned int count, u8* data,
                               void* cb_data, OperationCallback cb_function)
 {
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
 	if (count==0 || count > 32) return -EINVAL;
 
-	return unipi_spi_read_simple(spi_dev, UNIPI_MODBUS_OP_READBIT, reg, count, data,
+	return unipi_spi_read_simple(spi_dev, UNIPI_SPI_OP_READBIT, reg, count, data,
 	                             cb_data, cb_function);
 }
 
- 
+
 int unipi_spi_idle_op_async(void* self, void* cb_data, OperationCallback cb_function)
 {
 	struct spi_device* spi_dev = (struct spi_device*) self;
 	struct unipi_spi_context *context;
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_MODBUS_OP_IDLE, 0, 0x0e55, 0);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_IDLE, 0, 0x0e55, 0);
 	if (context==NULL)
 		return -ENOMEM;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 } 
 
-/**************************************************************
- * 
- * Synchronous operations
- * 
- * ***********************************************************/
-struct unipi_spi_sync_cb_data
-{
-	struct completion* done;
-	int		result;
+
+
+
+
+struct unipi_protocol_op spi_op_v1 = {
+	.ping_async = unipi_spi_idle_op_async,
+	.read_regs_async = unipi_spi_read_regs_async,
+	.write_regs_async = unipi_spi_write_regs_async,
+	.read_bits_async = unipi_spi_read_bits_async,
+	.write_bits_async = unipi_spi_write_bits_async,
+	.read_str_async = unipi_spi_read_str_async,
+	.write_str_async = unipi_spi_write_str_async,
+	.populated = unipi_spi_populated,
+	.firmware_sync = unipi_spi_firmware_op,
+	.lock_op = unipi_spi_lock,
+	.unlock_op = unipi_spi_unlock,
 };
-
-void unipi_spi_sync_op_callback(void* cb_data, int result, u8* recv)
-{
-	struct unipi_spi_sync_cb_data* unipi_cb_data = (struct unipi_spi_sync_cb_data*) cb_data;
-	if (cb_data) {
-		unipi_cb_data->result = result;
-		complete(unipi_cb_data->done);
-	}
-}
-
-int unipi_spi_idle_op(struct spi_device* spi_dev)
-{
-	int ret = 0;
-	struct unipi_spi_sync_cb_data cb_data;
-	DECLARE_COMPLETION_ONSTACK(done); //struct completion done;
-
-	init_completion(&done);
-	cb_data.done = &done;
-	ret = unipi_spi_idle_op_async(spi_dev, &cb_data, unipi_spi_sync_op_callback);
-	if (ret != 0)
-		return ret;
-	wait_for_completion(&done);
-	return cb_data.result;
-}
-
-int unipi_spi_regs_op(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op, unsigned int reg, unsigned int count, u8* data)
-{
-	int ret = 0;
-	struct unipi_spi_sync_cb_data cb_data;
-	DECLARE_COMPLETION_ONSTACK(done); //struct completion done;
-
-	init_completion(&done);
-	cb_data.done = &done;
-	switch (op) {
-		case UNIPI_MODBUS_OP_READREG:
-			ret = unipi_spi_read_regs_async(spi_dev, reg, count, data, &cb_data, unipi_spi_sync_op_callback);
-			break;
-		case UNIPI_MODBUS_OP_WRITEREG:
-			ret = unipi_spi_write_regs_async(spi_dev, reg, count, data, &cb_data, unipi_spi_sync_op_callback);
-			break;
-		case UNIPI_MODBUS_OP_READBIT:
-			ret = unipi_spi_read_bits_async(spi_dev, reg, count, data, &cb_data, unipi_spi_sync_op_callback);
-			break;
-		case UNIPI_MODBUS_OP_WRITEBIT:
-		case UNIPI_MODBUS_OP_WRITEBITS:
-			ret = unipi_spi_write_bits_async(spi_dev, reg, count, data, &cb_data, unipi_spi_sync_op_callback);
-			break;
-		default:
-			ret = -ENOENT;
-	}
-	if (ret != 0)
-		return ret;
-	wait_for_completion(&done);
-	return cb_data.result;
-}
 

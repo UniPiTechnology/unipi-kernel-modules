@@ -17,8 +17,9 @@
  ************/
 
 #include "unipi_uart.h"
+#include "unipi_channel.h"
+#include "unipi_iogroup_bus.h"
 #include "unipi_mfd.h"
-#include "unipi_mfd_iogroup.h"
 
 #define UNIPI_UART_DETAILED_DEBUG 0
 #if UNIPI_UART_DETAILED_DEBUG > 2
@@ -46,6 +47,11 @@
 #define PORT_UNIPI			184
 #define UNIPI_UART_MAX_NR	16
 #define UNIPI_UART_FIFO_SIZE	256
+
+#define CB_WRITESTRING 1
+#define CB_GETTXFIFO  2
+#define START_TX       3
+
 
 
 struct unipi_uart_port
@@ -390,7 +396,8 @@ static void unipi_uart_tx_callback(void *arg, int status, u8* data)
 void unipi_uart_handle_tx(struct unipi_uart_port *port, int calling) /* new async ver */
 {
 	struct device* parent = port->port.dev->parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	int to_send, to_send_packet, need;
 	//unsigned long flags;
 	struct circ_buf *xmit;
@@ -448,7 +455,7 @@ void unipi_uart_handle_tx(struct unipi_uart_port *port, int calling) /* new asyn
     //spin_unlock_irqrestore(&port->port.lock, flags);
 
     unipi_uart_trace("ttyNS%d Handle TX Send: %d %16ph\n", port->port.line, to_send_packet, port->tx_send_msg);
-	ret = mfd->op.write_str_async(mfd->op.self, port->dev_port, port->tx_send_msg, to_send_packet, 
+	ret = unipi_write_str_async(channel, port->dev_port, port->tx_send_msg, to_send_packet, 
 	                              port, unipi_uart_tx_callback);
 	if (ret != 0) {
 		//ERROR, try later
@@ -493,7 +500,8 @@ void unipi_uart_get_tx_fifo_callback(void* cb_data, int result, u8* value)
 int unipi_uart_get_tx_fifo(struct unipi_uart_port* n_port)
 {
 	struct device* parent = n_port->port.dev->parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_mfd_device *mfd = to_unipi_iogroup_device(parent)->mfd;
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	int ret;
 
 	ret = mfd->op.reg_read_async(mfd->op.self, n_port->tx_fifo_reg,
@@ -560,14 +568,15 @@ void unipi_uart_rx_callback(void* cb_data, int result, u8* recv)
 {
 	struct unipi_uart_port *n_port = (struct unipi_uart_port *)cb_data;
 	struct device* parent = n_port->port.dev->parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	unsigned long flags;
 	int len = result & 0xff;
 	int remain = (result >> 8) & 0xff;
 
 	if (result < 0) {
 		/* try again read str */
-		if (unipi_mfd_read_str_async(mfd, n_port->dev_port, 
+		if (unipi_read_str_async(channel, n_port->dev_port, 
 		          n_port->rx_send_msg, n_port->rx_remain,
 				  n_port, unipi_uart_rx_callback) == 0)
 			return;
@@ -579,7 +588,7 @@ void unipi_uart_rx_callback(void* cb_data, int result, u8* recv)
 	n_port->rx_remain = remain;
 	if (n_port->rx_remain) {
 		/* continue in rx "process" */
-		if (unipi_mfd_read_str_async(mfd, n_port->dev_port, 
+		if (unipi_str_async(channel, n_port->dev_port, 
 		          n_port->rx_send_msg, n_port->rx_remain, 
 				  n_port, unipi_uart_rx_callback) == 0)
 			return;
@@ -601,7 +610,8 @@ unlock:
 static int unipi_uart_start_rx_process(struct unipi_uart_port *n_port)
 {
 	struct device* parent = n_port->port.dev->parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	unsigned long flags;
 	int locked;
 	
@@ -612,7 +622,7 @@ static int unipi_uart_start_rx_process(struct unipi_uart_port *n_port)
 	if (locked) return 0;
 
 	/* Start new rx "process" */
-	if (unipi_mfd_read_str_async(mfd, n_port->dev_port, 
+	if (unipi_read_str_async(channel, n_port->dev_port, 
 				n_port->rx_send_msg, n_port->rx_remain, 
 				n_port, unipi_uart_rx_callback) != 0) {
 
@@ -666,10 +676,11 @@ int unipi_uart_startup(struct uart_port *port)
 {
 	struct unipi_uart_port *n_port = to_unipi_uart_port(port, port);
 	struct device* parent = n_port->port.dev->parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(parent);
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 
 	n_port->accept_rx = 0;
-	unipi_mfd_enable_interrupt(mfd, UNIPI_MFD_INT_RX_NOT_EMPTY | UNIPI_MFD_INT_RX_MODBUS);
+	unipi_mfd_enable_interrupt(iogroup, UNIPI_MFD_INT_RX_NOT_EMPTY | UNIPI_MFD_INT_RX_MODBUS);
 	unipi_uart_power(port, 1);
 	// TODO: /* Reset FIFOs*/
 	unipi_uart_trace("ttyNS%d Startup\n", port->line);
@@ -770,7 +781,8 @@ int unipi_uart_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct device *parent = dev->parent;
 	struct device_node *np = dev->of_node;
-	struct unipi_mfd_device * mfd;
+	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(parent);
+	struct unipi_channel *channel = iogroup->channel;
 	struct regmap* map;
 	struct unipi_uart_device *n_uart;
 	int port_count = 1;
@@ -786,8 +798,7 @@ int unipi_uart_probe(struct platform_device *pdev)
 		dev_err(dev, "No regmap for Unipi device\n");
 		return PTR_ERR(map);
 	}
-	mfd = dev_get_drvdata(parent);
-	
+
 	of_property_read_u32(np, "port-count", &port_count);
 	if (!((port_count >= 1)&&(port_count<=4))) {
 		dev_err(dev, "Property port-count (%d) must be 1..4\n", port_count);
@@ -804,13 +815,13 @@ int unipi_uart_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, n_uart);
 	
 	for (i = 0; i < port_count; i++) {
-		ret = unipi_uart_port_probe(dev, n_uart, i, mfd->irq);
+		ret = unipi_uart_port_probe(dev, n_uart, i, iogroup->irq);
 		if (ret)
 			goto out;
 		dev_info(dev, "Serial port ttyNS%d on %s port:%d created\n", n_uart->p[i].port.line, dev_name(parent), i);
 	}
-	mfd->rx_self = n_uart;
-	mfd->rx_char_callback = unipi_uart_rx_char_callback;
+	channel->rx_self = n_uart;
+	channel->rx_char_callback = unipi_uart_rx_char_callback;
 	return 0;
 
 out:
@@ -827,12 +838,13 @@ int unipi_uart_remove(struct platform_device *pdev)
 {
 	struct unipi_uart_device *n_uart = platform_get_drvdata(pdev);
 	struct device* parent = pdev->dev.parent;
-	struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
+	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	struct unipi_uart_port *port; 
 	int i;
 
-	mfd->rx_self = NULL;
-	mfd->rx_char_callback = NULL;
+	channel->rx_self = NULL;
+	channel->rx_char_callback = NULL;
 
 	for (i = 0; i < n_uart->port_count; i++) {
         port = n_uart->p + i;

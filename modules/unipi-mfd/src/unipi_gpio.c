@@ -16,9 +16,8 @@
 #include <linux/mfd/syscon.h>
 
 #include "unipi_common.h"
+#include "unipi_iogroup_bus.h"
 #include "unipi_mfd.h"
-#include "unipi_plc.h"
-#include "unipi_mfd_iogroup.h"
 
 #define UNIPI_GPIO_IN	BIT(0)
 #define UNIPI_GPIO_OUT	BIT(1)
@@ -31,6 +30,7 @@ struct unipi_gpio_data {
 	unsigned int	flags;  /* UNIPI_GPIO_IN | UNIPI_GPIO_OUT */
 	int				to_reg_shift;
 	int				to_bit_mask;
+	char			*fname;
 };
 
 struct unipi_gpio_device {
@@ -50,7 +50,7 @@ static int unipi_gpio_get(struct gpio_chip *chip, unsigned offset)
 	int ret;
 
 	offs = priv->value_reg + (offset >> priv->data->to_reg_shift);
-	printk("gpio get %d, %d", offset, offs);
+	//printk("gpio get %d, %d", offset, offs);
 
 	ret = regmap_read(priv->map, offs, &val);
 	if (ret)
@@ -63,7 +63,7 @@ static void unipi_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
 {
 	/* using coils to update */
 	struct unipi_gpio_device *priv = gpiochip_get_data(chip);
-	printk("gpio set %d, %d", offset, val);
+	//printk("gpio set %d, %d", offset, val);
 
 	regmap_write(priv->map, priv->value_reg + offset, !!val);
 }
@@ -94,6 +94,7 @@ static const struct unipi_gpio_data unipi_gpio_data_di = {
 	.flags		= UNIPI_GPIO_IN,
 	.to_reg_shift = 4,
 	.to_bit_mask = 0xf,
+	.fname = "DI%d.%d",
 };
 
 static const struct unipi_gpio_data unipi_gpio_data_do = {
@@ -103,6 +104,7 @@ static const struct unipi_gpio_data unipi_gpio_data_do = {
 	.flags		= UNIPI_GPIO_OUT,
 	.to_reg_shift = 0,
 	.to_bit_mask = 0,
+	.fname = "DO%d.%d",
 };
 
 
@@ -117,7 +119,7 @@ static struct dev_mfd_attribute dev_attr_di_counter = {
 };
 
 static struct dev_mfd_attribute dev_attr_di_value = {
-	__ATTR(value, 0444, unipi_mfd_show_reg, unipi_mfd_store_reg),
+	__ATTR(value, 0444, unipi_mfd_show_regbool, NULL),
 	0
 };
 
@@ -127,15 +129,24 @@ static struct attribute *unipi_mfd_di_attrs[] = {
 	&dev_attr_di_value.attr.attr,
 };
 
+static struct dev_mfd_attribute dev_attr_do_value = {
+	__ATTR(value, 0664, unipi_mfd_show_bool, unipi_mfd_store_bool),
+	0
+};
+
+static struct attribute *unipi_mfd_do_attrs[] = {
+	&dev_attr_do_value.attr.attr,
+};
+
 
 static int unipi_gpio_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	//struct device *parent = dev->parent;
 	struct unipi_gpio_device *priv;
 	struct device_node *np = dev->of_node;
+	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(dev->parent);
 	char name[30];
-	int ret, i;
+	int ret, i, regaddr;
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -183,15 +194,40 @@ static int unipi_gpio_probe(struct platform_device *pdev)
 	ret = of_property_read_u32(np, "debounce-reg", &priv->debounce_reg);
 	ret = of_property_read_u32(np, "counter-reg", &priv->counter_reg);
 
-	if (priv->counter_reg>=0) {
-		for (i=0; i<priv->ngpio; i++) {
-			snprintf(name, sizeof(name), "DI1.%d", i+1);
+	for (i=0; i<priv->ngpio; i++) {
+		snprintf(name, sizeof(name), priv->data->fname, iogroup->address, i+1);
+		if (priv->data->flags & UNIPI_GPIO_IN) {
+			//if (priv->counter_reg>=0)
+			regaddr = priv->value_reg+(i/16);
+			regaddr |= (i%16) << 16;
 			unipi_mfd_add_group(dev->parent, name, unipi_mfd_di_attrs, 3,
-			            (u32) priv->debounce_reg+i, (u32) priv->counter_reg+2*i, (u32) priv->value_reg+i);
+			            (u32) priv->debounce_reg+i,
+			            (u32) priv->counter_reg+2*i,
+			            (u32) regaddr);
+		} else {
+			unipi_mfd_add_group(dev->parent, name, unipi_mfd_do_attrs, 1,
+			            (u32) priv->value_reg+i);
 		}
 	}
 
 	return devm_gpiochip_add_data(&pdev->dev, &priv->chip, priv);
+}
+
+int unipi_gpio_remove(struct platform_device *pdev)
+{
+	int i;
+	struct unipi_gpio_device *priv = (struct unipi_gpio_device*) platform_get_drvdata(pdev);
+	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(pdev->dev.parent);
+	char name[30];
+
+	if (!priv || !priv->data)
+		return 0;
+	for (i=0; i<priv->ngpio; i++) {
+		snprintf(name, sizeof(name), priv->data->fname, iogroup->address, i+1);
+		unipi_mfd_remove_group(pdev->dev.parent, name);
+	}
+
+	return 0;
 }
 
 static const struct of_device_id of_unipi_gpio_match[] = {
@@ -203,6 +239,7 @@ MODULE_DEVICE_TABLE(of, of_unipi_gpio_match);
 
 static struct platform_driver unipi_gpio_driver = {
 	.probe		= unipi_gpio_probe,
+	.remove		= unipi_gpio_remove,
 	.driver		= {
 		.name	= "unipi-gpio",
 		.of_match_table = of_unipi_gpio_match,

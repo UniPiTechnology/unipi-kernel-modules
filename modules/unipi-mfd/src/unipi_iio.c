@@ -15,7 +15,7 @@
  ************/
 
 //#include "unipi_iio.h"
-#include "unipi_mfd.h"
+#include "unipi_channel.h"
 #include "unipi_mfd_iogroup.h"
 
 #define AI_VAL_REG_COUNT  2
