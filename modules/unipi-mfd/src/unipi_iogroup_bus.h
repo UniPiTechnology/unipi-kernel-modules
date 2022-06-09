@@ -10,37 +10,16 @@
  *
  */
 
-#ifndef MODULES_UNIPI_SPI_SRC_UNIPI_PLC_H_
-#define MODULES_UNIPI_SPI_SRC_UNIPI_PLC_H_
+#ifndef MODULES_UNIPI_SPI_SRC_UNIPI_IOGROUP_H_
+#define MODULES_UNIPI_SPI_SRC_UNIPI_IOGROUP_H_
 
 #include <linux/version.h>
 #include <linux/nvmem-consumer.h>
 
 #include "unipi_common.h"
-#include "unipi_id.h"
 
 struct unipi_iogroup_device;
 
-struct unipi_plc {
-//	struct unipi_id_data unipi_id;
-//	struct nvmem_cell * slots;
-	struct platform_device *pdev;
-	void   (*cleanup)(struct unipi_iogroup_device *iogroup);
-	
-};
-
-static inline void unipi_plc_put(struct unipi_plc *plc)
-{
-	if (plc)
-		put_device(&plc->pdev->dev);
-}
-
-static inline struct unipi_plc* unipi_plc_get(struct unipi_plc *plc)
-{
-	if (!plc || !get_device(&plc->pdev->dev))
-		return NULL;
-	return plc;
-}
 
 /**
  * struct unipi_iogroup_device - Plc side proxy for an SPI slave device
@@ -69,11 +48,14 @@ static inline struct unipi_plc* unipi_plc_get(struct unipi_plc *plc)
  */
 struct unipi_iogroup_device {
 	struct device		dev;
-	struct unipi_plc	*plc;
-	u8			address;
-	bool			rt;
-	void			*controller_state;
-	void			*controller_data;
+	struct unipi_channel *channel;
+	u8					address;
+	int					irq;
+	struct hrtimer		poll_timer;
+	int					poll_enabled;
+	//bool			rt;
+	//void			*controller_state;
+	//void			*controller_data;
 	char			modalias[SPI_NAME_SIZE];
 
 	/* the statistics */
@@ -118,6 +100,7 @@ struct unipi_iogroup_driver {
 
 /* device driver data */
 
+/*
 static inline void unipi_iogroup_set_drvdata(struct unipi_iogroup_device *iogroup, void *data)
 {
 	dev_set_drvdata(&iogroup->dev, data);
@@ -127,6 +110,7 @@ static inline void *unipi_iogroup_get_drvdata(struct unipi_iogroup_device *iogro
 {
 	return dev_get_drvdata(&iogroup->dev);
 }
+*/
 static inline struct unipi_iogroup_driver *to_unipi_iogroup_driver(struct device_driver *drv)
 {
 	return drv ? container_of(drv, struct unipi_iogroup_driver, driver) : NULL;
@@ -148,6 +132,12 @@ static inline void unipi_iogroup_unregister_driver(struct unipi_iogroup_driver *
 /* use a define to avoid include chaining to get THIS_MODULE */
 #define unipi_iogroup_register_driver(driver) \
 	__unipi_iogroup_register_driver(THIS_MODULE, driver)
+
+struct unipi_iogroup_device *
+       of_register_iogroup_device(struct unipi_channel *channel, struct device_node *nc);
+struct unipi_iogroup_device *
+       register_iogroup_device(struct unipi_channel *channel, int reg, const char* modalias);
+void iogroup_unregister_by_channel(struct unipi_channel *channel);
 
 
 #endif

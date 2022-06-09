@@ -18,7 +18,7 @@
 #include <linux/leds.h>
 
 #include "unipi_common.h"
-#include "unipi_mfd_iogroup.h"
+#include "unipi_mfd.h"
 
 struct unipi_led {
 	struct led_classdev cdev;

@@ -21,26 +21,44 @@
 #include <linux/version.h>
 
 #include "unipi_common.h"
-#include "unipi_mfd.h"
+#include "unipi_channel.h"
+
+enum UNIPI_SPI_OP
+{
+	UNIPI_SPI_OP_READBIT   = 0x01,
+	UNIPI_SPI_OP_READREG   = 0x04,
+	UNIPI_SPI_OP_WRITEBIT  = 0x05,
+	UNIPI_SPI_OP_WRITEREG  = 0x06,
+	UNIPI_SPI_OP_WRITEBITS = 0x0F,
+
+	UNIPI_SPI_OP_WRITECHAR = 0x41,
+	UNIPI_SPI_OP_WRITESTR  = 0x64,
+	UNIPI_SPI_OP_READSTR   = 0x65,
+	UNIPI_SPI_OP_IDLE      = 0xFA,
+
+	UNIPI_SPI_OP2_WRITESTR = 0x70,
+	UNIPI_SPI_OP2_READSTR  = 0x71,
+	UNIPI_SPI_OP2_IDLE     = 0xFB,
+};
+
 
 #define UNIPI_SPI_MESSAGE_HEADER_LENGTH	4
 #define UNIPI_SPI_FIRST_MESSAGE_LENGTH	6   /*including CRC */
-//#define UNIPI_SPI_FIRST_MESSAGE_ALLOC	8
-#define UNIPI_SPI_FIRST_MESSAGE_ALLOC	20
+#define UNIPI_SPI_FIRST_MESSAGE_ALLOC	8
 #define UNIPI_SPI_CRC_LENGTH			2
+
+#define UNIPI_SPI2_MESSAGE_LEN 16
+#define UNIPI_SPI2_MESSAGE_ALLOC UNIPI_SPI2_MESSAGE_LEN + 4
+
 
 #define UNIPI_SPI_EDGE_DELAY			10
 #define UNIPI_SPI_B_PER_WORD 			8
+#define UNIPI_SPI_INTER_FRAME_US		40
+#define UNIPI_SPI_INTER_FRAME_NS		(UNIPI_SPI_INTER_FRAME_US*1000)
 
 #define UNIPI_SPI_PROBE_FREQ			1000000
 #define UNIPI_SPI_SLOWER_FREQ			6000000
 
-//#if defined(CONFIG_ARM64)
-/* on NanoPi there are only 12MHz and 6MHz available, not in between */
-//   #define UNIPI_SPI_SLOWER_FREQ			6000000
-//#else
-//   #define UNIPI_SPI_SLOWER_FREQ			7500000
-//#endif
 
 /* On some spi controller (BCM) don't work correctly long transfers 
  * this number defines maximum length of one chunk */
@@ -50,24 +68,10 @@
 #define NEURONSPI_MAX_TX				60
 #endif
 
-enum UNIPI_MODBUS_OP 
-{
-	UNIPI_MODBUS_OP_READBIT   = 0x01,
-	UNIPI_MODBUS_OP_READREG   = 0x04,
-	UNIPI_MODBUS_OP_WRITEBIT  = 0x05,
-	UNIPI_MODBUS_OP_WRITEREG  = 0x06,
-	UNIPI_MODBUS_OP_WRITEBITS = 0x0F,
 
-	UNIPI_MODBUS_OP_WRITECHAR = 0x41,
-	UNIPI_MODBUS_OP_WRITESTR  = 0x64,
-	UNIPI_MODBUS_OP_READSTR   = 0x65,
-	UNIPI_MODBUS_OP_IDLE      = 0xFA
-};
-
-
-#define UNIPI_MODBUS_HEADER_SIZE   4
-#define UNIPI_MODBUS_REGISTER_SIZE 2
-#define UNIPI_MODBUS_TAIL_SIZE     4
+//#define UNIPI_MODBUS_HEADER_SIZE   4
+//#define UNIPI_MODBUS_REGISTER_SIZE 2
+//#define UNIPI_MODBUS_TAIL_SIZE     4
 
 /**
  * struct unipi_spi_statistics - statistics for transfers
@@ -97,10 +101,9 @@ struct unipi_spi_statistics {
 
 struct unipi_spi_device 
 {
-	struct unipi_mfd_device mfd; // must by the first member!
+	struct unipi_channel channel; // must by the first member!
 	int frequency;
 	cycles_t last_cs_cycles;
-	struct device *chrdev;
 	spinlock_t firmware_lock;   // protect access to firmware_in_progress
 	int firmware_in_progress;
 	struct unipi_spi_statistics stat;
@@ -111,55 +114,68 @@ struct unipi_spi_device
 	struct hrtimer frame_timer;
 	struct spi_device *spi_dev; // required by timer
 	int hmode;
+	int enable_v2;
+	int probe_mode;
 };
 
+struct unipi_spi_devstatus {
+	enum UNIPI_SPI_OP opcode;
+	unsigned int interrupt;
+	uint8_t port;
+	int remain;
+	uint8_t ch;
+};
 
-struct regmap *devm_regmap_init_unipi_regs(struct spi_device *spi,
-					const struct regmap_config *config);
+struct unipi_spi_reply {
+	enum UNIPI_SPI_OP opcode;
+	int ret;
+	unsigned int reg;
+	uint8_t *data;
+};
 
-struct regmap *devm_regmap_init_unipi_coils(struct spi_device *spi,
-					const struct regmap_config *config);
+struct unipi_spi_context
+{
+	struct spi_message message;
+	void * operation_callback_data;
+	OperationCallback operation_callback;
+	int (*parse_frame)(struct unipi_spi_context*, struct unipi_spi_devstatus*, struct unipi_spi_reply*);
+	int interframe_nsec;
+	int simple_read;
+	int simple_len;
+	u8* data;
+	int len;
+	u16 packet_crc;
+	union {
+		u8 tx_header[UNIPI_SPI2_MESSAGE_ALLOC];
+		struct {
+			u8 tx_header1[UNIPI_SPI_FIRST_MESSAGE_ALLOC];
+			u8 tx_header2[UNIPI_SPI_MESSAGE_HEADER_LENGTH+2*2+4];
+		};
+	};
+	union {
+		u8 rx_header[UNIPI_SPI2_MESSAGE_ALLOC];
+		struct {
+			u8 rx_header1[UNIPI_SPI_FIRST_MESSAGE_ALLOC];
+			u8 rx_header2[UNIPI_SPI_MESSAGE_HEADER_LENGTH+2*2+4];
+		};
+	};
+};
 
-int unipi_reg_read_async(void *context, unsigned int reg,
-					void* cb_data, OperationCallback callback);
-
+/* from unipi_spi.c */
 u16 unipi_spi_crc_set(u8* data, int len, u16 start);
-
-
-int unipi_spi_read_str_async(void* spi_dev, unsigned int port, u8* data, unsigned int count, 
-                             void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_write_str_async(void* spi_dev, unsigned int port, u8* data, unsigned int count, 
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_write_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_read_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi1_read_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi2_read_simple(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op,
-                           unsigned int reg, unsigned int count, u8 *data,
+int unipi_spi_exec_context(struct spi_device* spi_dev, struct unipi_spi_context *context,
                            void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_write_bits_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_read_bits_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_read_bits_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function);
-
-int unipi_spi_idle_op_async(void *self, void* cb_data, OperationCallback cb_function);
+void unipi_spi_populated(void * self);
+int unipi_spi_set_v1(struct spi_device* spi_dev);
+int unipi_spi_try_v2(struct spi_device* spi_dev);
 
 
-int unipi_spi_regs_op(struct spi_device* spi_dev, enum UNIPI_MODBUS_OP op, unsigned int reg, unsigned int count, u8* data);
-int unipi_spi_idle_op(struct spi_device* spi_dev);
-enum hrtimer_restart unipi_spi_timer_func(struct hrtimer *timer);
+/* from unipi_firmware.c */
+int  unipi_spi_firmware_op(void *proto_self, u8* send_buf, u8* recv_buf, s32 len, int firmware_cookie);
+void unipi_spi_unlock(void *proto_self);
+int  unipi_spi_lock(void *proto_self);
+
+
 
 
 /***************
@@ -184,75 +200,6 @@ enum hrtimer_restart unipi_spi_timer_func(struct hrtimer *timer);
 #define UNIPISPI_OP_MODE_DO_CRC             0x2
 #define UNIPISPI_OP_MODE_HAVE_CRC_SPACE     0x4
 
-/*************************
- * Function Declarations *
- *************************/
-/*
-s32 neuronspi_spi_uart_write(struct spi_device *spi, u8 *send_buf, int length, u8 uart_index);
-void neuronspi_spi_uart_read(struct spi_device* spi_dev, u8 *recv_buf, s32 len, u8 uart_index);
-int unipispi_modbus_read_register(struct spi_device* spi_dev, u16 reg, u16* value);
-int unipispi_modbus_read_u32(struct spi_device* spi_dev, u16 reg, u32* value);
-int unipispi_modbus_read_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
-int unipispi_modbus_write_register(struct spi_device* spi_dev, u16 reg, u16 value);
-int unipispi_modbus_write_u32(struct spi_device* spi_dev, u16 reg, u32 value);
-int unipispi_modbus_write_many(struct spi_device* spi_dev, u16 reg, u16* value, int register_count);
-int unipispi_modbus_write_coil(struct spi_device* spi_dev, u16 coil, int value);
-int unipi_spi_write_str(struct spi_device* spi, struct neuronspi_port* port, int length);
-int unipi_spi_get_tx_fifo(struct spi_device* spi, struct neuronspi_port* port);
-
-void neuronspi_enable_uart_interrupt(struct neuronspi_port* n_port);
-void neuronspi_uart_flush_proc(struct kthread_work *ws);
-*/
-/***********************
- * Function structures *
- ***********************/
-
-// Host driver struct
-/*extern struct spi_driver neuronspi_spi_driver;
-
-// These defines need to be at the end
-#define to_neuronspi_uart_data(p,e)  ((container_of((p), struct neuronspi_uart_data, e)))
-#define to_led_driver(p,e)	((container_of((p), struct neuronspi_led_driver, e)))
-#define to_uart_port(p,e)	((container_of((p), struct uart_port, e)))
-*/
-
-int unipi_spi_send_op(struct spi_device* spi_dev, u8* send_buf, u8* recv_buf, s32 len);
-int unipi_spi_async_op(struct spi_device* spi_dev, u8* send_buf, u8* recv_buf, s32 len, 
-                       void* cb_data, OperationCallback cb_function);
-int unipi_spi_firmware_op(struct spi_device* spi_dev, u8* send_buf, u8* recv_buf, s32 len, int firmware_cookie);
-
-void unipi_spi_unlock(struct spi_device* spi_dev);
-int unipi_spi_lock(struct spi_device* spi_dev);
-
-/*********************
- * In-line Functions *
- *********************/
-/*
-static __always_inline int neuronspi_frequency_by_model(u16 model)
-{
-    int i;
-    for (i = 0; i < NEURONSPI_FREQUENCY_LEN; i++) {
-        if ((NEURONSPI_FREQUENCY_MAP[i].mask & model) == NEURONSPI_FREQUENCY_MAP[i].model) 
-			return NEURONSPI_FREQUENCY_MAP[i].frequency;
-    }
-	return NEURONSPI_COMMON_FREQ;
-
-//    for (i = 0; i < NEURONSPI_SLOWER_MODELS_LEN; i++) {
-//        if (NEURONSPI_SLOWER_MODELS[i] == model) return 1;
-//    }
-    return 0;
-
-}
-
-static __always_inline int neuronspi_is_noirq_model(u16 model)
-{
-    int i;
-    for (i = 0; i < NEURONSPI_NO_INTERRUPT_MODELS_LEN; i++) {
-        if (NEURONSPI_NO_INTERRUPT_MODELS[i] == model) return 1;
-    }
-    return 0;
-}
-*/
 
 /* using trace_printk or printk ???*/
 #if UNIPI_SPI_DETAILED_DEBUG > 1

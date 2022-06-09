@@ -14,10 +14,12 @@
 //#include <linux/completion.h>
 //#include <linux/cpufreq.h>
 #include <linux/version.h>
+#include <linux/poll.h>
+#include <linux/wait.h>
 
 #include "unipi_common.h"
 #include "unipi_modbus.h"
-#include "unipi_spi.h"
+//#include "unipi_spi.h"
 
 
 #if UNIPI_MODBUS_DETAILED_DEBUG > 1
@@ -38,12 +40,18 @@
 int				unipi_modbus_major;
 struct class	*unipi_modbus_class;
 
+enum unipi_modbus_status {
+	UNIPI_MODBUS_STATUS_IDLE,
+	UNIPI_MODBUS_STATUS_INOP,
+	UNIPI_MODBUS_STATUS_DATA,
+};
 
 struct unipi_modbus_file_data
 {
-	//struct spi_device** spi_device;
-	struct mutex 		lock;
-	struct spi_device*	spi_dev;
+	struct mutex         lock;
+	struct unipi_channel *channel;
+	wait_queue_head_t    wait;
+	enum unipi_modbus_status status;
 	int					is_locked;
 	u32					cookie;
 	u8					recv_buf[UNIPI_MODBUS_BUFFER_MAX];
@@ -51,45 +59,35 @@ struct unipi_modbus_file_data
 	int					result;
 };
 
-
-/*
-int unipi_modbus_match_modbus_address(struct device *dev, const void *modbus_address)
-{
-	struct spi_device* spi_dev = dev_get_drvdata(dev);
-	struct unipi_spi_device* n_spi = (struct unipi_spi_device*) spi_get_drvdata(spi_dev);
-	return n_spi->mfd.modbus_address == *((u8*)modbus_address);
-}
-*/
-
-struct spi_device * unipi_modbus_dev_by_address(u8 modbus_address)
+struct unipi_channel* unipi_modbus_dev_by_address(u8 modbus_address)
 {
 	struct device *dev;
-	struct spi_device *spi_dev;
+	struct unipi_channel *channel;
 	
-	//dev = class_find_device(unipi_modbus_class, NULL, &modbus_address, unipi_modbus_match_modbus_address);
-	dev = class_find_device_by_devt(unipi_modbus_class, MKDEV(unipi_modbus_major, modbus_address));
+	dev = class_find_device_by_devt(unipi_modbus_class, 
+	                      MKDEV(unipi_modbus_major, modbus_address));
 	if (dev) {
-		spi_dev = (struct spi_device*) dev_get_drvdata(dev);
+		channel = (struct unipi_channel*) dev_get_drvdata(dev);
 		put_device(dev);
-		return spi_dev;
+		return channel;
  	}
 	return NULL;
 }
 EXPORT_SYMBOL_GPL(unipi_modbus_dev_by_address);
 
-struct device* unipi_modbus_classdev_register(struct spi_device *spi_dev, u8 address)
+struct device* unipi_modbus_classdev_register(struct unipi_channel *channel, u8 address)
 {
 	struct device* modbus_dev;
 
 	if (unipi_modbus_dev_by_address(address)) {
-		dev_err(&spi_dev->dev,"Duplicit modbus-address (%d). Channel inaccessible!", address);
+		dev_err(channel->dev,"Duplicit modbus-address (%d). Channel inaccessible!", address);
 		return NULL;
 	}
 
-	modbus_dev = device_create(unipi_modbus_class, &spi_dev->dev, MKDEV(unipi_modbus_major, address),
-	                           spi_dev, UNIPI_MODBUS_DEVICE_NAME_T, address);
+	modbus_dev = device_create(unipi_modbus_class, channel->dev, MKDEV(unipi_modbus_major, address),
+	                           channel, UNIPI_MODBUS_DEVICE_NAME_T, address);
 	if (IS_ERR(modbus_dev)) {
-		dev_err(&spi_dev->dev,"Failed to create modbus device (%d). Channel inaccessible!", address);
+		dev_err(channel->dev,"Failed to create modbus device (%d). Channel inaccessible!", address);
 		return NULL;
 	}
 	return modbus_dev;
@@ -113,13 +111,17 @@ int unipi_modbus_open (struct inode *inode_p, struct file *file_p)
 	private_data = kzalloc(sizeof(*private_data), GFP_ATOMIC);
 	mutex_init(&private_data->lock);
 
-	private_data->spi_dev = unipi_modbus_dev_by_address(modbus_address);
+	private_data->channel = unipi_modbus_dev_by_address(modbus_address);
 	/* private_data->spi_dev = (struct spi_device*) inode_p->i_private; */
-	if (private_data->spi_dev == NULL) {
+	if (private_data->channel == NULL || get_device(private_data->channel->dev) == NULL) {
 		kfree(private_data);
 		return -ENODEV;
 	}
-	printk("open %s", dev_name(&private_data->spi_dev->dev));
+	if (private_data->channel->dev->driver) {
+		if (private_data->channel->dev->driver->owner)
+			try_module_get(private_data->channel->dev->driver->owner);
+	}
+	init_waitqueue_head(&private_data->wait);
 	file_p->private_data = private_data;
 	return 0;
 }
@@ -131,20 +133,52 @@ int unipi_modbus_release (struct inode *inode_p, struct file *file_p)
 		return -1;
 	}
 	private_data = (struct unipi_modbus_file_data*)file_p->private_data;
+	if (private_data->is_locked) {
+		private_data->channel->op->unlock_op(private_data->channel->proto_self);
+	}
+	put_device(private_data->channel->dev);
+	if (private_data->channel->dev->driver) {
+		if (private_data->channel->dev->driver->owner)
+			module_put(private_data->channel->dev->driver->owner);
+	}
+
 	kfree(private_data);
 	file_p->private_data = NULL;
 	return 0;
 }
 
+
+static __poll_t unipi_modbus_poll(struct file *file, poll_table *wait)
+{
+	struct unipi_modbus_file_data* private_data = (struct unipi_modbus_file_data*) file->private_data;
+	//struct serio_raw_client *client = file->private_data;
+	//struct serio_raw *serio_raw = client->serio_raw;
+	__poll_t mask = 0;
+
+	poll_wait(file, &private_data->wait, wait);
+	if (private_data->status != UNIPI_MODBUS_STATUS_INOP)
+		mask = EPOLLOUT | EPOLLWRNORM;
+	else if (private_data->status == UNIPI_MODBUS_STATUS_DATA)
+		mask = EPOLLIN | EPOLLRDNORM | EPOLLOUT | EPOLLWRNORM;
+
+	//mask = serio_raw->dead ? EPOLLHUP | EPOLLERR : EPOLLOUT | EPOLLWRNORM;
+
+	return mask;
+}
+
 ssize_t unipi_modbus_read (struct file *file_p, char *buffer, size_t len, loff_t *offset)
 {
 	s32 result = 0;
-    loff_t dummy_offset = 0;
+	loff_t dummy_offset = 0;
 	struct unipi_modbus_file_data* private_data;
 
+	unipi_modbus_trace(KERN_INFO "unipi-modbus: CDEV Read %zu, offset=%d\n", len,
+					   (int)*offset);
+	/*
 	if (buffer == NULL) return -EINVAL; // Invalid read buffer
 	if (len == 0) return 0; // Empty read
 	if (len > UNIPI_MODBUS_BUFFER_MAX) return -EMSGSIZE;
+	*/
 	if (file_p == NULL || file_p->private_data == NULL) {
 		printk(KERN_DEBUG "unipi-modbus: Bad file descriptor\n");
 		return -EINVAL;
@@ -152,27 +186,33 @@ ssize_t unipi_modbus_read (struct file *file_p, char *buffer, size_t len, loff_t
 	private_data = (struct unipi_modbus_file_data*) file_p->private_data;
 
 	mutex_lock(&(private_data->lock));
-	unipi_modbus_trace(KERN_INFO "unipi-modbus: CDEV Read %zu, offset=%d\n", len,
-					   (int)*offset);
-
-	result = simple_read_from_buffer(buffer, len, &dummy_offset, private_data->recv_buf,
-	                                 UNIPI_MODBUS_BUFFER_MAX);
+	if (private_data->status == UNIPI_MODBUS_STATUS_INOP) {
+		result = -EAGAIN;
+		goto unlock;
+	}
+	if (private_data->status == UNIPI_MODBUS_STATUS_IDLE) {
+		result = 0;
+		goto unlock;
+	}
+	if ((buffer != NULL) && (len > 0) && (private_data->result >=0)){
+		result = simple_read_from_buffer(buffer, len, &dummy_offset, private_data->recv_buf,
+		                                 UNIPI_MODBUS_BUFFER_MAX);
+		if (result < 0) private_data->result = result;
+	}
+	result = private_data->result;
+	private_data->status = UNIPI_MODBUS_STATUS_IDLE;
+unlock:
 	mutex_unlock(&(private_data->lock));
 	return result;
 }
 
-struct unipi_modbus_cb_data
-{
-	struct completion* done;
-	int		result;
-};
-
 void unipi_modbus_op_callback(void* cb_data, int result, u8* recv)
 {
-	struct unipi_modbus_cb_data* unipi_cb_data = (struct unipi_modbus_cb_data*) cb_data;
+	struct unipi_modbus_file_data *private_data = (struct unipi_modbus_file_data*) cb_data;
 	if (cb_data) {
-		unipi_cb_data->result = result;
-		complete(unipi_cb_data->done);
+		private_data->result = result;
+		private_data->status = UNIPI_MODBUS_STATUS_DATA;
+		wake_up_interruptible(&private_data->wait);
 	}
 }
 
@@ -180,9 +220,9 @@ ssize_t unipi_modbus_write (struct file *file_p, const char *buffer, size_t len,
 {
     loff_t dummy_offset = 0;
 	struct unipi_modbus_file_data *private_data;
-	struct spi_device *spi;
-	struct unipi_modbus_cb_data cb_data;
-	DECLARE_COMPLETION_ONSTACK(done); //struct completion done;
+	struct unipi_channel *channel;
+	#define pcb_data  (private_data)
+	//void *pcb_data;
 	u8 op, count;
 	int reg;
 	int ret;
@@ -201,68 +241,71 @@ ssize_t unipi_modbus_write (struct file *file_p, const char *buffer, size_t len,
     }
     private_data = (struct unipi_modbus_file_data*) file_p->private_data;
 
-    spi = private_data->spi_dev;
-	spi_dev_get(spi);
+	channel = private_data->channel;
 
 	mutex_lock(&(private_data->lock));
-    private_data->recv_buf[0] = 0;
-#if UNIPI_MODBUS_DETAILED_DEBUG > 1
-	// clear receive buffer content
-	memset(private_data->recv_buf, 0, UNIPI_MODBUS_BUFFER_MAX);
-#endif
 	if (private_data->is_locked) {
 		/* Firmware op */
+		private_data->recv_buf[0] = 0;
 		simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
 							   &dummy_offset, buffer, len);
-		ret = unipi_spi_firmware_op(spi, private_data->send_buf, private_data->recv_buf, 
+		ret = channel->op->firmware_sync(channel->proto_self, private_data->send_buf, private_data->recv_buf, 
 		                            len, private_data->cookie);
-	} else {
-		op = buffer[0]; count = buffer[1]; reg = buffer[2] | (buffer[3] << 8);
-		printk("op=%d count=%d reg=%d", op, count, reg);
-		init_completion(&done);
-		cb_data.done = &done;
-		switch (op) {
-			case UNIPI_MODBUS_OP_READREG:
-				ret = unipi_spi_read_regs_async(spi, reg, count, private_data->recv_buf,
-												&cb_data, unipi_modbus_op_callback);
-				break;
-			case UNIPI_MODBUS_OP_READBIT:
-				ret = unipi_spi_read_bits_async(spi, reg, count, private_data->recv_buf,
-												&cb_data, unipi_modbus_op_callback);
-				break;
-			case UNIPI_MODBUS_OP_WRITEREG:
-				simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
-									&dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
-									len-UNIPI_MODBUS_HEADER_SIZE);
-				ret = unipi_spi_write_regs_async(spi, reg, count, private_data->send_buf,
-												&cb_data, unipi_modbus_op_callback);
-				break;
-			case UNIPI_MODBUS_OP_WRITEBITS:
-				simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
-									   &dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
-									   len-UNIPI_MODBUS_HEADER_SIZE);
-				ret = unipi_spi_write_bits_async(spi, reg, count, private_data->send_buf,
-			                                     &cb_data, unipi_modbus_op_callback);
-				break;
-			default:
-				ret = -ENOENT;
-		}
-		printk("op=%d count=%d reg=%d ret=%d", op, count, reg, ret);
-		if (ret == 0) {
-			wait_for_completion(&done);
-			printk("after cb=%d\n", cb_data.result);
-			if (op==UNIPI_MODBUS_OP_WRITEBITS && count==1) 
-				ret = (cb_data.result == 0) ? 1 : cb_data.result;
-			else
-				/* OK / Bad register / error in comm */
-				ret =(cb_data.result >= count)? count : cb_data.result;
-				//ret =(cb_data.result >= count)? 0 : (cb_data.result >= 0)? -ENOENT: cb_data.result;
-		}
+		goto unlock;
 	}
-	spi_dev_put(spi);
+	if (private_data->status == UNIPI_MODBUS_STATUS_INOP) {
+		ret = -EBUSY;
+		goto unlock;
+	}
+	private_data->status = UNIPI_MODBUS_STATUS_INOP;
+	private_data->recv_buf[0] = 0;
+	op = buffer[0]; count = buffer[1]; reg = buffer[2] | (buffer[3] << 8);
+	//printk("op=%d count=%d reg=%d", op, count, reg);
+	switch (op) {
+		case UNIPI_MODBUS_OP_READREG:
+			ret = unipi_read_regs_async(channel, reg, count, private_data->recv_buf,
+										pcb_data, unipi_modbus_op_callback);
+			break;
+		case UNIPI_MODBUS_OP_READBIT:
+			ret = unipi_read_bits_async(channel, reg, count, private_data->recv_buf,
+										pcb_data, unipi_modbus_op_callback);
+			break;
+		case UNIPI_MODBUS_OP_WRITEREG:
+			simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
+								&dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
+								len-UNIPI_MODBUS_HEADER_SIZE);
+			ret = unipi_write_regs_async(channel, reg, count, private_data->send_buf,
+										pcb_data, unipi_modbus_op_callback);
+			break;
+		case UNIPI_MODBUS_OP_WRITEBITS:
+			simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
+							   &dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
+							   len-UNIPI_MODBUS_HEADER_SIZE);
+			ret = unipi_write_bits_async(channel, reg, count, private_data->send_buf,
+	                                     pcb_data, unipi_modbus_op_callback);
+			break;
+		default:
+			ret = -ENOENT;
+	}
+	//printk("op=%d count=%d reg=%d ret=%d", op, count, reg, ret);
+	if (ret != 0) {
+		private_data->status = UNIPI_MODBUS_STATUS_IDLE;
+		goto unlock;
+	}
+	if (file_p->f_flags & O_NONBLOCK) {
+		goto unlock;
+	}
+	wait_event_interruptible(private_data->wait,
+                             (private_data->status!=UNIPI_MODBUS_STATUS_INOP));
+	if (op==UNIPI_MODBUS_OP_WRITEBITS && count==1) 
+		ret = (private_data->result == 0) ? 1 : private_data->result;
+	else
+		/* OK / Bad register / error in comm */
+		ret = (private_data->result >= count)? count : private_data->result;
+unlock:
 	mutex_unlock(&private_data->lock);
+	unipi_modbus_trace(KERN_INFO "unipi-modbus: CDEV Write ret:%d\n", ret);
 	return ret;
-	//return (ret < 0) ? ret : len;
 }
 
 
@@ -275,7 +318,7 @@ int unipi_modbus_lock (struct file *file_p, int cmd, struct file_lock *flock)
 		// Unlock device
 		private_data = (struct unipi_modbus_file_data*) file_p->private_data;
 		mutex_lock(&(private_data->lock));
-		unipi_spi_unlock(private_data->spi_dev);
+		private_data->channel->op->unlock_op(private_data->channel->proto_self);
 		private_data->cookie = 0;
 		private_data->is_locked = 0;
 		mutex_unlock(&(private_data->lock));
@@ -284,7 +327,7 @@ int unipi_modbus_lock (struct file *file_p, int cmd, struct file_lock *flock)
 		// Lock device
 		private_data = (struct unipi_modbus_file_data*) file_p->private_data;
 		mutex_lock(&(private_data->lock));
-		private_data->cookie = unipi_spi_lock(private_data->spi_dev);
+		private_data->cookie = private_data->channel->op->lock_op(private_data->channel->proto_self);
 		private_data->is_locked = private_data->cookie != 0;
 		mutex_unlock(&(private_data->lock));
 		if (!private_data->is_locked) return -ETXTBSY;
@@ -297,6 +340,7 @@ struct file_operations file_ops =
 	.open 				= unipi_modbus_open,
 	.read 				= unipi_modbus_read,
 	.write 				= unipi_modbus_write,
+	.poll 				= unipi_modbus_poll,
 	.release 			= unipi_modbus_release,
 	.flock 				= unipi_modbus_lock,
 	.lock 				= unipi_modbus_lock,
@@ -343,11 +387,9 @@ void __exit unipi_modbus_exit(void)
 	//printk(KERN_INFO "unipi-modbus: Modbus module unloaded\n");
 }
 
-/*
 module_init(unipi_modbus_init);
 module_exit(unipi_modbus_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Miroslav Ondra <ondra@faster.cz>");
 MODULE_DESCRIPTION("Unipi SPI Modbus Character Device Driver");
-*/

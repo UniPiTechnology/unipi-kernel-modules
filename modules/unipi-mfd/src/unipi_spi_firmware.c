@@ -21,7 +21,7 @@
 #include "unipi_spi_crc.h"
 
 
-#define UNIPI_FW_DETAILED_DEBUG 2
+#define UNIPI_FW_DETAILED_DEBUG 0
 #if UNIPI_FW_DETAILED_DEBUG > 1
 # define unipi_fw_trace_1(spi, f, args...)	dev_info(&spi->dev, f, ##args)
 #else
@@ -83,8 +83,9 @@ struct spi_message * unipi_spi_setup_message(struct spi_device* spi_dev,
 }
 
 /* - len is without crc -- must be corrected in char driver */
-int unipi_spi_firmware_op(struct spi_device* spi_dev, u8* send_buf, u8* recv_buf, s32 len, int firmware_cookie)
+int unipi_spi_firmware_op(void *proto_self, u8* send_buf, u8* recv_buf, s32 len, int firmware_cookie)
 {
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
 	struct spi_message *message;
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
 	unsigned long flags;
@@ -110,11 +111,15 @@ int unipi_spi_firmware_op(struct spi_device* spi_dev, u8* send_buf, u8* recv_buf
 }
 EXPORT_SYMBOL_GPL(unipi_spi_firmware_op);
 
-int unipi_spi_lock(struct spi_device* spi_dev)
+int unipi_spi_lock(void *proto_self)
 {
 	unsigned long flags;
 	int cookie;
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
+
+	n_spi->enable_v2 = 0;
+	unipi_spi_set_v1(spi_dev);
 
 	spin_lock_irqsave(&n_spi->firmware_lock, flags);
 	if (n_spi->firmware_in_progress) {
@@ -128,12 +133,14 @@ int unipi_spi_lock(struct spi_device* spi_dev)
 }
 EXPORT_SYMBOL_GPL(unipi_spi_lock);
 
-void unipi_spi_unlock(struct spi_device* spi_dev)
+void unipi_spi_unlock(void *proto_self)
 {
 	unsigned long flags;
+	struct spi_device* spi_dev = (struct spi_device*) proto_self;
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
 
 	spin_lock_irqsave(&n_spi->firmware_lock, flags);
+	if (n_spi->firmware_in_progress) n_spi->enable_v2 = 1;
 	n_spi->firmware_in_progress = 0;
 	spin_unlock_irqrestore(&n_spi->firmware_lock, flags);
 }

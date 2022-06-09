@@ -10,11 +10,12 @@
  *
  */
 
-#ifndef MODULES_UNIPI_SPI_SRC_UNIPI_MFD_H_
-#define MODULES_UNIPI_SPI_SRC_UNIPI_MFD_H_
+#ifndef MODULES_UNIPI_SPI_SRC_UNIPI_MFD_IOGROUP_H_
+#define MODULES_UNIPI_SPI_SRC_UNIPI_MFD_IOGROUP_H_
 
 #include <linux/version.h>
 #include "unipi_common.h"
+#include "unipi_iogroup_bus.h"
 
 /*
  * Standard registers and coils supported by any Unipi MFD firmware 
@@ -24,6 +25,7 @@
 #define UNIPI_MFD_COIL_REBOOT        1002
 #define UNIPI_MFD_COIL_NVRAM_SAVE    1003
 #define UNIPI_MFD_COIL_FIRMWARE_MODE 1004
+#define UNIPI_MFD_COIL_PROTOCOL_MODE 1007
 
 #define UNIPI_MFD_REG_FW_VERSION     1000
 #define UNIPI_MFD_REG_FW_VARIANT     1003
@@ -65,65 +67,75 @@
 #define UNIPI_MFD_INT_ID_MASK      			0x0f
 #define UNIPI_MFD_INT_NO_INT_BIT   			0x0f
 
-
-struct unipi_mfd_device;
-
-typedef void (*OperationCallback)(void*, int, u8*);
-
-typedef void (*RxCharCallback)(void*, u8, u8, int);
-typedef void (*IntStatusCallback)(struct unipi_mfd_device*, u8);
-typedef int  (*AsyncIdle)(void*, void*, OperationCallback);
-typedef int  (*RegReadAsync)(void *, unsigned int, void*,  OperationCallback);
-typedef int  (*StrAsync)(void *, unsigned int, u8*, unsigned int, void*,  OperationCallback);
-typedef void (*Populated)(void *);
-
-
-struct unipi_mfd_op 
-{
-	AsyncIdle	 async_idle;
-	RegReadAsync reg_read_async;
-	StrAsync	 write_str_async;
-	StrAsync	 read_str_async;
-	Populated	 populated;
+/*
+static char* unipi_mfd_firmware_names[] = {
+	"B-1000",		// 0
+	"E-8Di8Ro",		// 1
+	"E-14Ro",	 	// 2
+	"E-16Di",		// 3
+	"+P-11DiR485",	// 4
+	"+P-11DiR485",  // 5
+	"+P-11DiR485",  // 6
+	"+U-14Ro",  	// 7
+	"+U-14Ro",  	// 8
+	"+U-14Di",  	// 9
+	"+U-14Di",  	// 10  0x0a
+	"E-4Ai44o",		// 11  0x0b
+	"+P-6Di5Ro",	// 12  0x0c
+	"B-485",		// 13  0x0d
+	"E-4Light",		// 14  0x0e
+	"+U-6Di5Ro",	// 15  0x0f
+	"X_1Ir",		// 16  0x10
+	"MM_8OW",		// 17  0x11
+	"+P-4Di6Ro",	// 18  0x12
+	"+U-4Di6Ro",	// 19  0x13
+	"+P-4Di4Ro",	// 20  0x14
 };
+*/
 
-struct unipi_mfd_device
-{
-	struct regmap*			registers;
-	struct regmap*			coils;
-	int 					modbus_address;
-	void					*rx_self;
-	RxCharCallback			rx_char_callback;
-	IntStatusCallback		interrupt_status_callback;
-	struct unipi_mfd_op  	*op;
-	int						irq;
-	struct hrtimer			poll_timer;
-	int						poll_enabled;
-	void*		 self;
+struct dev_mfd_attribute {
+	struct device_attribute attr;
+	u32 reg;
 };
 
 
-int unipi_mfd_init(struct unipi_mfd_device * mfd, struct device* dev);
-int unipi_mfd_exit(struct unipi_mfd_device * mfd);
-struct unipi_mfd_device* unipi_spi_get_mfd(struct spi_device* spi_dev);
+ssize_t unipi_mfd_store_ulong(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t size);
+ssize_t unipi_mfd_show_ulong(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
+ssize_t unipi_mfd_store_int(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t size);
+ssize_t unipi_mfd_show_int(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
+ssize_t unipi_mfd_store_reg(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t size);
+ssize_t unipi_mfd_show_reg(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
+ssize_t unipi_mfd_showhex_reg(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
+ssize_t unipi_mfd_show_regbool(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
 
-int unipi_mfd_enable_interrupt(struct unipi_mfd_device *mfd, u16 mask);
+ssize_t unipi_mfd_show_bool(struct device *dev,
+					struct device_attribute *attr,
+					char *buf);
+ssize_t unipi_mfd_store_bool(struct device *dev,
+					struct device_attribute *attr,
+			 		const char *buf, size_t size);
+
+struct regmap* unipi_mfd_get_regmap(struct device* dev, const char* name);
+int unipi_mfd_enable_interrupt(struct unipi_iogroup_device *iogroup, u16 mask);
+
+int unipi_mfd_add_group(struct device *dev, const char *groupname, struct attribute ** templ, int count, ...);
+void unipi_mfd_remove_group(struct device *dev,  const char *groupname);
 
 
-
-#define unipi_mfd_rx_char(mfd, port, ch, remain) {if ((mfd)->rx_char_callback) \
-                         (mfd)->rx_char_callback((mfd)->rx_self, port,ch,remain);}
-
-#define unipi_mfd_int_status(mfd, int_status) {if ((mfd)->interrupt_status_callback) \
-                         (mfd)->interrupt_status_callback(mfd, int_status);}
-
-#define unipi_mfd_read_str_async(mfd, port, data, count, cb_data, cb_function) \
-                         (mfd)->op->read_str_async(mfd->self, port, data, count, cb_data, cb_function)
-
-#define unipi_mfd_write_str_async(mfd, port, data, count, cb_data, cb_function)  \
-                         (mfd)->op->write_str_async(mfd->self, port, data, count, cb_data, cb_function)
-
-#define unipi_mfd_populated(mfd) (mfd)->op->populated(mfd->self)
-
-
-#endif /* MODULES_UNIPI_SPI_SRC_UNIPI_MFD_H_ */
+#endif /* MODULES_UNIPI_SPI_SRC_UNIPI_MFD_IOGROUP_H_ */

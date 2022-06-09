@@ -1,6 +1,6 @@
 
 #include <linux/regmap.h>
-#include "unipi_spi.h"
+#include "unipi_channel.h"
 
 /* ==========================================
 packed struct modbus_header {
@@ -10,9 +10,11 @@ packed struct modbus_header {
 }
 */
 
-#define UNIPI_REGMAP_GET_BUFFER_SIZE_1  (UNIPI_MODBUS_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
-#define UNIPI_REGMAP_GET_BUFFER_SIZE_2  (2*UNIPI_MODBUS_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
-#define UNIPI_REGMAP_GET_BUFFER_SIZE(regcount) ((regcount)*UNIPI_MODBUS_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
+#define UNIPI_REGMAP_REGISTER_SIZE 2
+
+//#define UNIPI_REGMAP_GET_BUFFER_SIZE_1  (UNIPI_REGMAP_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
+//#define UNIPI_REGMAP_GET_BUFFER_SIZE_2  (2*UNIPI_REGMAP_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
+//#define UNIPI_REGMAP_GET_BUFFER_SIZE(regcount) ((regcount)*UNIPI_REGMAP_REGISTER_SIZE + UNIPI_MODBUS_HEADER_SIZE + UNIPI_MODBUS_TAIL_SIZE)
 
 /*** This structure is from /drivers/base/regmap/internal.h ****/
 struct regmap_async {
@@ -38,16 +40,17 @@ static void unipi_regmap_complete(void *data, int result, u8* recv)
 
 int unipi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size, void *val_buf, size_t val_size)
 {
-	struct spi_device *spi = context;
-	u8 *buffer;
+	struct unipi_channel *channel = context;
+	u16 *buffer;
 	int regcount;
 
 	buffer = kzalloc(val_size+4, GFP_KERNEL);
-    if (buffer == NULL)
+	if (buffer == NULL)
 		return -ENOMEM;
 
-    regcount = (val_size + (UNIPI_MODBUS_REGISTER_SIZE-1)) / UNIPI_MODBUS_REGISTER_SIZE;
-	if (unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_READREG, *(u32*)reg_buf, regcount, buffer) != regcount)
+	regcount = (val_size + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	//printk("unipi_regmap_hw_read r=%d rs=%ld vs=%ld rc=%d\n", *(u16*)reg_buf, reg_size, val_size, regcount);
+	if (unipi_read_regs_sync(channel, *(u16*)reg_buf, regcount, buffer) != regcount)
 		return -EINVAL;
 
 	memmove(val_buf, buffer, val_size);
@@ -57,10 +60,10 @@ int unipi_regmap_hw_read(void *context, const void *reg_buf, size_t reg_size, vo
 
 int unipi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *val)
 {
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	u16 buf[4];
 	
-	if (unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_READREG, reg, 1, (u8*)buf) != 1)
+	if (unipi_read_regs_sync(channel, reg, 1, buf) != 1)
 		return -EINVAL;
 
 	*val = buf[0];
@@ -70,8 +73,8 @@ int unipi_regmap_hw_reg_read(void *context, unsigned int reg, unsigned int *val)
 int unipi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size,
                                  const void *val, size_t val_size)
 {
-	struct spi_device *spi = context;
-	u8 *buffer;
+	struct unipi_channel *channel = context;
+	u16 *buffer;
 	int ret, regcount;
 
 	if (reg_size != sizeof(u16)) return -EINVAL;
@@ -81,8 +84,8 @@ int unipi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size
 		return -ENOMEM;
 
     memcpy(buffer, val, val_size);
-    regcount = (val_size + (UNIPI_MODBUS_REGISTER_SIZE-1)) / UNIPI_MODBUS_REGISTER_SIZE;
-	ret = unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_WRITEREG, *(u32*)reg, regcount, buffer);
+    regcount = (val_size + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	ret = unipi_write_regs_sync(channel, *(u16*)reg, regcount, buffer);
 	if (ret == regcount) ret = 0;
     kfree(buffer);
     return ret;
@@ -95,8 +98,8 @@ int unipi_regmap_hw_write(void *context, const void *buf, size_t buf_size)
 
 int unipi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val)
 {
-	struct spi_device *spi = context;
-	if (unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_WRITEREG, reg, 1, (u8*)&val) == 1) 
+	struct unipi_channel *channel = context;
+	if (unipi_write_regs_sync(channel, reg, 1, (u16*)&val) == 1) 
 		return 0;
 	return -EINVAL;
 	
@@ -105,7 +108,7 @@ int unipi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val)
 static int unipi_regmap_async_write(void *context,  const void *reg, size_t reg_len,
                             const void *val, size_t val_len,  struct regmap_async *a)
 {
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	struct unipi_regmap_async *async = container_of(a, struct unipi_regmap_async, core);
 	u8 *buffer;
 	int ret, regcount;
@@ -118,8 +121,8 @@ static int unipi_regmap_async_write(void *context,  const void *reg, size_t reg_
 
 	async->buffer = buffer;
     memcpy(buffer, val, val_len);
-    regcount = (val_len + (UNIPI_MODBUS_REGISTER_SIZE-1)) / UNIPI_MODBUS_REGISTER_SIZE;
-	ret = unipi_spi_write_regs_async(spi, *(u32*)reg, regcount, buffer, async, unipi_regmap_complete);
+    regcount = (val_len + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	ret = unipi_write_regs_async(channel, *(u16*)reg, regcount, buffer, async, unipi_regmap_complete);
 	if (ret != 0) 
 		kfree(buffer);
 	return ret;
@@ -188,11 +191,11 @@ static const struct regmap_config unipi_regmap_config_default =
 
 int unipi_regmap_hw_read_coil(void *context, const void *reg_buf, size_t reg_size, void *val_buf, size_t val_size)
 {
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	u32 buffer[2];
 	int i;
 	
-	if (unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_READBIT, *(u16*)reg_buf, 1, (u8*)buffer) < val_size) {
+	if (unipi_read_bits_sync(channel, *(u16*)reg_buf, 1, (u8*)buffer) < val_size) {
 		return -EINVAL;
 	}
 	for (i=0; i<val_size; i++) {
@@ -203,10 +206,10 @@ int unipi_regmap_hw_read_coil(void *context, const void *reg_buf, size_t reg_siz
 
 int unipi_regmap_hw_reg_read_coil(void *context, unsigned int reg, unsigned int *val)
 {
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	u32 buf[2] = {0,0};
 
-	if (unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_READBIT, reg, 1, (u8*)buf) < 1)
+	if (unipi_read_bits_sync(channel, reg, 1, (u8*)buf) < 1)
 		return -EINVAL;
 
 	*val = buf[0] & 1;
@@ -215,9 +218,9 @@ int unipi_regmap_hw_reg_read_coil(void *context, unsigned int reg, unsigned int 
 
 int unipi_regmap_hw_reg_write_coil(void *context, unsigned int reg, unsigned int val)
 {
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 
-	unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_WRITEBITS, reg, 1, (u8*)&val);
+	unipi_write_bits_sync(channel, reg, 1, (u8*)&val);
     return 0;
 }
 
@@ -225,7 +228,7 @@ int unipi_regmap_hw_gather_write_coil(void *context, const void *reg, size_t reg
                                  const void *val, size_t val_len)
 {
 	/* Max coil count is 32 -> use buffer with 32 bits data */
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	int ret, i;
 	u32 buffer[2] = {0,0};
 
@@ -239,7 +242,7 @@ int unipi_regmap_hw_gather_write_coil(void *context, const void *reg, size_t reg
 	for (i=0; i<val_len; i++) {
 		if (((u8*)val)[i]!=0) buffer[0] |= 1 << i;
 	}
-	ret = unipi_spi_regs_op(spi, UNIPI_MODBUS_OP_WRITEBITS, *(u16*)reg, val_len, (u8*)buffer);
+	ret = unipi_write_bits_sync(channel, *(u16*)reg, val_len, (u8*)buffer);
     return ret >= 0;
 }
 
@@ -254,7 +257,7 @@ static int unipi_regmap_async_write_coil(void *context,  const void *reg, size_t
 	/* Max coil count is 32 -> use buffer with 32 bits data 
 	 * incoming data are bytes oriented - must be compressed 
 	 */
-	struct spi_device *spi = context;
+	struct unipi_channel *channel = context;
 	struct unipi_regmap_async *async = container_of(a, struct unipi_regmap_async, core);
 	u32 buffer[2] = {0,0};
 	int ret, i;
@@ -269,7 +272,7 @@ static int unipi_regmap_async_write_coil(void *context,  const void *reg, size_t
 	}
 	//printk("Async r=%d, v=%d l=%ld", *(u16*)reg, buffer[0], val_len);
 	async->buffer = NULL;
-	ret = unipi_spi_write_bits_async(spi, *(u16*)reg, val_len, (u8*)buffer, async, unipi_regmap_complete);
+	ret = unipi_write_bits_async(channel, *(u16*)reg, val_len, (u8*)buffer, async, unipi_regmap_complete);
 	return ret;
 
 //	printk("async write coil rlen=%ld vlen=%ld reg=", reg_len, val_len);
@@ -329,23 +332,16 @@ static const struct regmap_config unipi_regmap_coil_config_default =
 		.wr_table 				= &unipi_coil_big_read_table,
 };
 
-struct regmap *devm_regmap_init_unipi_regs(struct spi_device *spi,
+struct regmap *devm_regmap_init_unipi_regs(struct unipi_channel *channel,
 					const struct regmap_config *config)
 {
-	return devm_regmap_init(&(spi->dev), &unipi_regmap_bus, spi, config ? config : &unipi_regmap_config_default);
+	return devm_regmap_init(channel->dev, &unipi_regmap_bus, channel, config ? config : &unipi_regmap_config_default);
 }
 
 
-struct regmap *devm_regmap_init_unipi_coils(struct spi_device *spi,
+struct regmap *devm_regmap_init_unipi_coils(struct unipi_channel *channel,
 					const struct regmap_config *config)
 {
-	return devm_regmap_init(&(spi->dev), &unipi_regmap_coil_bus, spi, config ? config : &unipi_regmap_coil_config_default);
-}
-
-int unipi_reg_read_async(void *context, unsigned int reg, void* cb_data, OperationCallback callback)
-{
-	struct spi_device *spi = context;
-	
-    return unipi_spi_read_regs_async(spi, reg, 1, NULL, cb_data, callback);
+	return devm_regmap_init(channel->dev, &unipi_regmap_coil_bus, channel, config ? config : &unipi_regmap_coil_config_default);
 }
 
