@@ -123,7 +123,7 @@ static int unipi_led_probe(struct platform_device *pdev)
 		uled->cdev.name = uled->name;
 		unipi_prepare_led(uled, np, i);
 		uled->cdev.brightness_set = unipi_led_set;
-		if (devm_led_classdev_register(dev, &uled->cdev) == 0) 
+		if (devm_led_classdev_register(dev, &uled->cdev) == 0)
 			nleds++;
 	}
 

@@ -81,10 +81,10 @@ int unipi_read_regs_sync( struct unipi_channel *channel, unsigned int reg, unsig
                          (channel)->interrupt_status_callback((channel)->interrupt_self, int_status);}
 
 #define unipi_read_str_async(channel, port, data, count, cb_data, cb_function) \
-                         (channel)->op->read_str_async(channel->self, port, data, count, cb_data, cb_function)
+                         (channel)->op->read_str_async(channel->proto_self, port, data, count, cb_data, cb_function)
 
 #define unipi_write_str_async(channel, port, data, count, cb_data, cb_function)  \
-                         (channel)->op->write_str_async(channel->self, port, data, count, cb_data, cb_function)
+                         (channel)->op->write_str_async(channel->proto_self, port, data, count, cb_data, cb_function)
 
 #define unipi_populated(channel) (channel)->op->populated(channel->proto_self)
 

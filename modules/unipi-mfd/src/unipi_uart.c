@@ -90,12 +90,14 @@ struct unipi_uart_device
 };
 
 
-struct uart_driver unipi_uart = 
-{
-	.owner		= THIS_MODULE,
-	.driver_name= "unipi_tty",
-	.dev_name	= "ttyNS",
-	.nr			= UNIPI_UART_MAX_NR,
+static struct uart_driver unipi_uart_uart_driver = {
+	.owner          = THIS_MODULE,
+	.driver_name    = "unipi_tty",
+	.dev_name       = "ttyNS",
+	.major          = PORT_UNIPI,
+	.minor          = 0,//MINOR_START,
+	.nr             = UNIPI_UART_MAX_NR,
+	//.cons           = IMX_CONSOLE,
 };
 static DECLARE_BITMAP(unipi_uart_lines, UNIPI_UART_MAX_NR);
 
@@ -500,12 +502,12 @@ void unipi_uart_get_tx_fifo_callback(void* cb_data, int result, u8* value)
 int unipi_uart_get_tx_fifo(struct unipi_uart_port* n_port)
 {
 	struct device* parent = n_port->port.dev->parent;
-	struct unipi_mfd_device *mfd = to_unipi_iogroup_device(parent)->mfd;
+	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
 	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	int ret;
 
-	ret = mfd->op.reg_read_async(mfd->op.self, n_port->tx_fifo_reg,
-	                             n_port, unipi_uart_get_tx_fifo_callback);
+	ret = unipi_read_regs_async(channel, n_port->tx_fifo_reg, 1, NULL,
+                             n_port, unipi_uart_get_tx_fifo_callback);
 	return !!ret;
 }
 
@@ -588,8 +590,8 @@ void unipi_uart_rx_callback(void* cb_data, int result, u8* recv)
 	n_port->rx_remain = remain;
 	if (n_port->rx_remain) {
 		/* continue in rx "process" */
-		if (unipi_str_async(channel, n_port->dev_port, 
-		          n_port->rx_send_msg, n_port->rx_remain, 
+		if (unipi_read_str_async(channel, n_port->dev_port,
+		          n_port->rx_send_msg, n_port->rx_remain,
 				  n_port, unipi_uart_rx_callback) == 0)
 			return;
 	}
@@ -762,7 +764,7 @@ int unipi_uart_port_probe(struct device *dev, struct unipi_uart_device *n_uart, 
 	hrtimer_init(&port->tx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	port->tx_timer.function = unipi_uart_timer_func;
 
-	ret = uart_add_one_port(&unipi_uart, &port->port);
+	ret = uart_add_one_port(&unipi_uart_uart_driver, &port->port);
 	if (ret) {
 		port->port.dev = NULL;
 		return ret;
@@ -827,7 +829,7 @@ int unipi_uart_probe(struct platform_device *pdev)
 out:
 	for (i = 0; i < port_count; i++) {
 		if (n_uart->p[i].port.dev) {
-			uart_remove_one_port(&unipi_uart, &n_uart->p[i].port);
+			uart_remove_one_port(&unipi_uart_uart_driver, &n_uart->p[i].port);
 			clear_bit(n_uart->p[i].port.line, unipi_uart_lines);
 		}
 	}
@@ -849,7 +851,7 @@ int unipi_uart_remove(struct platform_device *pdev)
 	for (i = 0; i < n_uart->port_count; i++) {
         port = n_uart->p + i;
         hrtimer_cancel(&port->tx_timer);
-		uart_remove_one_port(&unipi_uart, &port->port);
+		uart_remove_one_port(&unipi_uart_uart_driver, &port->port);
         //kthread_flush_work(&(port->tx_work));
 		unipi_uart_power(&port->port, 0);
         //printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d removed\n", i + n_spi->uart_pindex);
@@ -860,7 +862,6 @@ int unipi_uart_remove(struct platform_device *pdev)
 /*********************
  * Final definitions *
  *********************/
-
 static const struct of_device_id unipi_uart_id_match[] = {
 		{.compatible = "unipi,uart"},
 		{}
@@ -882,20 +883,20 @@ static int __init unipi_uart_init(void)
     int ret;
 
 	bitmap_zero(unipi_uart_lines, UNIPI_UART_MAX_NR);
-	ret = uart_register_driver(&unipi_uart);
+	ret = uart_register_driver(&unipi_uart_uart_driver);
 	if (ret) 
         return ret;
 		
 	ret = platform_driver_register(&unipi_uart_driver);
 	if (ret)
-		uart_unregister_driver(&unipi_uart);
+		uart_unregister_driver(&unipi_uart_uart_driver);
 	return ret;
 }
 
 static void __exit unipi_uart_exit(void)
 {
 	platform_driver_unregister(&unipi_uart_driver);
-	uart_unregister_driver(&unipi_uart);
+	uart_unregister_driver(&unipi_uart_uart_driver);
 }
 
 

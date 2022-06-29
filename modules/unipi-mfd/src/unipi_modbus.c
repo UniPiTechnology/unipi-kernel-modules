@@ -186,6 +186,12 @@ ssize_t unipi_modbus_read (struct file *file_p, char *buffer, size_t len, loff_t
 	private_data = (struct unipi_modbus_file_data*) file_p->private_data;
 
 	mutex_lock(&(private_data->lock));
+	if (private_data->is_locked) {
+		if ((buffer != NULL) && (len > 0))
+			result = simple_read_from_buffer(buffer, len, &dummy_offset, private_data->recv_buf,
+		                                 UNIPI_MODBUS_BUFFER_MAX);
+		goto unlock;
+	}
 	if (private_data->status == UNIPI_MODBUS_STATUS_INOP) {
 		result = -EAGAIN;
 		goto unlock;
