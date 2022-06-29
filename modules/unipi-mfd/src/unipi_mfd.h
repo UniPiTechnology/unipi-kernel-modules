@@ -98,6 +98,11 @@ struct dev_mfd_attribute {
 	u32 reg;
 };
 
+struct dev_mfd_of_attribute {
+	struct device_attribute attr;
+	const char* ofname;
+};
+
 
 ssize_t unipi_mfd_store_ulong(struct device *dev,
 					struct device_attribute *attr,

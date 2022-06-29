@@ -107,6 +107,16 @@ static const struct unipi_gpio_data unipi_gpio_data_do = {
 	.fname = "DO%d.%d",
 };
 
+static const struct unipi_gpio_data unipi_gpio_data_ro = {
+	.regmap_name = "coils",
+	.is_coil_map = 1,
+	.dt_value_reg_name = "value-coil",
+	.flags		= UNIPI_GPIO_OUT,
+	.to_reg_shift = 0,
+	.to_bit_mask = 0,
+	.fname = "RO%d.%d",
+};
+
 
 static struct dev_mfd_attribute dev_attr_di_debounce = {
 	__ATTR(debounce, 0664, unipi_mfd_show_reg, unipi_mfd_store_reg),
@@ -233,6 +243,7 @@ int unipi_gpio_remove(struct platform_device *pdev)
 static const struct of_device_id of_unipi_gpio_match[] = {
 	{ .compatible = "unipi,gpio-di", .data = &unipi_gpio_data_di },
 	{ .compatible = "unipi,gpio-do", .data = &unipi_gpio_data_do },
+	{ .compatible = "unipi,gpio-ro", .data = &unipi_gpio_data_ro },
 	{},
 };
 MODULE_DEVICE_TABLE(of, of_unipi_gpio_match);

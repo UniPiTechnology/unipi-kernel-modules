@@ -36,6 +36,7 @@
 
 // #define to_ext_attr(x) container_of(x, struct dev_mfd_attribute, attr)
 #define to_mfd_attr(x) container_of(x, struct dev_mfd_attribute, attr)
+#define to_mfd_of_attr(x) container_of(x, struct dev_mfd_of_attribute, attr)
 
 
 ssize_t unipi_mfd_show_version(struct device *dev,
@@ -226,6 +227,36 @@ ssize_t unipi_mfd_show_regbool(struct device *dev, struct device_attribute *attr
 }
 EXPORT_SYMBOL_GPL(unipi_mfd_show_regbool);
 
+static ssize_t sys_board_name_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct device_node *core_np;
+	const char *sys_board_name;
+	struct dev_mfd_of_attribute *ea = to_mfd_of_attr(attr);
+	int ret = 0;
+
+	if (of_node_get(dev->of_node)) {
+		core_np = of_find_node_by_name(dev->of_node, "core");
+		if (core_np) {
+			sys_board_name = of_get_property(core_np, ea->ofname, NULL);
+			of_node_put(core_np);
+			if (sys_board_name) {
+				ret = scnprintf(buf, 255, "%s\n", sys_board_name);
+			}
+		}
+		// of_node_put(dev->of_node); !! must not be here - is done in of_find 
+	}
+	return ret;
+}
+
+static struct dev_mfd_of_attribute dev_attr_sys_board_name = {
+	__ATTR(sys_board_name, 0444, sys_board_name_show, NULL),
+	"sys_board_name"
+};
+static struct dev_mfd_of_attribute dev_attr_firmware_name = {
+	__ATTR(firmware_name, 0444, sys_board_name_show, NULL),
+	"fw_name"
+};
+
 static struct dev_mfd_attribute dev_attr_was_watchdog = {
 	__ATTR(was_watchdog, 0664, unipi_mfd_show_bool, unipi_mfd_store_bool),
 	UNIPI_MFD_COIL_WAS_WATCHDOG
@@ -259,6 +290,11 @@ static struct dev_mfd_attribute dev_attr_firmware_variant = {
 static struct dev_mfd_attribute dev_attr_board_id = {
 	__ATTR(board_id, 0444, unipi_mfd_show_variant, NULL),
 	UNIPI_MFD_REG_BOARD_ID
+};
+
+static struct dev_mfd_attribute dev_attr_sys_board_serial = {
+	__ATTR(sys_board_serial, 0444, unipi_mfd_show_int, NULL),
+	UNIPI_MFD_REG_BOARD_SERIAL
 };
 
 static struct dev_mfd_attribute dev_attr_board_serial = {
@@ -303,6 +339,7 @@ static struct attribute *unipi_mfd_device_attrs[] = {
 	&dev_attr_interrupt_mask.attr.attr,
 	&dev_attr_master_watchdog_timeout.attr.attr,
 	&dev_attr_sysled_mode.attr.attr,
+	&dev_attr_firmware_name.attr.attr,
 	NULL
 };
 
@@ -315,6 +352,16 @@ static struct attribute *unipi_mfd_optional_attrs[] = {
 static const struct attribute_group unipi_mfd_group_def = {
 	.name  = "core",
 	.attrs  = unipi_mfd_device_attrs,
+};
+
+static struct attribute *unipi_plc_device_attrs[] = {
+	&dev_attr_sys_board_name.attr.attr,
+	&dev_attr_sys_board_serial.attr.attr,
+	NULL
+};
+
+static const struct attribute_group unipi_plc_group_def = {
+	.attrs  = unipi_plc_device_attrs,
 };
 
 
@@ -471,6 +518,57 @@ EXPORT_SYMBOL_GPL(unipi_mfd_remove_group);
 //	{ /* sentinel */ },
 //};
 
+static const char *unipi_plc_linkname = "io_group%d";
+
+int device_match_unipi_plc(struct device *dev, const void *unused)
+{
+	if (!dev->driver && dev_name(dev) && (strcmp(dev_name(dev),"unipi_plc")==0))
+		return 1;
+	return 0;
+}
+
+static void unipi_mfd_link_plc(struct unipi_iogroup_device *iogroup)
+{
+	struct device *plc_dev;
+	struct platform_device *pdev;
+	char *name;
+
+	plc_dev = bus_find_device(&platform_bus_type, NULL, NULL, device_match_unipi_plc);
+	if (!plc_dev) {
+		pdev = platform_device_alloc("unipi_plc", -1);
+		if (!pdev) 
+			return;
+		//plc_dev->dev.groups = neuron_plc_attr_groups;
+		if (platform_device_add(pdev) != 0) 
+			return;
+		plc_dev = &pdev->dev;
+	}
+	if (devm_device_add_group(&iogroup->dev, &unipi_plc_group_def) < 0) return;
+	name = devm_kzalloc(plc_dev, strlen(unipi_plc_linkname) + 10, GFP_KERNEL);
+	if (name) {
+		sprintf(name, unipi_plc_linkname, iogroup->address);
+		if (sysfs_create_link(&plc_dev->kobj, &iogroup->dev.kobj, name) < 0)
+			devm_kfree(plc_dev, name);
+	}
+}
+
+static void unipi_mfd_remove_plc(struct unipi_iogroup_device *iogroup)
+{
+	//void sysfs_remove_link(struct kobject *kobj, const char *name)
+	struct device *plc_dev;
+	char *name;
+
+	plc_dev = bus_find_device(&platform_bus_type, NULL, NULL, device_match_unipi_plc);
+	if (!plc_dev)
+		return;
+	name = kzalloc(strlen(unipi_plc_linkname) + 10, GFP_KERNEL);
+	if (name) {
+		sprintf(name, unipi_plc_linkname, iogroup->address);
+		sysfs_remove_link(&plc_dev->kobj, name);
+		kfree(name);
+	}
+}
+
 /* callback of poll_timer - for devices without or disfunctional interrupt */
 static enum hrtimer_restart unipi_mfd_poll_timer_func(struct hrtimer *timer)
 {
@@ -554,16 +652,20 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 	u16 id_registers[5];
 	const char *name1 = NULL;
 	const char *name2 = NULL;
+	const char *sys_board_name = NULL;
+
 	int board_id, dt_variant = -1, degraded = 0;
 	
 	if (of_node_get(dev->of_node)) {
 		core_np = of_find_node_by_name(dev->of_node, "core");
 		if (core_np) {
 			of_property_read_u32(core_np, "fw_variant", &dt_variant);
-			name1 = of_get_property(core_np, "fw_name", NULL);
+			name1 = of_get_property(core_np, dev_attr_firmware_name.ofname, NULL);
 			name2 = of_get_property(core_np, "board_name", NULL);
+			sys_board_name = of_get_property(core_np, dev_attr_sys_board_name.ofname, NULL);
 			of_node_put(core_np);
 		}
+		// of_node_put(dev->of_node); !! must not be here - is done in of_find 
 	}
 	/* read identification registers */
 	ret = regmap_bulk_read(iogroup->channel->registers, UNIPI_MFD_REG_FW_VERSION, id_registers, ARRAY_SIZE(id_registers));
@@ -573,9 +675,9 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 			name1 = name2 = NULL;
 		}
 		fw_variant = id_registers[3];
-		name1 = name1? : "";//unipi_mfd_find_firmware_name(hi(fw_variant));
+		name1 = name1? : "";
 		board_id = id_registers[4];
-		name2 = name2? : "";//unipi_mfd_find_firmware_name(hi(board_id));
+		name2 = name2? : name1;
 		dev_info(dev, "Found board %s (id=0x%x-%d).\n\t\t\tFirmware variant %s (0x%x-%d%s) version=%d.%d\n",
 					name2, hi(board_id), minor(board_id),
 					name1, hi(fw_variant), minor(fw_variant), is_cal(fw_variant)?"C":"",
@@ -599,6 +701,10 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		ret = 0;
 	} else {
 		ret = devm_device_add_group(dev, &unipi_mfd_group_def);
+	}
+	/* Fixup for Mervis old licensing process */
+	if ((iogroup->address < 114) && (sys_board_name)) {
+		unipi_mfd_link_plc(iogroup);
 	}
 
 	if (iogroup->irq) {
@@ -624,6 +730,7 @@ int unipi_mfd_remove(struct unipi_iogroup_device *iogroup)
 	if (iogroup->poll_timer.function != NULL) {
 		hrtimer_try_to_cancel(&iogroup->poll_timer);
 	}
+	unipi_mfd_remove_plc(iogroup);
 	return 0;
 }
 
