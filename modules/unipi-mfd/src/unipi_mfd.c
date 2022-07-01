@@ -227,6 +227,69 @@ ssize_t unipi_mfd_show_regbool(struct device *dev, struct device_attribute *attr
 }
 EXPORT_SYMBOL_GPL(unipi_mfd_show_regbool);
 
+
+static int unipi_mfd_of_get_regnum(struct device *dev, char* attrname)
+{
+	struct device_node *np = dev->of_node;
+	struct device_node *core_np;
+	int ret, regaddr;
+
+	if (!of_node_get(np)) return -EINVAL;
+	core_np = of_find_node_by_name(np, "core");
+	if (!core_np) return -EINVAL;
+	ret = of_property_read_u32(core_np, attrname, &regaddr);
+	of_node_put(core_np);
+	if (ret < 0) return ret;
+	if (regaddr > 3000) return -EINVAL;
+	return regaddr;
+}
+
+ssize_t unipi_mfd_show_wd_enable(struct device *dev, struct device_attribute *attr,
+			 char *buf)
+{
+	struct unipi_channel *channel = to_unipi_iogroup_device(dev)->channel;
+	int regaddr, val, ret;
+
+	regaddr = unipi_mfd_of_get_regnum(dev, "master_watchdog_enable");
+	if (regaddr < 0) return  regaddr;
+	ret = regmap_read(channel->registers, regaddr, &val);
+	if (ret<0) return ret;
+	return sysfs_emit(buf, "%d\n", !!((val)&1));
+}
+
+ssize_t unipi_mfd_store_wd_enable(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t size)
+{
+	struct unipi_channel *channel = to_unipi_iogroup_device(dev)->channel;
+	bool val;
+	int ret, regaddr;
+
+	regaddr = unipi_mfd_of_get_regnum(dev, "master_watchdog_enable");
+	if (strtobool(buf, &val) < 0)
+		return -EINVAL;
+
+	if (strtobool(buf, &val) < 0)
+		return -EINVAL;
+	ret = regmap_write(channel->registers, regaddr, val);
+	if (ret<0) return ret;
+	return size;
+}
+
+ssize_t unipi_mfd_show_cycle(struct device *dev, struct device_attribute *attr,
+			 char *buf)
+{
+	struct unipi_channel *channel = to_unipi_iogroup_device(dev)->channel;
+	int regaddr, ret;
+	unsigned long val;
+	regaddr = unipi_mfd_of_get_regnum(dev, "cycle_counter");
+	if (regaddr < 0) return  regaddr;
+
+	ret = regmap_bulk_read(channel->registers, regaddr, &val, 4);
+	if (ret<0) return ret;
+	return sysfs_emit(buf, "%ld\n", val);
+}
+
+
 static ssize_t sys_board_name_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct device_node *core_np;
@@ -247,6 +310,7 @@ static ssize_t sys_board_name_show(struct device *dev, struct device_attribute *
 	}
 	return ret;
 }
+
 
 static struct dev_mfd_of_attribute dev_attr_sys_board_name = {
 	__ATTR(sys_board_name, 0444, sys_board_name_show, NULL),
@@ -318,12 +382,12 @@ static struct dev_mfd_attribute dev_attr_sysled_mode = {
 };
 
 static struct dev_mfd_attribute dev_attr_master_watchdog_enable = {
-	__ATTR(master_watchdog_enable, 0664, unipi_mfd_show_reg, unipi_mfd_store_reg),
+	__ATTR(master_watchdog_enable, 0664, unipi_mfd_show_wd_enable, unipi_mfd_store_wd_enable),
 	0
 };
 
 static struct dev_mfd_attribute dev_attr_cycle_counter = {
-	__ATTR(cycle_counter, 0444, unipi_mfd_show_ulong, NULL),
+	__ATTR(cycle_counter, 0444, unipi_mfd_show_cycle, NULL),
 	0
 };
 
@@ -340,14 +404,11 @@ static struct attribute *unipi_mfd_device_attrs[] = {
 	&dev_attr_master_watchdog_timeout.attr.attr,
 	&dev_attr_sysled_mode.attr.attr,
 	&dev_attr_firmware_name.attr.attr,
+	&dev_attr_cycle_counter.attr.attr,
+	&dev_attr_master_watchdog_enable.attr.attr,
 	NULL
 };
 
-
-static struct attribute *unipi_mfd_optional_attrs[] = {
-	&dev_attr_cycle_counter.attr.attr,
-	&dev_attr_master_watchdog_enable.attr.attr,
-};
 
 static const struct attribute_group unipi_mfd_group_def = {
 	.name  = "core",
@@ -363,155 +424,6 @@ static struct attribute *unipi_plc_device_attrs[] = {
 static const struct attribute_group unipi_plc_group_def = {
 	.attrs  = unipi_plc_device_attrs,
 };
-
-
-int devm_unipi_add_group(struct device *dev, struct attribute_group *grp);
-
-int unipi_mfd_add_core_group(struct device *dev, struct device_node *mfd_np)
-{
-	//struct dev_mfd_attribute *mfda;
-	struct attribute_group * unipi_mfd_group ;
-	struct device_node *core_np = NULL;
-	struct dev_mfd_attribute *dev_attr;
-	struct attribute **attr_array;
-	int val, i, count = 0;
-
-	/* Find DT group "core" and count additional properties */
-	/*   of_find_node_by_name makes of_node_put(from), 
-	 *   so we must do get before calling it */
-	if (of_node_get(mfd_np)) {
-		core_np = of_find_node_by_name(mfd_np, "core");
-		if (core_np) {
-			for (i=0; i<ARRAY_SIZE(unipi_mfd_optional_attrs); i++) {
-				if (of_property_read_u32(core_np, unipi_mfd_optional_attrs[i]->name, &val)==0)
-					count ++;
-			}
-		}
-	}
-	if (count == 0) {
-		if (core_np) of_node_put(core_np);
-		return devm_device_add_group(dev, &unipi_mfd_group_def);
-	}
-	/* There are additional attributes */
-	unipi_mfd_group = kzalloc( sizeof(struct attribute_group)
-	                            + count * sizeof(struct dev_mfd_attribute)
-								+ (ARRAY_SIZE(unipi_mfd_device_attrs) + count) * sizeof(void*),
-								GFP_KERNEL);
-	if (unipi_mfd_group == NULL) {
-		of_node_put(core_np);
-		return -ENOMEM;
-	}
-	dev_attr   = (struct dev_mfd_attribute*)((u8*)unipi_mfd_group + sizeof(struct attribute_group));
-	attr_array = (struct attribute**)((u8*)dev_attr + count * sizeof(struct dev_mfd_attribute));
-	unipi_mfd_group->name = unipi_mfd_group_def.name;
-	unipi_mfd_group->attrs = attr_array;
-
-	for (i=0; i<ARRAY_SIZE(unipi_mfd_optional_attrs); i++) {
-		if (of_property_read_u32(core_np, unipi_mfd_optional_attrs[i]->name, &val)==0) {
-			*attr_array++ = &dev_attr->attr.attr;
-			memmove(dev_attr, unipi_mfd_optional_attrs[i], sizeof(struct dev_mfd_attribute));
-			dev_attr->reg = val;
-			dev_attr++;
-		}
-	}
-	memmove(attr_array, unipi_mfd_device_attrs, sizeof(unipi_mfd_device_attrs));
-	of_node_put(core_np);
-	//return devm_unipi_add_group(dev, unipi_mfd_group);
-	return devm_unipi_add_group(dev, unipi_mfd_group);
-}
-
-
-static int devm_unipi_group_match(struct device *dev, void *res, void *data)
-{
-	struct attribute_group **pgroup = res;
-	const char *name = (*pgroup)->name;
-	if (name && data) {
-		return !strcmp(name, data);
-	}
-	return 0;
-}
-
-static void devm_unipi_group_remove(struct device *dev, void *res)
-{
-	struct attribute_group **pgroup = res;
-
-	dev_dbg(dev, "%s: removing group %p\n", __func__, *pgroup);
-	sysfs_remove_group(&dev->kobj, *pgroup);
-	kfree(*pgroup);
-}
-
-int devm_unipi_add_group(struct device *dev, struct attribute_group *grp)
-{
-	struct attribute_group **devres;
-	int error;
-
-	devres = devres_alloc(devm_unipi_group_remove,
-			      sizeof(*devres), GFP_KERNEL);
-	if (!devres)
-		return -ENOMEM;
-
-	error = sysfs_create_group(&dev->kobj, grp);
-	if (error) {
-		devres_free(devres);
-		return error;
-	}
-
-	*devres = grp;
-	devres_add(dev, devres);
-	return 0;
-}
-
-
-int unipi_mfd_add_group(struct device *dev, const char *groupname, struct attribute ** templ, int count, ...)
-{
-	//struct dev_mfd_attribute *mfda;
-	struct attribute_group * unipi_mfd_group ;
-	struct dev_mfd_attribute *dev_attr;
-	struct attribute **attr_array;
-	char * name;
-	int  i, attr_name_size, ret;
-	
-	va_list vargs;
-
-	attr_name_size = strlen(groupname) + 1;
-	unipi_mfd_group = kzalloc( sizeof(struct attribute_group)\
-	                            + count * sizeof(struct dev_mfd_attribute)\
-								+ (count+1) * sizeof(void*)\
-								+ attr_name_size,
-								GFP_KERNEL);
-	if (unipi_mfd_group == NULL) {
-		return -ENOMEM;
-	}
-
-	dev_attr   = (struct dev_mfd_attribute*)((u8*)unipi_mfd_group + sizeof(struct attribute_group));
-	attr_array = (struct attribute**)((u8*)dev_attr + count * sizeof(struct dev_mfd_attribute));
-	name = (char*) ((u8*)attr_array + (count+1) * sizeof(void*));
-	strcpy(name, groupname);
-	unipi_mfd_group->name = name;
-	unipi_mfd_group->attrs = attr_array;
-
-	va_start(vargs, count);
-	for (i=0; i<count; i++) {
-		*attr_array++ = &dev_attr->attr.attr;
-		memmove(dev_attr, templ[i], sizeof(struct dev_mfd_attribute));
-		dev_attr->reg = va_arg(vargs, u32);
-		dev_attr++;
-	}
-	va_end(vargs);
-	/* sentinel */ 
-	*attr_array = NULL;
-	ret = devm_unipi_add_group(dev, unipi_mfd_group);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(unipi_mfd_add_group);
-
-void unipi_mfd_remove_group(struct device *dev, const char *groupname)
-{
-	devres_release(dev, devm_unipi_group_remove,
-			       devm_unipi_group_match,
-			       /* cast away const */ (void *)groupname);
-}
-EXPORT_SYMBOL_GPL(unipi_mfd_remove_group);
 
 //static struct of_dev_auxdata xx_auxdata_lookup[] = {
 //	OF_DEV_AUXDATA("unipi,gpio-di", 0, "iogroupXdi", NULL),
@@ -644,7 +556,7 @@ void unipi_mfd_int_status_callback(void* iogroup, u8 int_status)
 int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 {
 	struct device *dev = &iogroup->dev;
-	struct device_node *np = dev->of_node;
+	//struct device_node *np = dev->of_node;
 	int ret = 0;
 
 	struct device_node *core_np;
@@ -694,13 +606,11 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		}
 	}
 
+	ret = devm_device_add_group(dev, &unipi_mfd_group_def);
 	if (dt_variant != -1) {
-		unipi_mfd_add_core_group(dev, np);
 		devm_of_platform_populate(dev);
 		unipi_populated(iogroup->channel);
 		ret = 0;
-	} else {
-		ret = devm_device_add_group(dev, &unipi_mfd_group_def);
 	}
 	/* Fixup for Mervis old licensing process */
 	if ((iogroup->address < 114) && (sys_board_name)) {
