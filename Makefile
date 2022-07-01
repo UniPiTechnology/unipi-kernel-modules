@@ -3,8 +3,13 @@
 # if necessary.
 
 MODULES_DIR_PATH = ${PWD}/modules/
-MODULES_LIST = unipi/ rtc-unipi/ unipi-id/ unipi-rfkill/
+MODULES_LIST = rtc-unipi/ unipi-id/ unipi-rfkill/
 
+ifdef USE_MFD
+MODULES_LIST += unipi-mfd/
+else
+MODULES_LIST += unipi/
+endif
 
 .PHONY: default
 #default: symlink ;
@@ -31,4 +36,3 @@ clean:
 	for m in ${MODULES_LIST}; do\
 		cd ${MODULES_DIR_PATH}$$m; $(MAKE) clean;\
 		done
-
