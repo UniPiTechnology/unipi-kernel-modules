@@ -2,6 +2,7 @@
 
 You need Linux kernel source to compile this modules.
 Tested for kernel versions 4.11 .. 5.15.5
+For bullseye USE_MFD
 
 * Create package with
 
