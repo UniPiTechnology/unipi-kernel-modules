@@ -335,7 +335,7 @@ int unipi_iio_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const
  *  sysfs 
  *
  ************************************/ 
-static ssize_t mode_voltage_current_resistance_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mode_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct iio_dev *iio_dev = dev_get_drvdata(dev);
 	struct unipi_iio_device *n_iio = iio_priv(iio_dev);
@@ -345,7 +345,7 @@ static ssize_t mode_voltage_current_resistance_show(struct device *dev, struct d
 	return sysfs_emit(buf, "%d\n", val);
 }
 
-static ssize_t mode_voltage_current_resistance_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t mode_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct iio_dev *iio_dev = dev_get_drvdata(dev);
 	struct unipi_iio_device *n_iio = iio_priv(iio_dev);
@@ -357,9 +357,9 @@ static ssize_t mode_voltage_current_resistance_store(struct device *dev, struct 
 	return count;
 }
 
-DEVICE_ATTR_RW(mode_voltage_current_resistance);
+DEVICE_ATTR_RW(mode);
 static struct attribute *unipi_iio_ai_attrs[] = {
-		&dev_attr_mode_voltage_current_resistance.attr,
+		&dev_attr_mode.attr,
 		NULL,
 };
 
@@ -388,7 +388,7 @@ static const struct iio_info unipi_iio_ao_info = {
 	//.attrs = &neuron_sec_ao_group,
 };
 
-
+/*
 static struct dev_mfd_attribute dev_attr_ai_mode = {
 	__ATTR(mode, 0664, unipi_mfd_show_reg, unipi_mfd_store_reg),
 	0
@@ -404,7 +404,7 @@ static struct attribute *unipi_mfd_ai_attrs[] = {
 	&dev_attr_ai_mode.attr.attr,
 	&dev_attr_ai_value.attr.attr,
 };
-
+*/
 
 static int unipi_iio_probe(struct platform_device *pdev)
 {
@@ -415,7 +415,7 @@ static int unipi_iio_probe(struct platform_device *pdev)
 	//struct regmap* map;
 	//int io_count = 0;
 	int io_modereg = -1, io_valreg;
-	char name[30];
+	//char name[30];
 	//const struct unipi_iio_descriptor *descriptor;
 	struct iio_dev *iio_dev;
 	struct unipi_iio_device *n_iio;
@@ -464,7 +464,7 @@ static int unipi_iio_probe(struct platform_device *pdev)
 		n_iio->modereg = (io_modereg == -1) ? -1 : io_modereg + i;
 		devm_iio_device_register(dev, iio_dev);
 	}
-
+/*
 	for (i=0; i < iio_platform->io_count; i++) {
 		snprintf(name, sizeof(name), iio_platform->descriptor->fname, iogroup->address, i+1);
 		string_upper(name, name);
@@ -472,11 +472,13 @@ static int unipi_iio_probe(struct platform_device *pdev)
 		                (u32) (io_modereg == -1) ? -1 : io_modereg + i,
 		                (u32) io_valreg + (i * iio_platform->descriptor->valsize));
 	}
+*/
 	return 0;
 }
 
 int unipi_iio_remove(struct platform_device *pdev)
 {
+/*
 	int i;
 	struct unipi_iio_platform *iio_platform = (struct unipi_iio_platform*) platform_get_drvdata(pdev);
 	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(pdev->dev.parent);
@@ -484,11 +486,13 @@ int unipi_iio_remove(struct platform_device *pdev)
 
 	if (!iio_platform || !iio_platform->descriptor)
 		return 0;
+
 	for (i=0; i < iio_platform->io_count; i++) {
 		snprintf(name, sizeof(name), iio_platform->descriptor->fname, iogroup->address, i+1);
 		string_upper(name, name);
 		unipi_mfd_remove_group(pdev->dev.parent, name);
 	}
+*/
 	return 0;
 }
 
@@ -498,7 +502,7 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_univ =
   .channels = unipi_iio_ai_chan_univ,
   .info = &unipi_iio_ai_info,
   .map_mode = unipi_iio_map_mode_univ,
-  .fname = "ai%d.%d",
+  .fname = "AIi%d.%d",
 };
 
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ui18 =
@@ -507,7 +511,7 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_ui18 =
   .channels = unipi_iio_ai_chan_ui32,
   .info = &unipi_iio_ai_info32,
   .map_mode = unipi_iio_map_mode_ui,
-  .fname = "ai%d.%d",
+  .fname = "AI%d.%d",
 };
 
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ao =
@@ -516,7 +520,7 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_ao =
   .channels = unipi_iio_ao_chan_spec,
   .info = &unipi_iio_ao_info,
   .map_mode = unipi_iio_map_mode_ui,
-  .fname = "ao%d.%d",
+  .fname = "AO%d.%d",
 };
 /*
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ui =
