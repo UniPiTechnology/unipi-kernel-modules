@@ -93,54 +93,8 @@ static char* unipi_mfd_firmware_names[] = {
 };
 */
 
-struct dev_mfd_attribute {
-	struct device_attribute attr;
-	u32 reg;
-};
-
-struct dev_mfd_of_attribute {
-	struct device_attribute attr;
-	const char* ofname;
-};
-
-
-ssize_t unipi_mfd_store_ulong(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t size);
-ssize_t unipi_mfd_show_ulong(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-ssize_t unipi_mfd_store_int(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t size);
-ssize_t unipi_mfd_show_int(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-ssize_t unipi_mfd_store_reg(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t size);
-ssize_t unipi_mfd_show_reg(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-ssize_t unipi_mfd_showhex_reg(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-ssize_t unipi_mfd_show_regbool(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-
-ssize_t unipi_mfd_show_bool(struct device *dev,
-					struct device_attribute *attr,
-					char *buf);
-ssize_t unipi_mfd_store_bool(struct device *dev,
-					struct device_attribute *attr,
-			 		const char *buf, size_t size);
-
 struct regmap* unipi_mfd_get_regmap(struct device* dev, const char* name);
 int unipi_mfd_enable_interrupt(struct unipi_iogroup_device *iogroup, u16 mask);
-
-int unipi_mfd_add_group(struct device *dev, const char *groupname, struct attribute ** templ, int count, ...);
-void unipi_mfd_remove_group(struct device *dev,  const char *groupname);
 
 
 #endif /* MODULES_UNIPI_SPI_SRC_UNIPI_MFD_IOGROUP_H_ */

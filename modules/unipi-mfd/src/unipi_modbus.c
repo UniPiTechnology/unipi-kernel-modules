@@ -227,8 +227,6 @@ ssize_t unipi_modbus_write (struct file *file_p, const char *buffer, size_t len,
     loff_t dummy_offset = 0;
 	struct unipi_modbus_file_data *private_data;
 	struct unipi_channel *channel;
-	#define pcb_data  (private_data)
-	//void *pcb_data;
 	u8 op, count;
 	int reg;
 	int ret;
@@ -270,25 +268,25 @@ ssize_t unipi_modbus_write (struct file *file_p, const char *buffer, size_t len,
 	switch (op) {
 		case UNIPI_MODBUS_OP_READREG:
 			ret = unipi_read_regs_async(channel, reg, count, private_data->recv_buf,
-										pcb_data, unipi_modbus_op_callback);
+										private_data, unipi_modbus_op_callback);
 			break;
 		case UNIPI_MODBUS_OP_READBIT:
 			ret = unipi_read_bits_async(channel, reg, count, private_data->recv_buf,
-										pcb_data, unipi_modbus_op_callback);
+										private_data, unipi_modbus_op_callback);
 			break;
 		case UNIPI_MODBUS_OP_WRITEREG:
 			simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
 								&dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
 								len-UNIPI_MODBUS_HEADER_SIZE);
 			ret = unipi_write_regs_async(channel, reg, count, private_data->send_buf,
-										pcb_data, unipi_modbus_op_callback);
+										private_data, unipi_modbus_op_callback);
 			break;
 		case UNIPI_MODBUS_OP_WRITEBITS:
 			simple_write_to_buffer(private_data->send_buf, UNIPI_MODBUS_BUFFER_MAX,
 							   &dummy_offset, buffer+UNIPI_MODBUS_HEADER_SIZE,
 							   len-UNIPI_MODBUS_HEADER_SIZE);
 			ret = unipi_write_bits_async(channel, reg, count, private_data->send_buf,
-	                                     pcb_data, unipi_modbus_op_callback);
+	                                     private_data, unipi_modbus_op_callback);
 			break;
 		default:
 			ret = -ENOENT;
@@ -356,14 +354,13 @@ struct file_operations file_ops =
 
 int __init unipi_modbus_init(void)
 {
-    int major, rc = 0;
-	//if (unipi_modbus_major >= 0) return 0;
+	int major, rc = 0;
 
 	// Character device registration
 	major = register_chrdev(0, UNIPI_MODBUS_DEVICE_NAME, &file_ops);
 	if (major < 0){
-	   printk(KERN_ALERT "unipi-modbus: Failed to register chrdev\n");
-	   return major;
+		printk(KERN_ALERT "unipi-modbus: Failed to register chrdev\n");
+		return major;
 	}
 
 	// Character class registration
@@ -374,8 +371,7 @@ int __init unipi_modbus_init(void)
 		goto err_class;
 	}
 
-    unipi_modbus_major = major;
-	//printk(KERN_INFO "unipi-modbus: Modbus module loaded\n");
+	unipi_modbus_major = major;
 	return 0;
 
 err_class:
@@ -385,12 +381,8 @@ err_class:
 
 void __exit unipi_modbus_exit(void)
 {
-	//unipi_spi_trace(KERN_INFO "UNIPISPI: Open Counter is %d\n", neuronspi_cdrv.open_counter);
-    //if (unipi_modbus_major < 0) return;
-
 	class_destroy(unipi_modbus_class); 
 	unregister_chrdev(unipi_modbus_major, UNIPI_MODBUS_DEVICE_NAME);
-	//printk(KERN_INFO "unipi-modbus: Modbus module unloaded\n");
 }
 
 module_init(unipi_modbus_init);
