@@ -357,9 +357,7 @@ static int __unregister(struct device *dev, void *null)
 
 static int __init unipi_iogroup_bus_init(void)
 {
-	int ret;
-	ret = bus_register(&iogroup_bus_type);
-	return ret;
+	return bus_register(&iogroup_bus_type);
 }
 
 static void __exit unipi_iogroup_bus_exit(void)
@@ -370,7 +368,6 @@ static void __exit unipi_iogroup_bus_exit(void)
 module_init(unipi_iogroup_bus_init);
 module_exit(unipi_iogroup_bus_exit);
 
-//module_platform_driver(unipi_plc_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Miroslav Ondra <ondra@faster.cz>");

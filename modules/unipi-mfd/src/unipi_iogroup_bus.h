@@ -24,21 +24,13 @@ struct unipi_iogroup_device;
 /**
  * struct unipi_iogroup_device - Plc side proxy for an SPI slave device
  * @dev: Driver model representation of the device.
- * @plc: Plc used with the device.
- * @address: Chipselect, distinguishing chips handled by @controller.
- * @controller_state: Controller's runtime state
- * @controller_data: Board-specific definitions for controller, such as
- *	FIFO initialization parameters; from board_info.controller_data
+ * @channel: Channel used to communication with the device.
+ * @address: Unique id of iogroup device (usually slot number in plc)
+ * @irq:  Interrupt used by iogroup
+ * @poll_timer, poll_enabled: Alternative to interrupt
  * @modalias: Name of the driver to use with this device, or an alias
  *	for that name.  This appears in the sysfs "modalias" attribute
  *	for driver coldplugging, and in uevents used for hotplugging
- * @word_delay: delay to be inserted between consecutive
- *	words of a transfer
- *
- * @statistics: statistics for the unipi_iogroup_device
- *
- * A @unipi_iogroup_device is used to interchange data between an SPI slave
- * (usually a discrete chip) and CPU memory.
  *
  * In @dev, the platform_data is used to hold information about this
  * device that's meaningful to the device's protocol driver, but not
@@ -53,9 +45,6 @@ struct unipi_iogroup_device {
 	int					irq;
 	struct hrtimer		poll_timer;
 	int					poll_enabled;
-	//bool			rt;
-	//void			*controller_state;
-	//void			*controller_data;
 	char			modalias[SPI_NAME_SIZE];
 
 	/* the statistics */

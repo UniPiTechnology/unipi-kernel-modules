@@ -39,6 +39,17 @@
 #define to_mfd_of_attr(x) container_of(x, struct dev_mfd_of_attribute, attr)
 
 
+struct dev_mfd_attribute {
+	struct device_attribute attr;
+	u32 reg;
+};
+
+struct dev_mfd_of_attribute {
+	struct device_attribute attr;
+	const char* ofname;
+};
+
+
 ssize_t unipi_mfd_show_version(struct device *dev,
 			struct device_attribute *attr,
 			char *buf)
@@ -80,7 +91,6 @@ ssize_t unipi_mfd_store_ulong(struct device *dev,
 	/* Always return full write size even if we didn't consume all */
 	return size;
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_store_ulong);
 
 ssize_t unipi_mfd_show_ulong(struct device *dev,
 			  struct device_attribute *attr,
@@ -94,7 +104,6 @@ ssize_t unipi_mfd_show_ulong(struct device *dev,
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "%ld\n", val);
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_show_ulong);
 
 ssize_t unipi_mfd_store_int(struct device *dev,
 			 struct device_attribute *attr,
@@ -117,7 +126,6 @@ ssize_t unipi_mfd_store_int(struct device *dev,
 	/* Always return full write size even if we didn't consume all */
 	return size;
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_store_int);
 
 ssize_t unipi_mfd_show_int(struct device *dev,
 			struct device_attribute *attr,
@@ -131,7 +139,6 @@ ssize_t unipi_mfd_show_int(struct device *dev,
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "%d\n", val);
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_show_int);
 
 ssize_t unipi_mfd_store_reg(struct device *dev,
 			 struct device_attribute *attr,
@@ -153,7 +160,6 @@ ssize_t unipi_mfd_store_reg(struct device *dev,
 	/* Always return full write size even if we didn't consume all */
 	return size;
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_store_reg);
 
 ssize_t unipi_mfd_show_reg(struct device *dev,
 			struct device_attribute *attr,
@@ -166,7 +172,6 @@ ssize_t unipi_mfd_show_reg(struct device *dev,
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "%d\n", val);
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_show_reg);
 
 ssize_t unipi_mfd_showhex_reg(struct device *dev,
 			struct device_attribute *attr,
@@ -179,7 +184,6 @@ ssize_t unipi_mfd_showhex_reg(struct device *dev,
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "0x%04x\n", val);
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_showhex_reg);
 
 ssize_t unipi_mfd_store_bool(struct device *dev, struct device_attribute *attr,
 			  const char *buf, size_t size)
@@ -196,7 +200,6 @@ ssize_t unipi_mfd_store_bool(struct device *dev, struct device_attribute *attr,
 
 	return size;
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_store_bool);
 
 ssize_t unipi_mfd_show_bool(struct device *dev, struct device_attribute *attr,
 			 char *buf)
@@ -209,7 +212,6 @@ ssize_t unipi_mfd_show_bool(struct device *dev, struct device_attribute *attr,
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "%d\n", !!val);
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_show_bool);
 
 ssize_t unipi_mfd_show_regbool(struct device *dev, struct device_attribute *attr,
 			 char *buf)
@@ -225,7 +227,6 @@ ssize_t unipi_mfd_show_regbool(struct device *dev, struct device_attribute *attr
 	if (ret<0) return ret;
 	return sysfs_emit(buf, "%d\n", !!((val>>shift)&1));
 }
-EXPORT_SYMBOL_GPL(unipi_mfd_show_regbool);
 
 
 static int unipi_mfd_of_get_regnum(struct device *dev, char* attrname)
@@ -425,10 +426,6 @@ static const struct attribute_group unipi_plc_group_def = {
 	.attrs  = unipi_plc_device_attrs,
 };
 
-//static struct of_dev_auxdata xx_auxdata_lookup[] = {
-//	OF_DEV_AUXDATA("unipi,gpio-di", 0, "iogroupXdi", NULL),
-//	{ /* sentinel */ },
-//};
 
 static const char *unipi_plc_linkname = "io_group%d";
 
@@ -450,7 +447,6 @@ static void unipi_mfd_link_plc(struct unipi_iogroup_device *iogroup)
 		pdev = platform_device_alloc("unipi_plc", -1);
 		if (!pdev) 
 			return;
-		//plc_dev->dev.groups = neuron_plc_attr_groups;
 		if (platform_device_add(pdev) != 0) 
 			return;
 		plc_dev = &pdev->dev;
@@ -466,7 +462,6 @@ static void unipi_mfd_link_plc(struct unipi_iogroup_device *iogroup)
 
 static void unipi_mfd_remove_plc(struct unipi_iogroup_device *iogroup)
 {
-	//void sysfs_remove_link(struct kobject *kobj, const char *name)
 	struct device *plc_dev;
 	char *name;
 
@@ -630,13 +625,6 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 
 int unipi_mfd_remove(struct unipi_iogroup_device *iogroup)
 {
-	//struct unipi_channel *mfd_iogroup = unipi_iogroup_get_drvdata(iogroup);
-/*	if (mfd_iogroup) {
-		if (mfd_iogroup->spi_dev) put_device(&mfd_iogroup->spi_dev->dev);
-	}*/
-//	struct device* dev = &iogroup->dev;
-
-//	device_for_each_child_reverse(dev, NULL, mfd_iogroup_remove_devices_fn);
 	if (iogroup->poll_timer.function != NULL) {
 		hrtimer_try_to_cancel(&iogroup->poll_timer);
 	}
@@ -680,7 +668,6 @@ struct regmap* unipi_mfd_get_regmap(struct device* dev, const char* name)
 
 	iogroup = to_unipi_iogroup_device(dev);
 	mfd_iogroup = to_unipi_iogroup_device(dev)->channel;
-	//mfd_iogroup = (struct unipi_channel *)unipi_iogroup_get_drvdata(iogroup);
 	if (strcmp(name, "coils") == 0)
 		return mfd_iogroup->coils;
 	if (strcmp(name, "registers") == 0)
@@ -691,8 +678,7 @@ EXPORT_SYMBOL_GPL(unipi_mfd_get_regmap);
 
 static int __init unipi_mfd_init(void)
 {
-	int ret = 0;
-
+	int ret;
 	ret = unipi_iogroup_register_driver(&unipi_mfd_driver);
 	if (ret < 0) {
 		printk(KERN_ERR "%s: Failed to register driver --> %d\n", unipi_mfd_driver.driver.name, ret);
