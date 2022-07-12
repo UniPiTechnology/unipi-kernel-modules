@@ -73,13 +73,11 @@ struct unipi_uart_port
 
     spinlock_t                  rx_in_progress_lock;
     int                         rx_in_progress;
-    u8                          rx_send_msg[UNIPI_UART_FIFO_SIZE+4+8];
     u8                          rx_recv_msg[UNIPI_UART_FIFO_SIZE+4+8];
 
     spinlock_t                  txop_lock;
     int                         pending_txop;
     u8                          tx_send_msg[UNIPI_UART_FIFO_SIZE+4+8];
-    u8                          tx_recv_msg[UNIPI_UART_FIFO_SIZE+4+8];
 };
 
 struct unipi_uart_device
@@ -381,7 +379,7 @@ int static neuronspi_uart_read_tx_fifo_len(struct unipi_uart_port *port)
 
 #define MAX_TXLEN	(UNIPI_UART_FIFO_SIZE >> 1)
 
-static void unipi_uart_tx_callback(void *arg, int status, u8* data)
+static void unipi_uart_tx_callback(void *arg, int status)
 {
     struct unipi_uart_port *n_port = (struct unipi_uart_port*) arg;
     unsigned long flags;
@@ -487,13 +485,10 @@ void unipi_uart_start_tx(struct uart_port *port)
 }
 
 
-void unipi_uart_get_tx_fifo_callback(void* cb_data, int result, u8* value)
+void unipi_uart_get_tx_fifo_callback(void* cb_data, int result)
 {
     unsigned long flags;
 	struct unipi_uart_port *n_port = (struct unipi_uart_port *)cb_data;
-	if (result == 1)
-		n_port->tx_fifo_len = *(u16*)value;
-
    	spin_lock_irqsave(&n_port->port.lock, flags);
     unipi_uart_handle_tx(n_port, CB_GETTXFIFO);
     spin_unlock_irqrestore(&n_port->port.lock, flags);
@@ -506,7 +501,7 @@ int unipi_uart_get_tx_fifo(struct unipi_uart_port* n_port)
 	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	int ret;
 
-	ret = unipi_read_regs_async(channel, n_port->tx_fifo_reg, 1, NULL,
+	ret = unipi_read_regs_async(channel, n_port->tx_fifo_reg, 1, (uint8_t*)&n_port->tx_fifo_len,
                              n_port, unipi_uart_get_tx_fifo_callback);
 	return !!ret;
 }
@@ -566,7 +561,7 @@ static void unipi_uart_handle_rx(struct unipi_uart_port *port, int rxlen, u8* pb
 
 /* called from read_str_async operation 
 */
-void unipi_uart_rx_callback(void* cb_data, int result, u8* recv)
+void unipi_uart_rx_callback(void* cb_data, int result)
 {
 	struct unipi_uart_port *n_port = (struct unipi_uart_port *)cb_data;
 	struct device* parent = n_port->port.dev->parent;
@@ -579,19 +574,19 @@ void unipi_uart_rx_callback(void* cb_data, int result, u8* recv)
 	if (result < 0) {
 		/* try again read str */
 		if (unipi_read_str_async(channel, n_port->dev_port, 
-		          n_port->rx_send_msg, n_port->rx_remain,
+		          n_port->rx_recv_msg, n_port->rx_remain,
 				  n_port, unipi_uart_rx_callback) == 0)
 			return;
 		goto unlock;
 	}
 
 	/* send data to tty */
-	unipi_uart_handle_rx(n_port, len, recv);
+	unipi_uart_handle_rx(n_port, len, n_port->rx_recv_msg);
 	n_port->rx_remain = remain;
 	if (n_port->rx_remain) {
 		/* continue in rx "process" */
 		if (unipi_read_str_async(channel, n_port->dev_port,
-		          n_port->rx_send_msg, n_port->rx_remain,
+		          n_port->rx_recv_msg, n_port->rx_remain,
 				  n_port, unipi_uart_rx_callback) == 0)
 			return;
 	}
@@ -625,7 +620,7 @@ static int unipi_uart_start_rx_process(struct unipi_uart_port *n_port)
 
 	/* Start new rx "process" */
 	if (unipi_read_str_async(channel, n_port->dev_port, 
-				n_port->rx_send_msg, n_port->rx_remain, 
+				n_port->rx_recv_msg, n_port->rx_remain, 
 				n_port, unipi_uart_rx_callback) != 0) {
 
 		spin_lock_irqsave(&n_port->rx_in_progress_lock, flags);

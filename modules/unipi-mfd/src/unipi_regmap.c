@@ -31,7 +31,7 @@ struct unipi_regmap_async {
 	struct regmap_async core;
 };
 
-static void unipi_regmap_complete(void *data, int result, u8* recv)
+static void unipi_regmap_complete(void *data, int result)
 {
 	struct unipi_regmap_async *async = data;
 	regmap_async_complete_cb(&async->core, result);

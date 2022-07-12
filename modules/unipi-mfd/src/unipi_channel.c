@@ -44,7 +44,7 @@ struct unipi_channel_sync_cb_data
 	int		result;
 };
 
-void unipi_channel_sync_op_callback(void* cb_data, int result, u8* recv)
+void unipi_channel_sync_op_callback(void* cb_data, int result)
 {
 	struct unipi_channel_sync_cb_data* unipi_cb_data = (struct unipi_channel_sync_cb_data*) cb_data;
 	if (cb_data) {
