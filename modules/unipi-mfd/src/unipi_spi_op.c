@@ -92,14 +92,14 @@ int unipi_spi_parse_frame(struct unipi_spi_context* context, struct unipi_spi_de
 
 	devstatus->opcode = context->rx_header[0];
 	devstatus->interrupt = context->rx_header[1];
-	if (devstatus->opcode >= 0x41 && devstatus->opcode <= 0x44) {
+	if (devstatus->opcode >= UNIPI_SPI_OP_WRITECHAR && devstatus->opcode < (UNIPI_SPI_OP_WRITECHAR+4)) {
 		devstatus->remain = (context->rx_header[2]==0  ? 256 : context->rx_header[2]) - 1;
-		devstatus->port = devstatus->opcode - 0x41;
-		devstatus->opcode = 0x41;
+		devstatus->port = devstatus->opcode - UNIPI_SPI_OP_WRITECHAR;
+		devstatus->opcode = UNIPI_SPI_OP_WRITECHAR;
 		devstatus->ch = context->rx_header[3];
 	}
 
-	if ((devstatus->opcode==0xfa) && (context->rx_header[3]==0x2e))
+	if ((devstatus->opcode==UNIPI_SPI_OP_IDLE) && (context->rx_header[3]==0x2e))
 		unipi_spi_try_v2(context->message.spi);
 
 	reply->opcode = context->tx_header[0];

@@ -207,7 +207,7 @@ struct cb_multi {
 	int ret;
 };
 
-static void multi_callback(void* cb_data, int result, u8* recv)
+static void multi_callback(void* cb_data, int result)
 {
 	struct cb_multi *cb_multi = cb_data;
 	int ret;
@@ -235,7 +235,7 @@ next:
 	return;
 finish:
 	if (cb_multi->cb_function)
-		cb_multi->cb_function(cb_multi->cb_data, cb_multi->ret, recv);
+		cb_multi->cb_function(cb_multi->cb_data, cb_multi->ret);
 	kfree(cb_multi);
 }
 

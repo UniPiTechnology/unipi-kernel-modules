@@ -202,7 +202,7 @@ int unipi_spi_set_v1(struct spi_device* spi_dev)
 }
 
 
-static void try_v2_callback(void* cb_data, int result, u8* recv)
+static void try_v2_callback(void* cb_data, int result)
 {
 	struct spi_device* spi = (struct spi_device*) cb_data;
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi);
@@ -220,7 +220,7 @@ static void try_v2_callback(void* cb_data, int result, u8* recv)
 			list_del_init(&msg->queue);
 			context = ((container_of((msg), struct unipi_spi_context, message)));
 			if (context->operation_callback)
-				context->operation_callback(context->operation_callback_data, -EAGAIN, context->data);
+				context->operation_callback(context->operation_callback_data, -EAGAIN);
 			kfree(context);
 		}
 		spin_unlock_irqrestore(&n_spi->busy_lock, flags);
@@ -261,7 +261,7 @@ void unipi_spi_check_busy_queue(struct unipi_spi_device* n_spi)
 		if (ret != 0) {
 			/* if error -> inform caller by callback and try next */
 			if (context->operation_callback) 
-				context->operation_callback(context->operation_callback_data, ret, context->data);
+				context->operation_callback(context->operation_callback_data, ret);
 			kfree(context);
 		} else {
 			if (context->interframe_nsec > 0)
@@ -351,7 +351,7 @@ static void unipi_spi_op_complete(void *arg)
 		}
 	}
 	if (context->operation_callback)
-		context->operation_callback(context->operation_callback_data, reply.ret, reply.data);
+		context->operation_callback(context->operation_callback_data, reply.ret);
 	kfree(context);
 }
 

@@ -18,7 +18,7 @@
 
 struct unipi_channel;
 
-typedef void (*OperationCallback)(void*, int, u8*);
+typedef void (*OperationCallback)(void*, int);
 
 typedef void (*RxCharCallback)(void*, u8, u8, int);
 typedef void (*IntStatusCallback)(void*, u8);

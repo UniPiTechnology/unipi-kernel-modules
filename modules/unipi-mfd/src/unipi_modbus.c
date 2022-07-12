@@ -212,7 +212,7 @@ unlock:
 	return result;
 }
 
-void unipi_modbus_op_callback(void* cb_data, int result, u8* recv)
+void unipi_modbus_op_callback(void* cb_data, int result)
 {
 	struct unipi_modbus_file_data *private_data = (struct unipi_modbus_file_data*) cb_data;
 	if (cb_data) {
