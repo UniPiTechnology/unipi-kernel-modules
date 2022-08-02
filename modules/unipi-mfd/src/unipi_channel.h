@@ -44,17 +44,18 @@ struct unipi_protocol_op
 	StrAsync       write_str_async;
 	StrAsync       read_str_async;
 	void(*populated)(void*);
+	int        max_write_str_len;
 };
 
 struct unipi_channel
 {
-	struct regmap*			registers;
-	struct regmap*			coils;
-	void					*rx_self;
-	RxCharCallback			rx_char_callback;
-	void					*interrupt_self;
-	IntStatusCallback		interrupt_status_callback;
-	struct unipi_protocol_op  	*op;
+	struct regmap*		 registers;
+	struct regmap*		 coils;
+	void			 *rx_self;
+	RxCharCallback		 rx_char_callback;
+	void			 *interrupt_self;
+	IntStatusCallback	 interrupt_status_callback;
+	struct unipi_protocol_op *op;
 	void		*proto_self;
 	struct device	*dev;
 	struct device *chrdev;
@@ -102,6 +103,8 @@ int unipi_read_regs_sync( struct unipi_channel *channel, unsigned int reg, unsig
 
 #define unipi_ping_async(channel, cb_data, cb_function) \
                          (channel)->op->ping_async((channel)->proto_self, cb_data, cb_function)
+
+#define unipi_max_write_str_len(channel) (channel)->op->max_write_str_len
 
 
 

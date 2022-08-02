@@ -46,7 +46,7 @@ int unipi_spi_check_message(struct spi_device* spi, struct unipi_spi_context* co
 		n_spi->stat.errors_crc1++;
 		context->rx_header2[0] = 0;
 		context->rx_header[0] = 0;
-		return -1;
+		return -EIO;
 	}
 
 	if (context->len > 0) {
@@ -74,7 +74,7 @@ int unipi_spi_check_message(struct spi_device* spi, struct unipi_spi_context* co
 	return 0;
 }
 
-int unipi_spi_parse_frame(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
+static int unipi_spi_parse_frame_common(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
 {
 	u16 recv_crc;
 	//struct unipi_spi_device *n_spi;
@@ -84,14 +84,11 @@ int unipi_spi_parse_frame(struct unipi_spi_context* context, struct unipi_spi_de
 	recv_crc = unipi_spi_crc(context->rx_header, UNIPI_SPI_MESSAGE_HEADER_LENGTH, 0);
 	context->packet_crc = *((u16*)(context->rx_header+UNIPI_SPI_MESSAGE_HEADER_LENGTH));
 	if (recv_crc != context->packet_crc) {
-		return -1;
+		return -EIO;
 	}
-	/*if (unipi_spi_check_message(context) != 0) {
-		return -1;
-	}*/
 
 	devstatus->opcode = context->rx_header[0];
-	devstatus->interrupt = context->rx_header[1];
+	devstatus->interrupt = context->rx_header[1] & (~0x80);  // mask out v2_enabled flag
 	if (devstatus->opcode >= UNIPI_SPI_OP_WRITECHAR && devstatus->opcode < (UNIPI_SPI_OP_WRITECHAR+4)) {
 		devstatus->remain = (context->rx_header[2]==0  ? 256 : context->rx_header[2]) - 1;
 		devstatus->port = devstatus->opcode - UNIPI_SPI_OP_WRITECHAR;
@@ -99,24 +96,79 @@ int unipi_spi_parse_frame(struct unipi_spi_context* context, struct unipi_spi_de
 		devstatus->ch = context->rx_header[3];
 	}
 
-	if ((devstatus->opcode==UNIPI_SPI_OP_IDLE) && (context->rx_header[3]==0x2e))
+	if ((devstatus->opcode==UNIPI_SPI_OP_IDLE) && (context->rx_header[1] & 0x80))
 		unipi_spi_try_v2(context->message.spi);
 
 	reply->opcode = context->tx_header[0];
-	if (context->len) {
-		/* ToDo: check second crc  */ 
-		if (reply->opcode == context->rx_header2[0]) {
-			reply->ret = context->rx_header2[1];
-			reply->data = context->rx_header2+UNIPI_SPI_MESSAGE_HEADER_LENGTH;
-		} else {
-			reply->ret = -EIO;
-		}
+	reply->ret = 0;
+	return 0;
+}
+
+static int unipi_spi_parse_frame_simple(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
+{
+	u16 recv_crc;
+	int ret = unipi_spi_parse_frame_common(context, devstatus, reply);
+	if (ret != 0) return ret;
+
+	// Check second message crc
+	recv_crc = unipi_spi_crc(context->rx_header2, context->len, context->packet_crc);
+	context->packet_crc = context->rx_header2[context->len] | (context->rx_header2[context->len+1] << 8);
+	//unipi_spi_trace_1(spi, "Read - %d: %10ph", context->len, context->rx_header2);
+
+	if (recv_crc != context->packet_crc) {
+		reply->ret = -ENXIO;
+		return 0;
+	}
+	if (reply->opcode != context->rx_header2[0]) {
+		reply->ret = -EINVAL;
+		return 0;
+	}
+	reply->ret = context->rx_header2[1];
+	if ((reply->ret > 0) && (context->simple_read) && (context->data))
+		memmove(context->data, context->rx_header2+UNIPI_SPI_MESSAGE_HEADER_LENGTH, context->simple_len);
+	return 0;
+}
+
+static int unipi_spi_parse_frame_read(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
+{
+	u16 recv_crc;
+	int ret = unipi_spi_parse_frame_common(context, devstatus, reply);
+	if (ret != 0) return ret;
+
+	// Check second message crc
+	recv_crc = unipi_spi_crc(context->rx_header2, UNIPI_SPI_MESSAGE_HEADER_LENGTH, context->packet_crc);
+	recv_crc = unipi_spi_crc(context->data, context->len, recv_crc);
+	context->packet_crc = context->data[context->len] | (context->data[context->len+1] << 8);
+	//printk("Read - %d: %10ph ccrc=%04x rcrc=%04x\n", context->len, context->rx_header2, recv_crc, context->packet_crc);
+
+	if (recv_crc != context->packet_crc) {
+		reply->ret = -ENXIO;
+		return 0;
+	}
+	if (reply->opcode != context->rx_header2[0]) {
+		reply->ret = -EINVAL;
+		return 0;
+	}
+	if (reply->opcode == UNIPI_SPI_OP_READSTR) {
+		/* combine len + remain */
+		reply->ret = context->rx_header2[1] | (context->rx_header2[3] << 8);
 	} else {
-		reply->ret = 0;
+		reply->ret = context->rx_header2[1];
 	}
 	return 0;
 }
 
+static int unipi_spi_parse_frame_write(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
+{
+	int ret = unipi_spi_parse_frame_common(context, devstatus, reply);
+	if (ret != 0) return ret;
+	if (reply->opcode != context->rx_header2[0]) {
+		reply->ret = -EINVAL;
+		return 0;
+	}
+	reply->ret = context->rx_header2[1];
+	return 0;
+}
 
 /* upper part of all async opertations
  * - create context with space for 2+add_trans transactions
@@ -135,7 +187,7 @@ struct unipi_spi_context *unipi_spi_alloc_context(struct spi_device* spi_dev, en
 		return NULL;
 	}
 	freq = n_spi->frequency;
-	context->parse_frame = unipi_spi_parse_frame;
+	context->parse_frame = unipi_spi_parse_frame_common;
 	context->tx_header[0] = op;
 	context->tx_header[1] = len;
 	context->tx_header[2] = lo(reg);
@@ -209,6 +261,7 @@ int unipi_spi_write_simple(struct spi_device* spi_dev, enum UNIPI_SPI_OP op,
 	s_trans[2].rx_buf = context->rx_header2;
 
 	context->len = len;
+	context->parse_frame = unipi_spi_parse_frame_write;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
@@ -246,6 +299,7 @@ int unipi_spi_read_simple(struct spi_device* spi_dev, enum UNIPI_SPI_OP op,
 	context->simple_read = 1;
 	context->simple_len = (op==UNIPI_SPI_OP_READREG) ? count*2 : roundup_block(count, 8);
 	context->data = data;
+	context->parse_frame = unipi_spi_parse_frame_simple;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
@@ -294,6 +348,7 @@ int unipi_spi_read_regs_async(void *proto_self, unsigned int reg, unsigned int c
 
 	context->len = len;
 	context->data = data;
+	context->parse_frame = unipi_spi_parse_frame_read;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
@@ -342,6 +397,7 @@ int unipi_spi_write_regs_async(void *proto_self, unsigned int reg, unsigned int 
 	}
 
 	context->len = len;
+	context->parse_frame = unipi_spi_parse_frame_write;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
@@ -381,6 +437,7 @@ int unipi_spi_write_str_async(void* spi, unsigned int port, u8* data, unsigned i
 	}
 
 	context->len = len;
+	context->parse_frame = unipi_spi_parse_frame_write;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
 
@@ -400,23 +457,31 @@ int unipi_spi_read_str_async(void* spi, unsigned int port, u8* data, unsigned in
 		len = 250;
 	}
 
+	//unipi_spi_trace_1(spi_dev, "Read str async port=%d, len=%d\n", port, len);
+
 	data_trans = roundup_block(len+UNIPI_SPI_CRC_LENGTH, NEURONSPI_MAX_TX);
-	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_READSTR, len, port <<8, 1+data_trans);
+	context = unipi_spi_alloc_context(spi_dev, UNIPI_SPI_OP_READSTR, len+UNIPI_MODBUS_HEADER_SIZE, port <<8, 1+data_trans);
 	if (context == NULL) return -ENOMEM;
 
+	/* crc must be calculated due to firmware behavior */
+	context->packet_crc = unipi_spi_crc(context->tx_header2, UNIPI_MODBUS_HEADER_SIZE, context->packet_crc);
+	context->packet_crc = unipi_spi_crc_set(data, len, context->packet_crc);
+
+	s_trans = (struct spi_transfer *)(context + 1);
 	s_trans[1].delay.value = 25;
 	s_trans[1].delay.unit = SPI_DELAY_UNIT_USECS;
 
 	s_trans[2].bits_per_word = UNIPI_SPI_B_PER_WORD;
 	s_trans[2].speed_hz = s_trans[1].speed_hz;
 	s_trans[2].len = UNIPI_MODBUS_HEADER_SIZE;
-	s_trans[2].tx_buf = NULL;
+	s_trans[2].tx_buf = context->tx_header2;
 	s_trans[2].rx_buf = context->rx_header2;
 
 	remain = len + UNIPI_SPI_CRC_LENGTH;
 	for ( i=0; i < data_trans; i++) {
 		s_trans[i+3].bits_per_word = UNIPI_SPI_B_PER_WORD;
 		s_trans[i+3].speed_hz = s_trans[1].speed_hz;
+		s_trans[3+i].tx_buf = data + (NEURONSPI_MAX_TX * i);  /* firmware misbehave else can be NULL*/
 		s_trans[i+3].rx_buf = data + (NEURONSPI_MAX_TX * i);
 		s_trans[i+3].len = (remain > NEURONSPI_MAX_TX) ? NEURONSPI_MAX_TX : remain;
 		remain -= NEURONSPI_MAX_TX;
@@ -424,9 +489,9 @@ int unipi_spi_read_str_async(void* spi, unsigned int port, u8* data, unsigned in
 
 	context->len = len;
 	context->data = data;
+	context->parse_frame = unipi_spi_parse_frame_read;
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
 }
-
 
 
 /*  Async op for WRITEBIT */
@@ -485,5 +550,6 @@ struct unipi_protocol_op spi_op_v1 = {
 	.firmware_sync = unipi_spi_firmware_op,
 	.lock_op = unipi_spi_lock,
 	.unlock_op = unipi_spi_unlock,
+	.max_write_str_len = (128),
 };
 

@@ -46,7 +46,8 @@ struct unipi_iogroup_device {
 	struct hrtimer		poll_timer;
 	int					poll_enabled;
 	char			modalias[SPI_NAME_SIZE];
-
+	void			*uart_rx_self;
+	void			(*uart_rx_callback)(void*, int port);
 	/* the statistics */
 	//struct spi_statistics	statistics;
 };

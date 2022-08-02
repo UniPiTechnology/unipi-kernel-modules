@@ -15,8 +15,9 @@
  ************/
 
 //#include "unipi_iio.h"
+#include "unipi_common.h"
+#include "unipi_iogroup_bus.h"
 #include "unipi_mfd.h"
-#include "unipi_mfd_iogroup.h"
 
 static const struct iio_chan_spec unipi_iio_stm_ai_chan_spec[] = {
 	{
@@ -388,7 +389,7 @@ int unipi_iio_stm_ai_register(struct device* dev, struct regmap *map, int group_
 	iio_dev->currentmode = INDIO_DIRECT_MODE;
 	iio_dev->name = "ai_type_legacy";
 	iio_dev->dev.parent = dev;
-	dev_set_name(&iio_dev->dev, "ai_%d_1", group_index);
+	dev_set_name(&iio_dev->dev, "AI%d.1", group_index);
 	iio_dev->num_channels = ARRAY_SIZE(unipi_iio_stm_ai_chan_spec);
 	iio_dev->channels = unipi_iio_stm_ai_chan_spec;
 	iio_dev->info = &unipi_iio_stm_ai_info;
@@ -411,7 +412,7 @@ int unipi_iio_stm_ao_register(struct device* dev, struct regmap *map, int group_
 	iio_dev->currentmode = INDIO_DIRECT_MODE;
 	iio_dev->name = "ao_type_legacy";
 	iio_dev->dev.parent = dev;
-	dev_set_name(&iio_dev->dev, "ao_%d_1", group_index);
+	dev_set_name(&iio_dev->dev, "AO%d.1", group_index);
 	iio_dev->num_channels = ARRAY_SIZE(unipi_iio_stm_ao_chan_spec);
 	iio_dev->channels = unipi_iio_stm_ao_chan_spec;
 	iio_dev->info = &unipi_iio_stm_ao_info;
