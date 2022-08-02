@@ -114,7 +114,7 @@ ssize_t unipi_mfd_store_int(struct device *dev,
 	int ret;
 	long new;
 
-	printk("store_int r=%d v=%s", ea->reg, buf);
+	//printk("store_int r=%d v=%s", ea->reg, buf);
 	ret = kstrtol(buf, 0, &new);
 	if (ret)
 		return ret;
@@ -516,9 +516,15 @@ irqreturn_t unipi_mfd_irq(s32 irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-void unipi_mfd_int_status_callback(void* iogroup, u8 int_status)
+void unipi_mfd_int_status_callback(void* self, u8 int_status)
 {
+	struct unipi_iogroup_device *iogroup = (struct unipi_iogroup_device *)self;
 	/* int_status & UNIPI_MFD_INT_RX_NOT_EMPTY */
+	if (int_status & (UNIPI_MFD_INT_RX_NOT_EMPTY | UNIPI_MFD_INT_RX_MODBUS)) {
+		if (iogroup->uart_rx_callback) {
+			iogroup->uart_rx_callback(iogroup->uart_rx_self, 0);
+		}
+	}
 }
 
 

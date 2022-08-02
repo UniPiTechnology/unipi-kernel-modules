@@ -36,9 +36,9 @@ enum UNIPI_SPI_OP
 	UNIPI_SPI_OP_READSTR   = 0x65,
 	UNIPI_SPI_OP_IDLE      = 0xFA,
 
+	UNIPI_SPI_OP2_READSTR  = 0x60,
 	UNIPI_SPI_OP2_WRITESTR = 0x70,
-	UNIPI_SPI_OP2_READSTR  = 0x71,
-	UNIPI_SPI_OP2_IDLE     = 0xFB,
+	UNIPI_SPI_OP2_IDLE     = 0xAF,
 };
 
 
@@ -129,8 +129,8 @@ struct unipi_spi_devstatus {
 struct unipi_spi_reply {
 	enum UNIPI_SPI_OP opcode;
 	int ret;
-	unsigned int reg;
-	uint8_t *data;
+//	unsigned int reg;
+//	uint8_t *data;
 };
 
 struct unipi_spi_context
@@ -201,7 +201,6 @@ int  unipi_spi_lock(void *proto_self);
 #define UNIPISPI_OP_MODE_HAVE_CRC_SPACE     0x4
 
 
-/* using trace_printk or printk ???*/
 #if UNIPI_SPI_DETAILED_DEBUG > 1
 # define unipi_spi_trace_1(spi, f, args...)	dev_info(&spi->dev, f, ##args)
 #else

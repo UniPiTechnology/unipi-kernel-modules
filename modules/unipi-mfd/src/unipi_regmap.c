@@ -80,15 +80,15 @@ int unipi_regmap_hw_gather_write(void *context, const void *reg, size_t reg_size
 	if (reg_size != sizeof(u16)) return -EINVAL;
 
 	buffer = kzalloc(val_size+4, GFP_KERNEL);
-    if (buffer == NULL)
+	if (buffer == NULL)
 		return -ENOMEM;
 
-    memcpy(buffer, val, val_size);
-    regcount = (val_size + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	memcpy(buffer, val, val_size);
+	regcount = (val_size + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
 	ret = unipi_write_regs_sync(channel, *(u16*)reg, regcount, buffer);
 	if (ret == regcount) ret = 0;
-    kfree(buffer);
-    return ret;
+	kfree(buffer);
+	return ret;
 }
 
 int unipi_regmap_hw_write(void *context, const void *buf, size_t buf_size)
@@ -102,7 +102,6 @@ int unipi_regmap_hw_reg_write(void *context, unsigned int reg, unsigned int val)
 	if (unipi_write_regs_sync(channel, reg, 1, (u16*)&val) == 1) 
 		return 0;
 	return -EINVAL;
-	
 }
 
 static int unipi_regmap_async_write(void *context,  const void *reg, size_t reg_len,
@@ -113,15 +112,19 @@ static int unipi_regmap_async_write(void *context,  const void *reg, size_t reg_
 	u8 *buffer;
 	int ret, regcount;
 
-	if (reg_len != sizeof(u16)) return -EINVAL;
-
+	if ((reg_len != sizeof(u16)) && (val != NULL)) return -EINVAL;
+	if (val == NULL) {
+		val_len = reg_len - sizeof(u16);
+		val = ((u8*)reg) + sizeof(u16);
+	}
 	buffer = kzalloc(val_len+4, GFP_KERNEL);
-    if (buffer == NULL)
+	if (buffer == NULL)
 		return -ENOMEM;
 
 	async->buffer = buffer;
-    memcpy(buffer, val, val_len);
-    regcount = (val_len + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	memcpy(buffer, val, val_len);
+	regcount = (val_len + (UNIPI_REGMAP_REGISTER_SIZE-1)) / UNIPI_REGMAP_REGISTER_SIZE;
+	//printk("REGMAP: reg=%d regcount=%d val_len=%d\n", *(u16*)reg, regcount, val_len);
 	ret = unipi_write_regs_async(channel, *(u16*)reg, regcount, buffer, async, unipi_regmap_complete);
 	if (ret != 0) 
 		kfree(buffer);

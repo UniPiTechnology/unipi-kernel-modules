@@ -20,8 +20,9 @@
 #include "unipi_channel.h"
 #include "unipi_iogroup_bus.h"
 #include "unipi_mfd.h"
+#include "unipi_tty.h"
 
-#define UNIPI_UART_DETAILED_DEBUG 0
+#define UNIPI_UART_DETAILED_DEBUG 2
 #if UNIPI_UART_DETAILED_DEBUG > 2
 # define unipi_uart_trace_2(f, args...)	printk(KERN_INFO "UNIPIUART: " f, ##args)
 #else
@@ -56,34 +57,34 @@
 
 struct unipi_uart_port
 {
-	struct uart_port			port;
-	int							dev_port;    // index of port on mfd 0..3
-    u8                          rx_remain;
-    int                         accept_rx;
-	struct kthread_work			flush_work;
-    
-	struct kthread_work			tx_work;
-    u16                         tx_fifo_reg;  // register in mfd modbus map to read internal tx fifo length
-                                              // 0 if undefined
-    u16                         tx_fifo_len;  // estimates char count in neuron internal tx fifo
-	struct hrtimer				tx_timer;
+	struct uart_port	port;
+	int			dev_port;    // index of port on mfd 0..3
+	u8                      rx_remain;
+	int                     accept_rx;
+	struct kthread_work	flush_work;
 
-	s32							baud;
-    s64                         one_char_nsec;
+	struct kthread_work	tx_work;
+	u16                     tx_fifo_reg;  // register in mfd modbus map to read internal tx fifo length
+	                                          // 0 if undefined
+	u16                     tx_fifo_len;  // estimates char count in neuron internal tx fifo
+	struct hrtimer		tx_timer;
 
-    spinlock_t                  rx_in_progress_lock;
-    int                         rx_in_progress;
-    u8                          rx_recv_msg[UNIPI_UART_FIFO_SIZE+4+8];
+	s32			baud;
+	s64                     one_char_nsec;
 
-    spinlock_t                  txop_lock;
-    int                         pending_txop;
-    u8                          tx_send_msg[UNIPI_UART_FIFO_SIZE+4+8];
+	spinlock_t              rx_in_progress_lock;
+	int                     rx_in_progress;
+	u8                      rx_recv_msg[UNIPI_UART_FIFO_SIZE+4+8];
+
+	spinlock_t              txop_lock;
+	int                     pending_txop;
+	u8                      tx_send_msg[UNIPI_UART_FIFO_SIZE+4+8];
 };
 
 struct unipi_uart_device
 {
 	struct regmap		*regmap;
-	int					port_count;
+	int			port_count;
 	struct unipi_uart_port	p[0];
 };
 
@@ -156,11 +157,10 @@ void unipi_uart_null_void(struct uart_port *port)
 void unipi_uart_stop_rx(struct uart_port *port)
 {
 	struct unipi_uart_port *n_port = to_unipi_uart_port(port, port);
-    /*unsigned long flags;*/
-
-    /*spin_lock_irqsave(&port->lock, flags);*/
-    n_port->accept_rx = 0;
-    /*spin_unlock_irqrestore(&port->lock, flags);*/
+	/*unsigned long flags;*/
+	/*spin_lock_irqsave(&port->lock, flags);*/
+	n_port->accept_rx = 0;
+	/*spin_unlock_irqrestore(&port->lock, flags);*/
 }
 
 void unipi_uart_config_port(struct uart_port *port, int flags)
@@ -191,10 +191,10 @@ void unipi_uart_pm(struct uart_port *port, u32 state, u32 oldstate)
  
 u32 unipi_spi_uart_get_cflag(struct regmap *map, u8 port)
 {
-    u32 value;
-    regmap_bulk_read(map, port_to_uartregs(port, UNIPI_MFD_REG_UART0_CFLAGS), &value, 2);
+	u32 value;
+	regmap_bulk_read(map, port_to_uartregs(port, UNIPI_MFD_REG_UART0_CFLAGS), &value, 2);
 	unipi_uart_trace_1("Get cflag val:%08x\n", value);
-    return value;
+	return value;
 }
 
 void unipi_uart_set_ldisc(struct uart_port *port, struct ktermios *kterm)
@@ -234,9 +234,9 @@ u32 unipi_uart_get_mctrl(struct uart_port *port)
 	return TIOCM_DSR | TIOCM_CAR;
 }
 
-int	unipi_uart_ioctl(struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg)
+int unipi_uart_ioctl(struct uart_port *port, unsigned int ioctl_code, unsigned long ioctl_arg)
 {
-    u32 value;
+	u32 value;
 	struct unipi_uart_port *n_port = to_unipi_uart_port(port, port);
 	struct unipi_uart_device *n_uart = dev_get_drvdata(port->dev);
 
@@ -246,17 +246,17 @@ int	unipi_uart_ioctl(struct uart_port *port, unsigned int ioctl_code, unsigned l
 		return 1;
 	}
 	case 0x5481: {
-        value = ((ioctl_arg * 1000000) / n_port->baud);
-        if (value > 0xffff) value = 0xffff;
+		value = ((ioctl_arg * 1000000) / n_port->baud);
+		if (value > 0xffff) value = 0xffff;
 		unipi_uart_trace("ttyNS%d Ioctl 0x5481 set timeout=%d\n", port->line, value);
-        regmap_write(n_uart->regmap, port_to_uartregs(n_port->dev_port, UNIPI_MFD_REG_UART0_TIMEOUT), value);
+		regmap_write(n_uart->regmap, port_to_uartregs(n_port->dev_port, UNIPI_MFD_REG_UART0_TIMEOUT), value);
 		return 0;
 	}
 	case 0x5480: {
-        value = (ioctl_arg * 10);
-        if (value > 0xffff) value = 0xffff;
+		value = (ioctl_arg * 10);
+		if (value > 0xffff) value = 0xffff;
 		unipi_uart_trace("ttyNS%d Ioctl 0x5480 set timeout=%d\n", port->line, value);
-        regmap_write(n_uart->regmap, port_to_uartregs(n_port->dev_port, UNIPI_MFD_REG_UART0_TIMEOUT), value);
+		regmap_write(n_uart->regmap, port_to_uartregs(n_port->dev_port, UNIPI_MFD_REG_UART0_TIMEOUT), value);
 		return 0;
 	}
 	default: {
@@ -377,19 +377,18 @@ int static neuronspi_uart_read_tx_fifo_len(struct unipi_uart_port *port)
                              lowlimit * port->one_char_nsec, delta*port->one_char_nsec, \
                              HRTIMER_MODE_REL)
 
-#define MAX_TXLEN	(UNIPI_UART_FIFO_SIZE >> 1)
 
 static void unipi_uart_tx_callback(void *arg, int status)
 {
-    struct unipi_uart_port *n_port = (struct unipi_uart_port*) arg;
-    unsigned long flags;
+	struct unipi_uart_port *n_port = (struct unipi_uart_port*) arg;
+	unsigned long flags;
 
 	if (status > 0) {
 		n_port->tx_fifo_len += status;
 	}
-   	spin_lock_irqsave(&n_port->port.lock, flags);
-    unipi_uart_handle_tx(n_port, CB_WRITESTRING);
-   	spin_unlock_irqrestore(&n_port->port.lock, flags);
+	spin_lock_irqsave(&n_port->port.lock, flags);
+	unipi_uart_handle_tx(n_port, CB_WRITESTRING);
+	spin_unlock_irqrestore(&n_port->port.lock, flags);
 }
 
 
@@ -403,67 +402,67 @@ void unipi_uart_handle_tx(struct unipi_uart_port *port, int calling) /* new asyn
 	struct circ_buf *xmit;
 	int new_tail, ret;
 
-    //port->port.lock taken, This call must not sleep
+	//port->port.lock taken, This call must not sleep
 
 	if (unlikely(port->port.x_char)) {
-        // zatim nevim, co s tim
+		// zatim nevim, co s tim
 		port->port.icount.tx++;
 		port->port.x_char = 0;
 	}
 
- 	xmit = &port->port.state->xmit;
+	xmit = &port->port.state->xmit;
 	//spin_lock_irqsave(&port->port.lock, flags);
 	// Get length of data pending in circular buffer
 	to_send = uart_circ_chars_pending(xmit);
-    unipi_uart_trace("ttyNS%d Handle TX. to_send=%d calling=%d\n", port->port.line, to_send, calling);
+	unipi_uart_trace("ttyNS%d Handle TX. to_send=%d calling=%d\n", port->port.line, to_send, calling);
 	if ((to_send == 0) || uart_tx_stopped(&port->port)) {
 		port->pending_txop = 0;
 		//spin_unlock_irqrestore(&port->port.lock, flags);
-        // check tx_fifo status
-        if (port->tx_fifo_len) {
-            unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, port->tx_fifo_len * port->one_char_nsec);
-            start_tx_timer(port, port->tx_fifo_len, 2);
-        }
+		// check tx_fifo status
+		if (port->tx_fifo_len) {
+			unipi_uart_trace_1("ttyNS%d Handle TX. Start timer=%llu", port->port.line, port->tx_fifo_len * port->one_char_nsec);
+			start_tx_timer(port, port->tx_fifo_len, 2);
+		}
 		return;
 	}
-   
-    // Limit to size of (TX FIFO / 2)
-    to_send_packet = (to_send > MAX_TXLEN) ? MAX_TXLEN : to_send;
-    need = to_send_packet - (UNIPI_UART_FIFO_SIZE - port->tx_fifo_len);
-    if (need > 0) {
-		//spin_unlock_irqrestore(&port->port.lock, flags);
-        if (calling!=CB_GETTXFIFO) {
-            if (unipi_uart_get_tx_fifo(port) == 0) return;
-		}
-        // reschedule work with pause
-		port->pending_txop = 0;
-        start_tx_timer(port, need, UNIPI_UART_FIFO_SIZE/4);
-        return;
-    }
-            
-    // Read data from tty buffer and send it to spi
-    //spin_lock_irqsave(&port->port.lock, flags);
-    port->port.icount.tx += to_send_packet;
-    new_tail = (xmit->tail + to_send_packet) & (UART_XMIT_SIZE - 1);
-    if (new_tail <= xmit->tail) {
-        memcpy(port->tx_send_msg, xmit->buf+xmit->tail, UART_XMIT_SIZE - xmit->tail);
-        memcpy(port->tx_send_msg+UART_XMIT_SIZE - xmit->tail, xmit->buf, new_tail);
-    } else {
-        memcpy(port->tx_send_msg, xmit->buf+xmit->tail, to_send_packet);
-    }
-    xmit->tail = new_tail;
-    //spin_unlock_irqrestore(&port->port.lock, flags);
 
-    unipi_uart_trace("ttyNS%d Handle TX Send: %d %16ph\n", port->port.line, to_send_packet, port->tx_send_msg);
+	// Limit to size of (TX FIFO / 2 ) 
+	to_send_packet = (to_send > unipi_max_write_str_len(channel)) ? unipi_max_write_str_len(channel) : to_send;
+	need = to_send_packet - (UNIPI_UART_FIFO_SIZE - port->tx_fifo_len);
+	if (need > 0) {
+		//spin_unlock_irqrestore(&port->port.lock, flags);
+		if (calling!=CB_GETTXFIFO) {
+			if (unipi_uart_get_tx_fifo(port) == 0) return;
+		}
+		// reschedule work with pause
+		port->pending_txop = 0;
+		start_tx_timer(port, need, UNIPI_UART_FIFO_SIZE/4);
+		return;
+	}
+
+	// Read data from tty buffer and send it to spi
+	//spin_lock_irqsave(&port->port.lock, flags);
+	port->port.icount.tx += to_send_packet;
+	new_tail = (xmit->tail + to_send_packet) & (UART_XMIT_SIZE - 1);
+	if (new_tail <= xmit->tail) {
+		 memcpy(port->tx_send_msg, xmit->buf+xmit->tail, UART_XMIT_SIZE - xmit->tail);
+		 memcpy(port->tx_send_msg+UART_XMIT_SIZE - xmit->tail, xmit->buf, new_tail);
+	} else {
+		memcpy(port->tx_send_msg, xmit->buf+xmit->tail, to_send_packet);
+	}
+	xmit->tail = new_tail;
+	//spin_unlock_irqrestore(&port->port.lock, flags);
+
+	unipi_uart_trace("ttyNS%d Handle TX Send: %d %16ph\n", port->port.line, to_send_packet, port->tx_send_msg);
 	ret = unipi_write_str_async(channel, port->dev_port, port->tx_send_msg, to_send_packet, 
 	                              port, unipi_uart_tx_callback);
 	if (ret != 0) {
 		//ERROR, try later
 		port->pending_txop = 0;
-        start_tx_timer(port, 10, UNIPI_UART_FIFO_SIZE/4);
+		start_tx_timer(port, 10, UNIPI_UART_FIFO_SIZE/4);
 	} else if ((to_send-to_send_packet) < WAKEUP_CHARS) {
-        uart_write_wakeup(&port->port);
-    }
+		uart_write_wakeup(&port->port);
+	}
 }
 
 void unipi_uart_start_tx(struct uart_port *port)
@@ -537,8 +536,8 @@ static void unipi_uart_handle_rx(struct unipi_uart_port *port, int rxlen, u8* pb
 {
 	unsigned long flags;
 	u32 ch, flag, i;
-    
-    unipi_uart_trace("ttyNS%d Insert Chars (%d): %16ph\n", port->port.line, rxlen, pbuf);
+
+	unipi_uart_trace("ttyNS%d Insert Chars (%d): %16ph\n", port->port.line, rxlen, pbuf);
 
 	if (rxlen) {
 		spin_lock_irqsave(&port->port.lock, flags);
@@ -570,6 +569,8 @@ void unipi_uart_rx_callback(void* cb_data, int result)
 	unsigned long flags;
 	int len = result & 0xff;
 	int remain = (result >> 8) & 0xff;
+
+	unipi_uart_trace("ttyNS%d RX cb result=%x len=%d remain=%d\n", n_port->port.line, result, len, remain);
 
 	if (result < 0) {
 		/* try again read str */
@@ -637,7 +638,7 @@ void unipi_uart_flush_buffer(struct uart_port* port)
 
 	unipi_uart_trace("ttyNS%d Flush buffer\n", port->line);
 
-    /* port->lock taken, This call must not sleep
+	/* port->lock taken, This call must not sleep
 		disable accepting received data
 		will be enabled in rx callback when remain=0
 	*/
@@ -667,6 +668,17 @@ void unipi_uart_rx_char_callback(void *self, u8 port, u8 ch, int remain)
 	spin_unlock_irqrestore(&n_port->port.lock, flags);
 }
 
+/* called from unipi_mfd_int_status_callback when interrupt status contains RX flags */
+void unipi_uart_rx_not_empty_callback(void *self, int port)
+{
+	struct unipi_uart_device *n_uart = (struct unipi_uart_device *)self;
+	struct unipi_uart_port *n_port;
+
+	if (port >= n_uart->port_count) return;
+	n_port = &n_uart->p[port];
+	unipi_uart_start_rx_process(n_port);
+}
+
 
 // Initialise the driver - called once on open
 int unipi_uart_startup(struct uart_port *port)
@@ -675,6 +687,7 @@ int unipi_uart_startup(struct uart_port *port)
 	struct device* parent = n_port->port.dev->parent;
 	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(parent);
 	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
+	unipi_uart_trace("ttyNS Startup\n");
 
 	n_port->accept_rx = 0;
 	unipi_mfd_enable_interrupt(iogroup, UNIPI_MFD_INT_RX_NOT_EMPTY | UNIPI_MFD_INT_RX_MODBUS);
@@ -687,8 +700,8 @@ int unipi_uart_startup(struct uart_port *port)
 
 void unipi_uart_shutdown(struct uart_port *port)
 {
-    unipi_uart_trace("ttyNS%d Shutdown\n", port->line);
-    unipi_uart_power(port, 0);
+	unipi_uart_trace("ttyNS%d Shutdown\n", port->line);
+	unipi_uart_power(port, 0);
 }
 
 
@@ -819,6 +832,8 @@ int unipi_uart_probe(struct platform_device *pdev)
 	}
 	channel->rx_self = n_uart;
 	channel->rx_char_callback = unipi_uart_rx_char_callback;
+	iogroup->uart_rx_callback = unipi_uart_rx_not_empty_callback;
+	iogroup->uart_rx_self = n_uart;
 	return 0;
 
 out:
@@ -835,21 +850,24 @@ int unipi_uart_remove(struct platform_device *pdev)
 {
 	struct unipi_uart_device *n_uart = platform_get_drvdata(pdev);
 	struct device* parent = pdev->dev.parent;
-	struct unipi_channel *channel = to_unipi_iogroup_device(parent)->channel;
+	struct unipi_iogroup_device *iogroup = to_unipi_iogroup_device(parent);
+	struct unipi_channel *channel = iogroup->channel;
 	//struct unipi_mfd_device *mfd = dev_get_drvdata(parent);
 	struct unipi_uart_port *port; 
 	int i;
 
 	channel->rx_self = NULL;
 	channel->rx_char_callback = NULL;
+	iogroup->uart_rx_callback = NULL;
+	iogroup->uart_rx_self = NULL;
 
 	for (i = 0; i < n_uart->port_count; i++) {
-        port = n_uart->p + i;
-        hrtimer_cancel(&port->tx_timer);
+		port = n_uart->p + i;
+		hrtimer_cancel(&port->tx_timer);
 		uart_remove_one_port(&unipi_uart_uart_driver, &port->port);
-        //kthread_flush_work(&(port->tx_work));
+		//kthread_flush_work(&(port->tx_work));
 		unipi_uart_power(&port->port, 0);
-        //printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d removed\n", i + n_spi->uart_pindex);
+		//printk(KERN_INFO "UNIPIUART: Serial port ttyNS%d removed\n", i + n_spi->uart_pindex);
 	}
 	return 0;
 }
@@ -873,18 +891,21 @@ struct platform_driver unipi_uart_driver =
 	.remove				= unipi_uart_remove,
 };
 
+static int unipi_tty_initialized = 0;
+
 static int __init unipi_uart_init(void)
 {
-    int ret;
-
+	int ret;
 	bitmap_zero(unipi_uart_lines, UNIPI_UART_MAX_NR);
 	ret = uart_register_driver(&unipi_uart_uart_driver);
-	if (ret) 
-        return ret;
+	if (ret)
+		return ret;
 		
 	ret = platform_driver_register(&unipi_uart_driver);
 	if (ret)
 		uart_unregister_driver(&unipi_uart_uart_driver);
+	else
+		unipi_tty_initialized = unipi_tty_init() == 0;
 	return ret;
 }
 
@@ -892,6 +913,8 @@ static void __exit unipi_uart_exit(void)
 {
 	platform_driver_unregister(&unipi_uart_driver);
 	uart_unregister_driver(&unipi_uart_uart_driver);
+	if (unipi_tty_initialized)
+		unipi_tty_exit();
 }
 
 

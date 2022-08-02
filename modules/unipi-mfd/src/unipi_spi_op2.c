@@ -53,6 +53,7 @@ static int unipi_spi2_zip_reg(enum UNIPI_SPI_OP op, unsigned int reg)
 int unipi_spi2_parse_frame(struct unipi_spi_context* context, struct unipi_spi_devstatus *devstatus, struct unipi_spi_reply *reply)
 {
 	u16 recv_crc;
+	u8* reply_data;
 //	struct unipi_spi_device *n_spi;
 	unsigned int reply_max_count, reg;
 
@@ -66,7 +67,7 @@ int unipi_spi2_parse_frame(struct unipi_spi_context* context, struct unipi_spi_d
 			// probable reply use protocol version 1
 			reply->ret = -ENOEXEC;
 		}
-		return -1;
+		return -EIO;
 	}
 	devstatus->opcode = context->rx_header[0];
 	//if (devstatus->opcode == UNIPI_SPI_OP2_IDLE) devstatus->opcode = UNIPI_SPI_OP_IDLE;
@@ -74,7 +75,7 @@ int unipi_spi2_parse_frame(struct unipi_spi_context* context, struct unipi_spi_d
 
 	reg = context->tx_header[1]; //&0x3f;
 	reply->opcode = context->tx_header[4];
-	reply->data = context->rx_header + ((reply->opcode==UNIPI_SPI_OP_READBIT)? 12 : 8);
+	//reply->data = context->rx_header + ((reply->opcode==UNIPI_SPI_OP_READBIT)? 12 : 8);
 
 	reply_max_count = context->rx_header[7];
 	if (reply_max_count == 0xff)
@@ -85,6 +86,12 @@ int unipi_spi2_parse_frame(struct unipi_spi_context* context, struct unipi_spi_d
 		reply->ret = reply_max_count - reg;
 	else
 		reply->ret = context->len;
+
+	//if (context->operation_callback) {
+	if ((reply->ret > 0) && (context->simple_read) && (context->data)) {
+		reply_data = context->rx_header + ((reply->opcode==UNIPI_SPI_OP_READBIT)? 12 : 8);
+		memmove(context->data, reply_data, context->simple_len);
+	}
 	return 0;
 }
 
@@ -316,7 +323,7 @@ int unipi_spi2_read_str_async(void* self, unsigned int port, u8* data, unsigned 
 	struct spi_device* spi_dev = (struct spi_device*) self;
 	struct unipi_spi_context *context;
 	int fastop;
-	if (count>8) { return -EIO; } 
+//	if (count != 8) { return -EIO; } 
 
 	fastop = UNIPI_SPI_OP2_READSTR;
 
@@ -326,8 +333,8 @@ int unipi_spi2_read_str_async(void* self, unsigned int port, u8* data, unsigned 
 	unipi_spi_crc_set(context->tx_header, UNIPI_SPI2_MESSAGE_LEN, 0);
 
 	context->simple_read = 1;
-	context->simple_len = count;
-	context->len = count;
+	context->simple_len = 8; //count;
+	context->len = 8; //count;
 	context->data = data;
 	unipi_spi_trace_1(spi_dev, "REQ (rdstr %d) %6phC\n", count, context->tx_header);
 	return unipi_spi_exec_context(spi_dev, context, cb_data, cb_function);
@@ -380,4 +387,5 @@ struct unipi_protocol_op spi_op_v2 = {
 	.firmware_sync = unipi_spi_firmware_op,
 	.lock_op = unipi_spi_lock,
 	.unlock_op = unipi_spi_unlock,
+	.max_write_str_len = 10,
 };

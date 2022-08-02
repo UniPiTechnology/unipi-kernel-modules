@@ -301,7 +301,7 @@ static void unipi_spi_op_complete(void *arg)
 	}
 	//unipi_spi_trace_1(spi, "Read (op1) st=%d %16ph\n", context->message.status, context->rx_header);
 	reply.ret = -EIO;
-	reply.data = context->data;
+//	reply.data = context->data;
 
 	if (context->message.status != 0) {
 		// sending unsuccessfull - reason unknown
@@ -337,18 +337,27 @@ static void unipi_spi_op_complete(void *arg)
 				n_spi->stat.errors_opcode1++;
 				break;
 		}
+		if (reply.ret == -ENXIO) {
+			//unipi_spi_error(spi, "Incorrect CRC2: %04x COMPUTED: %04x\n", context->packet_crc, recv_crc);
+			//unipi_spi_error(spi, "  len=%d, tx=%4phC rx=%4phC\n", context->len, context->tx_header,context->rx_header2);
+			n_spi->stat.errors_crc2++;
+		} else if (reply.ret == -EINVAL) {
+			n_spi->stat.errors_opcode1++;
+		}
+/*
 		if (context->operation_callback) {
 			if (reply.ret > 0) {
 				if ((context->simple_read) && (context->data))
 					memmove(context->data, reply.data, context->simple_len);
 //			} else if (context->tx_header[0] == UNIPI_SPI_OP_READSTR) {
-//				/* combine len + remain */
+//				// combine len + remain
 //				ret = ret | (context->rx_header2[3] << 8);
 //			}
 //			} else {
 //				ret = -EIO;
 			}
 		}
+*/
 	}
 	if (context->operation_callback)
 		context->operation_callback(context->operation_callback_data, reply.ret);
@@ -394,21 +403,6 @@ int unipi_spi_exec_context(struct spi_device* spi_dev, struct unipi_spi_context 
 	}
 	return ret;
 }
-
-
-/*  Async op for READREG */
-/*
-int unipi_spi_read_regs_async(struct spi_device* spi_dev, unsigned int reg, unsigned int count, u8* data,
-                              void* cb_data, OperationCallback cb_function)
-{
-	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
-	if (n_spi->hmode) {
-		return unipi_spi2_read_simple(spi_dev, UNIPI_SPI_OP_READREG, reg, count, data, cb_data, cb_function);
-	} else {
-		return unipi_spi1_read_regs_async(spi_dev, reg, count, data, cb_data, cb_function);
-	}
-}
-*/
 
 void unipi_spi_populated(void * self)
 {
@@ -608,13 +602,7 @@ static int __init unipi_spi_init(void)
 {
 	int ret = 0;
 
-//	ret = unipi_modbus_init();
-//	if (ret) return (ret);
-
-	//spin_lock_init(&unipi_spi_master_lock);
-
 	ret = spi_register_driver(&unipi_spi_driver);
-
 	if (ret < 0) {
 		printk(KERN_ERR "%s: Failed to register spi driver --> %d\n", unipi_spi_driver.driver.name, ret);
 		return ret;
