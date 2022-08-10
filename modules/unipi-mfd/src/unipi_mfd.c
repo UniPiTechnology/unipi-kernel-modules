@@ -476,13 +476,23 @@ static void unipi_mfd_remove_plc(struct unipi_iogroup_device *iogroup)
 	}
 }
 
+
+void unipi_mfd_poll_callback(void* cb_data, int result)
+{
+	struct unipi_iogroup_device *iogroup = (struct unipi_iogroup_device *) cb_data;
+	hrtimer_start_range_ns(&iogroup->poll_timer, 2000000, 4000000, HRTIMER_MODE_REL);
+}
+
+
 /* callback of poll_timer - for devices without or disfunctional interrupt */
 static enum hrtimer_restart unipi_mfd_poll_timer_func(struct hrtimer *timer)
 {
 	struct unipi_iogroup_device *iogroup = ((container_of((timer), struct unipi_iogroup_device, poll_timer)));
-	unipi_ping_async(iogroup->channel, NULL, NULL);
+	if (unipi_ping_async(iogroup->channel, iogroup, unipi_mfd_poll_callback) != 0) {
+		// ?? ToDo: return HRTIMER_RESTART;
+	}
 	//unipi_spi_trace((channel->dev), "Pseudo IRQ\n");
-	return HRTIMER_RESTART;
+	return HRTIMER_NORESTART;
 }
 
 
@@ -520,6 +530,7 @@ void unipi_mfd_int_status_callback(void* self, u8 int_status)
 {
 	struct unipi_iogroup_device *iogroup = (struct unipi_iogroup_device *)self;
 	/* int_status & UNIPI_MFD_INT_RX_NOT_EMPTY */
+
 	if (int_status & (UNIPI_MFD_INT_RX_NOT_EMPTY | UNIPI_MFD_INT_RX_MODBUS)) {
 		if (iogroup->uart_rx_callback) {
 			iogroup->uart_rx_callback(iogroup->uart_rx_self, 0);
