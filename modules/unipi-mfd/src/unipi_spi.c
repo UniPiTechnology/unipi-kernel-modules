@@ -422,7 +422,7 @@ int unipi_spi_probe(struct spi_device *spi)
 
 	//unsigned long flags;
 
-	n_spi = kzalloc(sizeof *n_spi, GFP_ATOMIC);
+	n_spi = kzalloc(sizeof *n_spi, GFP_KERNEL);
 	if (!n_spi)
 		return -ENOMEM;
 
