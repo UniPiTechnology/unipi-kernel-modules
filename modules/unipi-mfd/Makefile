@@ -52,6 +52,7 @@ obj-m += unipi_iio_legacy.o
 obj-m += unipi_uart.o
 obj-m += unipi_mfd.o
 obj-m += unipi_modbus.o
+obj-m += unipi_dali.o
 
 UNIPI_KERNEL_MODULES = $(obj-m:.o=.ko)
 
@@ -66,6 +67,7 @@ unipi_iio_legacy-objs := src/unipi_iio_legacy.o
 unipi_uart-objs := src/unipi_uart.o src/unipi_tty.o
 unipi_mfd-objs := src/unipi_mfd.o
 unipi_modbus-objs := src/unipi_modbus.o
+unipi_dali-objs := src/unipi_dali.o
 
 KBUILD_EXTRA_SYMBOLS = $(KBUILD_EXTMOD)/../unipi-id/Module.symvers
 
