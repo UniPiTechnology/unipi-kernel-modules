@@ -107,7 +107,7 @@ struct unipi_spi_context *unipi_spi2_alloc_context(struct spi_device* spi_dev, e
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
 
 	trans_count = 1;
-	context = kzalloc(sizeof(struct unipi_spi_context) + trans_count * sizeof(struct spi_transfer), GFP_ATOMIC);
+	context = kzalloc(sizeof(struct unipi_spi_context) + trans_count * sizeof(struct spi_transfer), GFP_NOWAIT);
 	if (! context) {
 		return NULL;
 	}
@@ -255,7 +255,7 @@ int unipi_spi2_read_regs_async(void* self, unsigned int reg, unsigned int count,
 //	if (count <= 4) 
 //		return unipi_spi2_read_simple(spi_dev, UNIPI_SPI_OP_READREG, reg, count, data, cb_data, cb_function);
 
-	cb_multi = kzalloc(sizeof(struct cb_multi), GFP_ATOMIC);
+	cb_multi = kzalloc(sizeof(struct cb_multi), GFP_NOWAIT);
 	if (cb_multi == NULL) return -ENOMEM;
 	cb_multi->spi_dev = spi_dev;
 	cb_multi->cb_data = cb_data;
@@ -279,7 +279,7 @@ int unipi_spi2_write_regs_async(void* self, unsigned int reg, unsigned int count
 	//if (count <= 4)
 	//	return unipi_spi2_write_simple(spi_dev, UNIPI_SPI_OP_WRITEREG, reg, count, data, cb_data, cb_function);
 
-	cb_multi = kzalloc(sizeof(struct cb_multi), GFP_ATOMIC);
+	cb_multi = kzalloc(sizeof(struct cb_multi), GFP_NOWAIT);
 	if (cb_multi == NULL) return -ENOMEM;
 	cb_multi->spi_dev = spi_dev;
 	cb_multi->cb_data = cb_data;
