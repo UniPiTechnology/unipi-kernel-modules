@@ -64,8 +64,9 @@
 #define UNIPI_MFD_INT_TX_FINISHED  			0x2
 #define UNIPI_MFD_INT_RX_MODBUS    			0x4
 #define UNIPI_MFD_INT_DI_CHANGED   			0x8
-#define UNIPI_MFD_INT_ID_MASK      			0x0f
-#define UNIPI_MFD_INT_NO_INT_BIT   			0x0f
+#define UNIPI_MFD_INT_DALI_RX      			0x10
+#define UNIPI_MFD_INT_ID_MASK      			0x1f
+#define UNIPI_MFD_INT_NO_INT_BIT   			0x1f
 
 /*
 static char* unipi_mfd_firmware_names[] = {
