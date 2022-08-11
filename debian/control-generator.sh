@@ -91,7 +91,6 @@ case "${PRODUCT}" in
             BINARY_PKG_NAME=unipi-kernel-modules
             PKG_KERNEL_HEADERS=unipi-kernel-headers
             PKG_KERNEL_IMAGE=unipi-kernel
-            USE_MFD="USE_MFD=1"
         fi
         ;;
     iris )
@@ -190,9 +189,9 @@ override_dh_auto_install:
 
 override_dh_auto_build:
 		for LDP in ${LINUX_DIR_PATH}; do \
-			make ${USE_MFD} clean || exit 1;\
-			dh_auto_build -- LINUX_DIR_PATH=\$\${LDP} ${USE_MFD} || exit 1;\
-			dh_auto_install --destdir=debian/tempdest -- LINUX_DIR_PATH=\$\${LDP} ${USE_MFD} || exit 1;\
+			make clean || exit 1;\
+			dh_auto_build -- LINUX_DIR_PATH=\$\${LDP} || exit 1;\
+			dh_auto_install --destdir=debian/tempdest -- LINUX_DIR_PATH=\$\${LDP} || exit 1;\
 		done
 EOF
 

@@ -5,8 +5,8 @@ include:
 variables:
     package_name: "unipi-kernel-modules"
     build_for_product: "all"
-    build_for_distribution: "all"
-    build_independent_for: "stable+oldstable newstable"
+    build_for_distribution: "newstable"
+    build_independent_for: "newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
     # iris and patron are symlinked from zulu builed via repo patch table in before script
