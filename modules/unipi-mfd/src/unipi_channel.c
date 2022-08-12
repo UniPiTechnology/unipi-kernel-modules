@@ -174,15 +174,16 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 				iogroup = of_register_iogroup_device(channel, nc);
 				dev_warn(dev, "iogroup register = %d\n", IS_ERR(iogroup));
 				if (IS_ERR(iogroup)) {
-					of_node_clear_flag(nc, OF_POPULATED);
 				//} else if (device_is_bound(&iogroup->dev)) {
 				} else {
+					msleep(20);
 					ret = device_attach(&iogroup->dev);
 					dev_warn(dev, "iogroup attach = %d\n", ret);
 					if (ret==1)
 						return 0;
 				}
 				iogroup_unregister_device(iogroup);
+				of_node_clear_flag(nc, OF_POPULATED);
 			}
 		}
 	}
