@@ -174,7 +174,8 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 				iogroup = of_register_iogroup_device(channel, nc);
 				if (IS_ERR(iogroup)) {
 					of_node_clear_flag(nc, OF_POPULATED);
-				} else if (device_is_bound(&iogroup->dev)) {
+				//} else if (device_is_bound(&iogroup->dev)) {
+				} else if (iogroup->dev.driver == NULL) {
 					return 0;
 				}
 				iogroup_unregister_device(iogroup);
