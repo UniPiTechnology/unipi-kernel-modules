@@ -170,21 +170,21 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 	// nc = of_get_compatible_child(dev->of_node, "iogroup");
 	for_each_child_of_node(dev->of_node, nc) {
 		if (of_device_is_compatible(nc, "iogroup")) {
-			if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
+			//if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
 				iogroup = of_register_iogroup_device(channel, nc);
 				dev_warn(dev, "iogroup register = %d\n", IS_ERR(iogroup));
 				if (IS_ERR(iogroup)) {
 				//} else if (device_is_bound(&iogroup->dev)) {
 				} else {
-					msleep(20);
+					msleep(500);
 					ret = device_attach(&iogroup->dev);
 					dev_warn(dev, "iogroup attach = %d\n", ret);
 					if (ret==1)
 						return 0;
 				}
 				iogroup_unregister_device(iogroup);
-				of_node_clear_flag(nc, OF_POPULATED);
-			}
+				//of_node_clear_flag(nc, OF_POPULATED);
+			//}
 		}
 	}
 	/* fallback to empty iogroup */
