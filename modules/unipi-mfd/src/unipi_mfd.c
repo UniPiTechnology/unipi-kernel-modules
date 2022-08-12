@@ -681,7 +681,8 @@ struct unipi_iogroup_driver unipi_mfd_driver =
 	.driver =
 	{
 		.name			= "unipi-mfd",
-		.of_match_table	= of_match_ptr(unipi_mfd_id_match)
+		.of_match_table	= of_match_ptr(unipi_mfd_id_match),
+		.probe_type     = PROBE_FORCE_SYNCHRONOUS
 	},
 	.probe				= unipi_mfd_probe,
 	.remove				= unipi_mfd_remove,
