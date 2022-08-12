@@ -167,18 +167,22 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 	}
 
 	/* ToDo: find the best iogroup definition based on firmware */
-	nc = of_get_compatible_child(dev->of_node, "iogroup");
-	if (nc) {
-		if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
-			iogroup = of_register_iogroup_device(channel, nc);
-			if (IS_ERR(iogroup)) {
-				of_node_clear_flag(nc, OF_POPULATED);
+	// nc = of_get_compatible_child(dev->of_node, "iogroup");
+	for_each_child_of_node(dev->of_node, nc) {
+		if (of_device_is_compatible(nc, "iogroup")) {
+			if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
+				iogroup = of_register_iogroup_device(channel, nc);
+				if (IS_ERR(iogroup)) {
+					of_node_clear_flag(nc, OF_POPULATED);
+				} else {
+					return 0;
+				}
 			}
 		}
-	} else {
-		iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
-		if (IS_ERR(iogroup)) {
-		}
+	}
+	/* fallback to empty iogroup */
+	iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
+	if (IS_ERR(iogroup)) {
 	}
 	return 0;
 }
