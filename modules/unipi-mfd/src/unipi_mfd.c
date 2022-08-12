@@ -594,6 +594,7 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 
 	if (of_node_get(dev->of_node)) {
 		allowed_count = of_property_read_variable_u32_array(dev->of_node, "fw_variant", allowed_fw_variants, 1, MAX_ALLOWED_FW);
+		dev_info(dev, "YY %x\n", allowed_fw_variants[0]);
 		core_np = of_find_node_by_name(dev->of_node, "core");
 		if (core_np) {
 			if ((allowed_count <= 0) && (of_property_read_u32(core_np, "fw_variant", allowed_fw_variants) == 0)) 
