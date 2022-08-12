@@ -137,7 +137,7 @@ int unipi_ping_sync(struct unipi_channel* channel)
 
 int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 {
-	//int ret = 0;
+	int ret = 0;
 	struct unipi_iogroup_device *iogroup;
 	struct device_node *nc;
 	unsigned int modbus_address = 0;
@@ -172,11 +172,14 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 		if (of_device_is_compatible(nc, "iogroup")) {
 			if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
 				iogroup = of_register_iogroup_device(channel, nc);
+				dev_warn(dev, "iogroup register = %d\n", IS_ERR(iogroup));
 				if (IS_ERR(iogroup)) {
 					of_node_clear_flag(nc, OF_POPULATED);
 				//} else if (device_is_bound(&iogroup->dev)) {
 				} else {
-					if (device_attach(&iogroup->dev) == 1)
+					ret = device_attach(&iogroup->dev);
+					dev_warn(dev, "iogroup attach = %d\n", ret);
+					if (ret==1)
 						return 0;
 				}
 				iogroup_unregister_device(iogroup);

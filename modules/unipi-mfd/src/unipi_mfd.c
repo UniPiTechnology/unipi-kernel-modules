@@ -590,6 +590,7 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		return ret;
 	board_id = id_registers[4];
 	fw_variant = id_registers[3];
+	dev_info(dev, "XX %04x\n", fw_variant);
 
 	if (of_node_get(dev->of_node)) {
 		allowed_count = of_property_read_variable_u32_array(dev->of_node, "fw_variant", allowed_fw_variants, 1, MAX_ALLOWED_FW);
