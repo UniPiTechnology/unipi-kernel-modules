@@ -128,6 +128,7 @@ struct unipi_iogroup_device *
 struct unipi_iogroup_device *
        register_iogroup_device(struct unipi_channel *channel, int reg, const char* modalias);
 void iogroup_unregister_by_channel(struct unipi_channel *channel);
+void iogroup_unregister_device(struct unipi_iogroup_device *iogroup);
 
 
 #endif
