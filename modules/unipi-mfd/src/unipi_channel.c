@@ -176,7 +176,6 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 				if (IS_ERR(iogroup)) {
 				//} else if (device_is_bound(&iogroup->dev)) {
 				} else {
-					msleep(500);
 					ret = device_attach(&iogroup->dev);
 					dev_warn(dev, "iogroup attach = %d\n", ret);
 					if (ret==1)
