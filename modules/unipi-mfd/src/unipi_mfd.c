@@ -421,7 +421,7 @@ static struct attribute *unipi_mfd_device_attrs[] = {
 
 
 static const struct attribute_group unipi_mfd_group_def = {
-	.name  = "core",
+//	.name  = "core",
 	.attrs  = unipi_mfd_device_attrs,
 };
 
