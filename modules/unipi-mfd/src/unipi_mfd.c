@@ -71,7 +71,7 @@ ssize_t unipi_mfd_show_variant(struct device *dev,
 	int val, ret;
 	ret = regmap_read(channel->registers, ea->reg, &val);
 	if (ret<0) return ret;
-	return sysfs_emit(buf, "%d-%d%s\n", hi(val), minor(val), is_cal(val)?" CAL":"");
+	return sysfs_emit(buf, "0x%02x-%d%s\n", hi(val), minor(val), is_cal(val)?" CAL":"");
 }
 
 ssize_t unipi_mfd_store_ulong(struct device *dev,
@@ -231,15 +231,12 @@ ssize_t unipi_mfd_show_regbool(struct device *dev, struct device_attribute *attr
 
 static int unipi_mfd_of_get_regnum(struct device *dev, char* attrname)
 {
-	struct device_node *np = dev->of_node;
-	struct device_node *core_np;
+	struct device_node *np = to_unipi_iogroup_device(dev)->variant_node;
 	int ret, regaddr;
 
 	if (!of_node_get(np)) return -EINVAL;
-	core_np = of_find_node_by_name(np, "core");
-	if (!core_np) return -EINVAL;
-	ret = of_property_read_u32(core_np, attrname, &regaddr);
-	of_node_put(core_np);
+	ret = of_property_read_u32(np, attrname, &regaddr);
+	of_node_put(np);
 	if (ret < 0) return ret;
 	if (regaddr > 3000) return -EINVAL;
 	return regaddr;
@@ -293,33 +290,45 @@ ssize_t unipi_mfd_show_cycle(struct device *dev, struct device_attribute *attr,
 
 static ssize_t sys_board_name_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct device_node *core_np;
+	struct device_node *np = to_unipi_iogroup_device(dev)->variant_node;
 	const char *sys_board_name;
 	struct dev_mfd_of_attribute *ea = to_mfd_of_attr(attr);
 	int ret = 0;
 
-	if (of_node_get(dev->of_node)) {
-		core_np = of_find_node_by_name(dev->of_node, "core");
-		if (core_np) {
-			sys_board_name = of_get_property(core_np, ea->ofname, NULL);
-			of_node_put(core_np);
-			if (sys_board_name) {
-				ret = scnprintf(buf, 255, "%s\n", sys_board_name);
-			}
+	if (of_node_get(np)) {
+		sys_board_name = of_get_property(np, ea->ofname, NULL);
+		of_node_put(np);
+		if (sys_board_name) {
+			ret = scnprintf(buf, 255, "%s\n", sys_board_name);
 		}
-		// of_node_put(dev->of_node); !! must not be here - is done in of_find 
 	}
 	return ret;
 }
 
+static ssize_t firmware_name_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct device_node *np = to_unipi_iogroup_device(dev)->variant_node;
+	const char *firmware_name = NULL;
+	int ret = 0;
+	int index = to_unipi_iogroup_device(dev)->variant_index;
+	if (index < 1)
+		return 0;
+
+	if (of_node_get(np)) {
+		of_property_read_string_index(np, "fw_name", index-1, &firmware_name);
+		of_node_put(np);
+		if (firmware_name) {
+			ret = scnprintf(buf, 255, "%s\n", firmware_name);
+		}
+	}
+	return ret;
+}
+
+DEVICE_ATTR_RO(firmware_name);
 
 static struct dev_mfd_of_attribute dev_attr_sys_board_name = {
 	__ATTR(sys_board_name, 0444, sys_board_name_show, NULL),
 	"sys_board_name"
-};
-static struct dev_mfd_of_attribute dev_attr_firmware_name = {
-	__ATTR(firmware_name, 0444, sys_board_name_show, NULL),
-	"fw_name"
 };
 
 static struct dev_mfd_attribute dev_attr_was_watchdog = {
@@ -404,7 +413,7 @@ static struct attribute *unipi_mfd_device_attrs[] = {
 	&dev_attr_interrupt_mask.attr.attr,
 	&dev_attr_master_watchdog_timeout.attr.attr,
 	&dev_attr_sysled_mode.attr.attr,
-	&dev_attr_firmware_name.attr.attr,
+	&dev_attr_firmware_name.attr,
 	&dev_attr_cycle_counter.attr.attr,
 	&dev_attr_master_watchdog_enable.attr.attr,
 	NULL
@@ -566,6 +575,21 @@ void unipi_mfd_int_status_callback(void* self, u8 int_status)
 */
 
 #define MAX_ALLOWED_FW 32
+int unipi_mfd_find_variant(struct device *dev, struct device_node *node, u16 fw_variant)
+{
+	u32 allowed_fw_variants[MAX_ALLOWED_FW];
+	int i;
+	int allowed_count = -1;
+
+	allowed_count = of_property_read_variable_u32_array(node, "fw_variant", allowed_fw_variants, 1, MAX_ALLOWED_FW);
+	/* skip lowest nibble of fwvariant in compare */
+	for (i=0; i< allowed_count; i++) {
+		if ((allowed_fw_variants[i] >> 4) == (fw_variant >> 4)) {
+			return i+1;
+		}
+	}
+	return 0;
+}
 
 int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 {
@@ -573,15 +597,13 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 	//struct device_node *np = dev->of_node;
 	int ret = 0;
 
-	struct device_node *core_np;
+	struct device_node *child;
 	u16 id_registers[5];
 	const char *name1 = NULL;
 	const char *name2 = NULL;
 	const char *sys_board_name = NULL;
-	u32 allowed_fw_variants[MAX_ALLOWED_FW];
 	u16 fw_variant;
-	int allowed_count = -1;
-	int i, found = 0;
+	int found = 0;
 	int board_id;
 
 	/* read identification registers */
@@ -590,35 +612,23 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		return ret;
 	board_id = id_registers[4];
 	fw_variant = id_registers[3];
-	dev_info(dev, "XX %04x\n", fw_variant);
 
-	if (of_node_get(dev->of_node)) {
-		allowed_count = of_property_read_variable_u32_array(dev->of_node, "fw_variant", allowed_fw_variants, 1, MAX_ALLOWED_FW);
-		dev_info(dev, "YY %x\n", allowed_fw_variants[0]);
-		core_np = of_find_node_by_name(dev->of_node, "core");
-		if (core_np) {
-			if ((allowed_count <= 0) && (of_property_read_u32(core_np, "fw_variant", allowed_fw_variants) == 0)) 
-				allowed_count = 1;
-			name1 = of_get_property(core_np, dev_attr_firmware_name.ofname, NULL);
-			name2 = of_get_property(core_np, "board_name", NULL);
-			sys_board_name = of_get_property(core_np, dev_attr_sys_board_name.ofname, NULL);
-			of_node_put(core_np);
+	found = unipi_mfd_find_variant(dev, dev->of_node, fw_variant);
+	if (!found) {
+		for_each_child_of_node(dev->of_node, child) {
+			found = unipi_mfd_find_variant(dev, child, fw_variant);
+			if (found) break;
 		}
-		// of_node_put(dev->of_node); !! must not be here - is done in of_find 
-		/* check device tree mismatch */
-		/* skip lowest nibble of fwvariant in compare */
-		if (allowed_count>0) {
-			i = 0;
-			while ((allowed_fw_variants[i] >> 4) != (fw_variant >> 4)) {
-				i++;
-				if (i == allowed_count) {
-					return -ENODEV;
-				}
-			}
-		}
-		found = 1;
+	} else {
+		child = dev->of_node;
 	}
-
+	if (found && of_node_get(child)) {
+		//name1 = of_get_property(core_np, dev_attr_firmware_name.ofname, NULL);
+		of_property_read_string_index(child, "fw_name", found-1, &name1);
+		name2 = of_get_property(child, "board_name", NULL);
+		sys_board_name = of_get_property(child, dev_attr_sys_board_name.ofname, NULL);
+		of_node_put(child);
+	}
 	name1 = (name1 && found)? name1: "";
 	name2 = (name2 && found)? name2: name1;
 	dev_info(dev, "Found board %s (id=0x%x-%d).\n\t\t\tFirmware variant %s (0x%x-%d%s) version=%d.%d\n",
@@ -631,11 +641,14 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		return 0;
 	}
 	ret = devm_device_add_group(dev, &unipi_mfd_group_def);
+	iogroup->variant_index = found;
 	if (!found) {
 		dev_warn(dev, "Device found doesn't comply with provided device tree. Not fully operational.\n");
 	} else {
-		devm_of_platform_populate(dev);
-		unipi_populated(iogroup->channel);
+		iogroup->variant_node = child;
+		if (of_platform_populate(child, NULL, NULL, dev)==0) {
+			unipi_populated(iogroup->channel);
+		}
 		ret = 0;
 	}
 	/* Fixup for Mervis old licensing process */
@@ -660,6 +673,13 @@ int unipi_mfd_remove(struct unipi_iogroup_device *iogroup)
 		hrtimer_try_to_cancel(&iogroup->poll_timer);
 	}
 	unipi_mfd_remove_plc(iogroup);
+
+	/* depopulate platform devices (of_platform_depopulate) */
+	if (iogroup->variant_node && of_node_check_flag(iogroup->variant_node, OF_POPULATED_BUS)) {
+		device_for_each_child_reverse(&iogroup->dev, NULL, of_platform_device_destroy);
+		of_node_clear_flag(iogroup->variant_node, OF_POPULATED_BUS);
+	}
+
 	return 0;
 }
 
@@ -682,8 +702,7 @@ struct unipi_iogroup_driver unipi_mfd_driver =
 	.driver =
 	{
 		.name			= "unipi-mfd",
-		.of_match_table	= of_match_ptr(unipi_mfd_id_match),
-		.probe_type     = PROBE_FORCE_SYNCHRONOUS
+		.of_match_table	= of_match_ptr(unipi_mfd_id_match)
 	},
 	.probe				= unipi_mfd_probe,
 	.remove				= unipi_mfd_remove,
