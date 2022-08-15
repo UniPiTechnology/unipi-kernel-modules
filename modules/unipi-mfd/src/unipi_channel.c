@@ -137,7 +137,6 @@ int unipi_ping_sync(struct unipi_channel* channel)
 
 int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 {
-	//int ret = 0;
 	struct unipi_iogroup_device *iogroup;
 	struct device_node *nc;
 	unsigned int modbus_address = 0;
@@ -171,15 +170,19 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 	if (nc) {
 		if (!of_node_test_and_set_flag(nc, OF_POPULATED)) {
 			iogroup = of_register_iogroup_device(channel, nc);
-			if (IS_ERR(iogroup)) {
-				of_node_clear_flag(nc, OF_POPULATED);
+			if (!IS_ERR(iogroup)) {
+				return 0;
 			}
+			of_node_clear_flag(nc, OF_POPULATED);
 		}
-	} else {
-		iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
-		if (IS_ERR(iogroup)) {
-		}
+		of_node_put(nc);
 	}
+	/* fallback to empty iogroup */
+	/*
+	iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
+	if (IS_ERR(iogroup)) {
+	}
+	*/
 	return 0;
 }
 
