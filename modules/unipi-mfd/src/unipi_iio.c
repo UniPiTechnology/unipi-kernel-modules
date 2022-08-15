@@ -78,6 +78,14 @@ static const struct iio_chan_spec unipi_iio_ai_chan_ui32[] = {
 	}
 };
 
+static const struct iio_chan_spec unipi_iio_r18_chan[] = {
+	{
+			.type = IIO_RESISTANCE,
+			.channel = 0,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+	}
+};
+
 static const struct iio_chan_spec unipi_iio_ai_chan_resistance[] = {
 	{
 			.type = IIO_RESISTANCE,
@@ -217,6 +225,15 @@ int unipi_iio_map_mode_ui(struct iio_dev *indio_dev)
 	return -1;
 }
 
+int unipi_iio_map_mode_r18(struct iio_dev *indio_dev)
+{
+	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
+	switch(n_iio->mode) {
+		case 0: return IIO_RESISTANCE;
+	}
+	return -1;
+}
+
 int unipi_iio_map_mode_resistance(struct iio_dev *indio_dev)
 {
 	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
@@ -294,8 +311,8 @@ int unipi_iio_ai_read_raw_u32(struct iio_dev *indio_dev, struct iio_chan_spec co
 				return  IIO_VAL_FRACTIONAL_LOG2;
 
 			case IIO_RESISTANCE: 
-				*val = 10000; *val2 = 18;
-				return  IIO_VAL_FRACTIONAL_LOG2;
+				*val = 1; *val2 = 1000;
+				return  IIO_VAL_FRACTIONAL;
 		}
 	}
 	return -EINVAL;
@@ -380,6 +397,10 @@ static const struct iio_info unipi_iio_ai_info = {
 static const struct iio_info unipi_iio_ai_info32 = {
 	.read_raw = unipi_iio_ai_read_raw_u32,
 	.attrs = &unipi_iio_ai_group,
+};
+
+static const struct iio_info unipi_iio_r18_info = {
+	.read_raw = unipi_iio_ai_read_raw_u32,
 };
 
 static const struct iio_info unipi_iio_ao_info = {
@@ -514,6 +535,15 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_ui18 =
   .fname = "AI%d.%d",
 };
 
+static const struct unipi_iio_descriptor unipi_iio_descriptor_r18 =
+{ .num_channels = 1,
+  .valsize = 2,
+  .channels = unipi_iio_r18_chan,
+  .info = &unipi_iio_r18_info,
+  .map_mode = unipi_iio_map_mode_r18,
+  .fname = "AI%d.%d",
+};
+
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ao =
 { .num_channels = 1,
   .valsize = 1,
@@ -538,6 +568,7 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_resistance =
 static const struct of_device_id of_unipi_iio_match[] = {
 	{ .compatible = "unipi,ai", .data = &unipi_iio_descriptor_univ},
 	{ .compatible = "unipi,ai18", .data = &unipi_iio_descriptor_ui18},
+	{ .compatible = "unipi,air18", .data = &unipi_iio_descriptor_r18},
 	{ .compatible = "unipi,ao", .data = &unipi_iio_descriptor_ao},
 /*	{ .compatible = "unipi,aio_type_b", .data = &unipi_gpio_data_di }, */
 	{},
