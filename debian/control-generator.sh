@@ -143,7 +143,7 @@ if [ "${DEBIAN_VERSION}" == "stretch" -o "${DEBIAN_VERSION}" == "buster" ]; then
     depends="unipi-firmware (>=5.50)"
 else
     unset pre_depends
-    depends="unipi-os-configurator-data"
+    depends="unipi-os-configurator-data(>=0.7.test.20220815)"
     #suggests="unipi-firmware"
     unset suggests
 fi

@@ -39,15 +39,17 @@ struct unipi_iogroup_device;
  * information about how this particular board wires the chip's pins.
  */
 struct unipi_iogroup_device {
-	struct device		dev;
+	struct device         dev;
 	struct unipi_channel *channel;
-	u8					address;
-	int					irq;
-	struct hrtimer		poll_timer;
-	int					poll_enabled;
-	char			modalias[SPI_NAME_SIZE];
-	void			*uart_rx_self;
-	void			(*uart_rx_callback)(void*, int port);
+	u8                    address;
+	int                   irq;
+	int                   variant_index;
+	struct device_node   *variant_node;
+	struct hrtimer        poll_timer;
+	int                   poll_enabled;
+	char                  modalias[SPI_NAME_SIZE];
+	void                 *uart_rx_self;
+	void                (*uart_rx_callback)(void*, int port);
 	/* the statistics */
 	//struct spi_statistics	statistics;
 };
