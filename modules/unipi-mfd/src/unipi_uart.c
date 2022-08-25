@@ -45,7 +45,6 @@
  * Data Definitions *
  ********************/
 
-#define PORT_UNIPI			184
 #define UNIPI_UART_MAX_NR	16
 #define UNIPI_UART_FIFO_SIZE	256
 

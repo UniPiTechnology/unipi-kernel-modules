@@ -31,6 +31,7 @@
 #include <linux/version.h>
 
 #include "unipi_tty.h"
+#include "unipi_uart.h"
 
 #if UNIPI_TTY_DETAILED_DEBUG > 0
 # define unipi_tty_trace(f, args...)	printk(f, ##args)
@@ -52,6 +53,7 @@ static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned ch
 
 static int (*alias_n_tty_ioctl)(struct tty_struct *tty, struct file *file,
                unsigned int cmd, unsigned long arg);
+static int (*alias_n_tty_open)(struct tty_struct *tty);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
@@ -107,6 +109,30 @@ static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
 	return  alias_n_tty_ioctl(tty, file, cmd, arg);
 }
 
+static int unipi_is_port_unipi(struct tty_struct *tty)
+{
+    struct uart_state *state = tty->driver_data;
+    struct uart_port *uport;
+
+    uport = state->uart_port;
+    return (uport->type == PORT_UNIPI);
+}
+
+/**
+ *	unipi_tty_open		-	open an ldisc
+ *	@tty: terminal to open
+ *
+ *	Return error if tty is nor UNIPI port 
+ */
+
+static int unipi_tty_open(struct tty_struct *tty)
+{
+	if (! unipi_is_port_unipi(tty)) {
+		return -ENOMEM;
+	}
+	return alias_n_tty_open(tty);
+}
+
 
 struct tty_ldisc_ops unipi_tty_ldisc;
 
@@ -128,10 +154,12 @@ int unipi_tty_init(void)
 	alias_n_tty_receive_buf = unipi_tty_ldisc.receive_buf;
 	alias_n_tty_receive_buf2 = unipi_tty_ldisc.receive_buf2;
 	alias_n_tty_ioctl = unipi_tty_ldisc.ioctl;
+	alias_n_tty_open = unipi_tty_ldisc.open;
 
 	unipi_tty_ldisc.receive_buf     = unipi_tty_receive_buf;
 	unipi_tty_ldisc.receive_buf2	= unipi_tty_receive_buf2;
 	unipi_tty_ldisc.ioctl	        = unipi_tty_ioctl;
+	unipi_tty_ldisc.open	        = unipi_tty_open;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 	err = tty_register_ldisc(&unipi_tty_ldisc);
