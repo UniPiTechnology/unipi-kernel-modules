@@ -86,6 +86,7 @@ void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 {
 	u32 vref_int = 0;
 	u32 vref_inp = 0;
+    u64 d1, d2;
 	int err1=0, err2=0, offs1=0, offs2=0;
 
 	regmap_read(n_iio->map, UNIPI_MFD_REG_VREFINT, &vref_int);
@@ -99,10 +100,26 @@ void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 	vref_int = vref_inp ? : 12208;
 
 	/* ToDo: use do_div */
+#if 0
 	n_iio->kvolt = (((u64)9900 << 2)*vref_int*(10000+err1))/10000/vref_inp;
 	n_iio->fvolt = ((u64)offs1 << 14) / 10;
 	n_iio->kamp = (((u64)33000 << 1)*vref_int*(10000+err2))/10000/vref_inp;
 	n_iio->famp = ((u64)offs2 << 13) / 10;
+#else
+	d1 = (((u64)9900 << 2)*vref_int*(10000+err1));
+    d2 = 10000*vref_inp;
+	n_iio->kvolt = do_div(d1,d2);
+
+	d1 = ((u64)offs1 << 14);
+	n_iio->fvolt = do_div(d1, 10);
+
+	d1 = (((u64)33000 << 1)*vref_int*(10000+err2));
+	d2 = 10000*vref_inp;
+	n_iio->kamp = do_div(d1, d2);
+
+	d1 = ((u64)offs2 << 13);
+	n_iio->famp = do_div(d1m 10);
+#endif
 }
 
 void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
