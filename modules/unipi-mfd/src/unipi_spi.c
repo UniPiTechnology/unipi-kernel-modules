@@ -419,6 +419,11 @@ int unipi_spi_probe(struct spi_device *spi)
 	int alive = 0;
 	int ret, i;   //, degraded=0; //, no_irq = 0;
 	u32 probe_always_succeeds = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,13,0)
+	struct spi_delay  inactive_delay =  { .value = 1, .unit = 1} ;
+	struct spi_delay  setup_delay =  { .value = 1, .unit = 10} ;
+	struct spi_delay  hold_delay =  { .value = 1, .unit = 10} ;
+#endif
 
 	//unsigned long flags;
 
@@ -434,10 +439,7 @@ int unipi_spi_probe(struct spi_device *spi)
 	spi->max_speed_hz	= spi->max_speed_hz ? spi->max_speed_hz : 12000000;
 	spi->rt = 1;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,13,0)
-	struct spi_delay  inactive_delay =  { .value = 1, .unit = 1} ;
-	struct spi_delay  setup_delay =  { .value = 1, .unit = 10} ;
-	struct spi_delay  hold_delay =  { .value = 1, .unit = 10} ;
-	spi_set_cs_timing(spi, &setu_delay, &hold_delay, &inactive_delay);
+	spi_set_cs_timing(spi, &setup_delay, &hold_delay, &inactive_delay);
 #else
     spi->cs_inactive.value = 1;
     spi->cs_inactive.unit  = SPI_DELAY_UNIT_USECS;
