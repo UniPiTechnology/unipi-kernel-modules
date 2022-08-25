@@ -38,17 +38,28 @@
 # define unipi_tty_trace(f, args...)
 #endif
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
 			      const char *fp, int count);
 static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
 			      const char *fp, int count);
+#else
+static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count);
+static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count);
+#endif
 
 static int (*alias_n_tty_ioctl)(struct tty_struct *tty, struct file *file,
                unsigned int cmd, unsigned long arg);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
                                   const char *fp, int count)
+#else
+static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count)
+#endif
 {
 	int is_parmrk = I_PARMRK(tty);
 	if (is_parmrk)
@@ -59,8 +70,13 @@ static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *c
 		tty->termios.c_iflag = tty->termios.c_iflag | (PARMRK);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
                                   const char *fp, int count)
+#else
+static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
+			      char *fp, int count)
+#endif
 {
 	int ret;
 	int is_parmrk = I_PARMRK(tty);
