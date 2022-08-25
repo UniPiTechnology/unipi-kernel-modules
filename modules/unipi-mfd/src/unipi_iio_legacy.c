@@ -122,10 +122,18 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 	vref_int = vref_inp ? : 12208;
 
 	/* ToDo: use do_div */
+//#if ARM64
+#if 0
 	n_iio->kvolt = (((u64)vref_inp << 16) * 4095*10000) / vref_int / (9900 * (10000+err1));
 	n_iio->fvolt = (((u64)vref_inp << 16) * 4095 * offs1) / vref_int / 99000;
 	n_iio->kamp = (((u64)vref_inp << 16) * 4095*10000) / vref_int / (33000 * (10000+err1));
 	n_iio->famp = (((u64)vref_inp << 16) * 4095 * offs1) / vref_int / 33000;
+#else
+	n_iio->kvolt = do_div((((u64)vref_inp << 16) * 4095*10000), (vref_int * (9900 * (10000+err1))));
+	n_iio->fvolt = do_div(((u64)vref_inp << 16) * 4095 * offs1), (vref_int * 99000));
+	n_iio->kamp = do_div((((u64)vref_inp << 16) * 4095*10000), vref_int * (33000 * (10000+err1)));
+	n_iio->famp = do_div(((u64)vref_inp << 16) * 4095 * offs1), vref_int * 33000);
+#endif
 }
 
 /*void unipi_iio_stm_ai_read_voltage(struct iio_dev *iio_dev, struct iio_chan_spec const *ch, int *val, int *val2, long mask)
