@@ -109,6 +109,7 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 {
 	u32 vref_int = 0;
 	u32 vref_inp = 0;
+    u64 d1, d2;
 	int err1=0, err2=0, offs1=0, offs2=0;
 
 	regmap_read(n_iio->map, UNIPI_MFD_REG_VREFINT, &vref_int);
@@ -129,10 +130,18 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 	n_iio->kamp = (((u64)vref_inp << 16) * 4095*10000) / vref_int / (33000 * (10000+err1));
 	n_iio->famp = (((u64)vref_inp << 16) * 4095 * offs1) / vref_int / 33000;
 #else
-	n_iio->kvolt = do_div((((u64)vref_inp << 16) * 4095*10000), (vref_int * (9900 * (10000+err1))));
-	n_iio->fvolt = do_div(((u64)vref_inp << 16) * 4095 * offs1), (vref_int * 99000));
-	n_iio->kamp = do_div((((u64)vref_inp << 16) * 4095*10000), vref_int * (33000 * (10000+err1)));
-	n_iio->famp = do_div(((u64)vref_inp << 16) * 4095 * offs1), vref_int * 33000);
+	d1 = (((u64)vref_inp << 16) * 4095*10000);
+	d2 = vref_int * (9900 * (10000+err1));
+	n_iio->kvolt = do_div(d1, d2);
+	d1 = ((u64)vref_inp << 16) * 4095 * offs1);
+	d2 = (vref_int * 99000);
+	n_iio->fvolt = do_div(d1, d2);
+	d1 = (((u64)vref_inp << 16) * 4095*10000);
+    d2 = vref_int * (33000 * (10000+err1));
+	n_iio->kamp = do_div(d1, d2);
+	d1 = (u64)vref_inp << 16) * 4095 * offs1);
+	d2 = vref_int * 33000;
+	n_iio->famp = do_div(d1, d2);
 #endif
 }
 
