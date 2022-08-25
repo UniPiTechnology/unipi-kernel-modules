@@ -5,8 +5,8 @@ include:
 variables:
     package_name: "unipi-kernel-modules"
     build_for_product: "all"
-    #build_for_product: "zulu g1"
-    build_for_distribution: "newstable"
+    build_for_product: "zulu g1"
+    #build_for_distribution: "newstable"
     #build_independent_for: "newstable"
     mirror_to_github: "yes"
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
