@@ -432,8 +432,13 @@ int unipi_spi_probe(struct spi_device *spi)
 	spi->bits_per_word	= 8;
 	spi->mode		    = spi->mode ? spi->mode : SPI_MODE_0;
 	spi->max_speed_hz	= spi->max_speed_hz ? spi->max_speed_hz : 12000000;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
 	spi->rt = 1;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,13,0)
+	struct spi_delay  inactive_delay =  { .value = 1, .unit = 1} ;
+	struct spi_delay  setup_delay =  { .value = 1, .unit = 10} ;
+	struct spi_delay  hold_delay =  { .value = 1, .unit = 10} ;
+	spi_set_cs_timing(spi, &setu_delay, &hold_delay, &inactive_delay);
+#else
     spi->cs_inactive.value = 1;
     spi->cs_inactive.unit  = SPI_DELAY_UNIT_USECS;
     spi->cs_setup.value = 10;
@@ -441,6 +446,7 @@ int unipi_spi_probe(struct spi_device *spi)
     spi->cs_hold.value = 10;
     spi->cs_hold.unit  = SPI_DELAY_UNIT_NSECS;
 #endif
+
 	ret = spi_setup(spi);
 	if (ret) {
         kfree(n_spi);
