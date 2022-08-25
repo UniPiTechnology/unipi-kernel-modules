@@ -118,7 +118,7 @@ void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 	n_iio->kamp = do_div(d1, d2);
 
 	d1 = ((u64)offs2 << 13);
-	n_iio->famp = do_div(d1m 10);
+	n_iio->famp = do_div(d1, 10);
 #endif
 }
 
