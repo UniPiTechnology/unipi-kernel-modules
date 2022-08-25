@@ -133,13 +133,13 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 	d1 = (((u64)vref_inp << 16) * 4095*10000);
 	d2 = vref_int * (9900 * (10000+err1));
 	n_iio->kvolt = do_div(d1, d2);
-	d1 = ((u64)vref_inp << 16) * 4095 * offs1);
+	d1 = ((u64)vref_inp << 16) * 4095 * offs1;
 	d2 = (vref_int * 99000);
 	n_iio->fvolt = do_div(d1, d2);
 	d1 = (((u64)vref_inp << 16) * 4095*10000);
-    d2 = vref_int * (33000 * (10000+err1));
+	d2 = vref_int * (33000 * (10000+err1));
 	n_iio->kamp = do_div(d1, d2);
-	d1 = (u64)vref_inp << 16) * 4095 * offs1);
+	d1 = ((u64)vref_inp << 16) * 4095 * offs1;
 	d2 = vref_int * 33000;
 	n_iio->famp = do_div(d1, d2);
 #endif
