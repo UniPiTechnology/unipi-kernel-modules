@@ -114,7 +114,10 @@ static int unipi_is_port_unipi(struct tty_struct *tty)
     struct uart_state *state = tty->driver_data;
     struct uart_port *uport;
 
+	if (! state) return 0;
     uport = state->uart_port;
+	if (! uport) return 0;
+	//printk("LDISC type=%d\n", uport->type);
     return (uport->type == PORT_UNIPI);
 }
 
