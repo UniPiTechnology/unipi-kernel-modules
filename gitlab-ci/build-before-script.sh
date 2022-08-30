@@ -21,6 +21,16 @@ if [ "$PRODUCT" == "axon" ]; then
 
 elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ] || [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ]; then
     apt-get install -y raspberrypi-kernel-headers
+    # modify repo-patch-table
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+bullseye-neuron64-main    bullseye-neuron-main
+bullseye-neuron64-test    bullseye-neuron-test
+bullseye-unipi1x64-main    bullseye-unipi1-main
+bullseye-unipi1x64-test    bullseye-unipi1-test
+EOF
+
+
 
 elif [ "$PRODUCT" == "g1" ]; then
     if [ "$DEBIAN_VERSION" = "buster" ]; then
