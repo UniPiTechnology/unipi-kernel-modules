@@ -30,7 +30,8 @@ bullseye-unipi1x64-main    bullseye-unipi1-main
 bullseye-unipi1x64-test    bullseye-unipi1-test
 EOF
 
-
+elif [ "$PRODUCT" == "neuron64u" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
+    apt install -y unipi-kernel-headers
 
 elif [ "$PRODUCT" == "g1" ]; then
     if [ "$DEBIAN_VERSION" = "buster" ]; then
