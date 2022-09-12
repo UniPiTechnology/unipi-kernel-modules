@@ -23,18 +23,28 @@ C_SRC_FILES += src/unipi_regmap.c
 C_SRC_FILES += src/unipi_channel.c
 
 C_SRC_FILES1 += src/unipi_iogroup_bus.c
-C_SRC_FILES2 += src/unipi_modbus.c
+C_SRC_FILES1 += src/unipi_modbus.c
+C_SRC_FILES1 += src/unipi_dali.c
+C_SRC_FILES1 += src/unipi_gpio.c
+C_SRC_FILES1 += src/unipi_iio.c
+C_SRC_FILES1 += src/unipi_iio_legacy.c
+C_SRC_FILES1 += src/unipi_leds.c
+C_SRC_FILES1 += src/unipi_mfd.c
+C_SRC_FILES1 += src/unipi_tty.c
+C_SRC_FILES1 += src/unipi_uart.c
 
 #C_SRC_FILES1 += src/unipi_plc.c
 #C_SRC_FILES3 += src/unipi_leds.c
 
 H_SRC_FILES = src/unipi_spi.h
-H_SRC_FILES = src/unipi_spi_crc.h
+H_SRC_FILES += src/unipi_spi_crc.h
 H_SRC_FILES += src/unipi_common.h
-H_SRC_FILES += src/unipi_eprom.h
+H_SRC_FILES += src/unipi_iogroup_bus.h
 H_SRC_FILES += src/unipi_channel.h
 H_SRC_FILES += src/unipi_modbus.h
-#H_SRC_FILES += src/unipi_id.h
+H_SRC_FILES += src/unipi_mfd.h
+H_SRC_FILES += src/unipi_tty.h
+H_SRC_FILES += src/unipi_uart.h
 
 OBJ_FILES  = $(C_SRC_FILES:.c=.o)
 
@@ -42,11 +52,8 @@ OBJ_FILES  = $(C_SRC_FILES:.c=.o)
 #KERNEL_MODULE_NAME = unipi
 obj-m += unipi.o
 obj-m += unipi_iogroup_bus.o
-#obj-m += unipi_plc.o
-#obj-m += unipi_mfd.o
 obj-m += unipi_leds.o
 obj-m += unipi_gpio.o
-#obj-m += unipi_unipispi.o
 obj-m += unipi_iio.o
 obj-m += unipi_iio_legacy.o
 obj-m += unipi_uart.o
@@ -58,8 +65,6 @@ UNIPI_KERNEL_MODULES = $(obj-m:.o=.ko)
 
 unipi-objs := ${OBJ_FILES}
 unipi_iogroup_bus-objs := src/unipi_iogroup_bus.o
-#unipi_plc-objs := src/unipi_plc.o
-#unipi_unipispi-objs := src/unipi_unipispi.o
 unipi_leds-objs := src/unipi_leds.o
 unipi_gpio-objs := src/unipi_gpio.o
 unipi_iio-objs := src/unipi_iio.o
@@ -82,7 +87,7 @@ modules_install:
 
 dkms:
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
-	$(INSTALL) -D $(C_SRC_FILES) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
+	$(INSTALL) -D $(C_SRC_FILES) $(C_SRC_FILES1) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
 
 clean: 
 	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
