@@ -12,3 +12,8 @@ variables:
     github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
     # iris and patron are symlinked from zulu builed via repo patch table in before script
     disable_for: "newstable-axon newstable-patron newstable-iris"
+
+generate-config:
+    before_script:
+        - cp build-pipeline-generator.sh /ci-scripts/build-pipeline-generator.sh
+        - chmod +x /ci-scripts/build-pipeline-generator.sh
