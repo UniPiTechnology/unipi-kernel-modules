@@ -25,6 +25,16 @@ dkms:
 	for m in ${MODULES_LIST}; do\
 		cd ${MODULES_DIR_PATH}$$m; $(MAKE) dkms INSTALL_MOD_PATH=${DESTDIR}/$$m || exit 1;\
 		done
+	i=0; for m in ${MODULES_LIST}; do\
+		for module in `cat ${MODULES_DIR_PATH}$$m/dkms.list`; do\
+			echo "BUILT_MODULE_NAME[$${i}]=$${module}";\
+			echo "BUILT_MODULE_LOCATION[$${i}]=$${m%/}";\
+			echo "DEST_MODULE_LOCATION[$${i}]=/extra";\
+			echo "";\
+			i=$$((i+1));\
+			done;\
+		done > dkms.conf
+	@cat dkms.conf
 
 clean:
 	for m in ${MODULES_LIST}; do\

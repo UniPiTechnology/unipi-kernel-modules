@@ -36,6 +36,8 @@ override_dh_prep:
 override_dh_dkms:
 	dh_dkms -V ${PROJECT_VERSION}
 	make dkms DESTDIR=${PWD}/debian/unipi-kernel-modules-dkms/usr/src/unipi-${PROJECT_VERSION}
+	sed '/# insert modules here #/r dkms.conf' \
+	    -i ${PWD}/debian/unipi-kernel-modules-dkms/usr/src/unipi-${PROJECT_VERSION}/dkms.conf
 
 override_dh_auto_build:
 
@@ -65,6 +67,11 @@ case "${PRODUCT}" in
         BINARY_PKG_NAME=unipi-kernel-modules
         PKG_KERNEL_IMAGE=raspberrypi-kernel
         PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+        ;;
+    neuron64u | neuronu | unipi1u | unipi1x64u)
+        BINARY_PKG_NAME=unipi-kernel-modules
+        PKG_KERNEL_HEADERS=unipi-kernel-headers
+        PKG_KERNEL_IMAGE=unipi-kernel
         ;;
     axon )
         BINARY_PKG_NAME=unipi-kernel-modules
@@ -127,8 +134,13 @@ fi
 #####################################################################
 ### Create changelog for binary packages with modified version string
 
+if [ "$PRODUCT" == "neuron64u" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
+    MODULES_VERSION=${PROJECT_VERSION}~${PKG_KERNEL_VER_STRIPPED}
+else
+    MODULES_VERSION=${PROJECT_VERSION}.${PKG_KERNEL_VER_STRIPPED}
+fi
 cat  >debian/${BINARY_PKG_NAME}.changelog <<EOF
-unipi-kernel-modules (${PROJECT_VERSION}.${PKG_KERNEL_VER_STRIPPED}) unstable; urgency=medium
+unipi-kernel-modules (${MODULES_VERSION}) unstable; urgency=medium
   * Compiled for ${PKG_KERNEL_IMAGE}
  -- auto-generator <info@unipi.technology>  $(date -R)
 
