@@ -32,13 +32,15 @@ EOF
 
 elif [ "$PRODUCT" == "neuron64u" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
     apt install -y unipi-kernel-headers
-    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+    if  [ "$DEBIAN_VERSION" = "bullseye" ]; then
+        cat >/ci-scripts/repo_patch_table.txt <<EOF
 
 bullseye-neuron64u-main    bullseye-neuron-main bullseye-unipi1-main
 bullseye-neuron64u-test    bullseye-neuron-test bullseye-unipi1-test
 bullseye-neuronu-main      bullseye-neuron-main bullseye-unipi1-main
 bullseye-neuronu-test      bullseye-neuron-test bullseye-unipi1-test
 EOF
+    fi
 
 elif [ "$PRODUCT" == "g1" ]; then
     if [ "$DEBIAN_VERSION" = "buster" ]; then
