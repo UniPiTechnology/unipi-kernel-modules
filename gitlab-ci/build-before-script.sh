@@ -66,8 +66,3 @@ if [ -n "$PLATFORM" ]; then
     unset VERSION_SUFFIX
 fi
 
-if [ "$DEBIAN_VERSION" = "buster" ]; then
-  cat debian/unipi-kernel-modules-dkms.dkms.buster > debian/unipi-kernel-modules-dkms.dkms
-else
-  cat debian/unipi-kernel-modules-dkms.dkms.bullseye > debian/unipi-kernel-modules-dkms.dkms
-fi

@@ -36,6 +36,7 @@ override_dh_prep:
 override_dh_dkms:
 	dh_dkms -V ${PROJECT_VERSION}
 	make dkms DESTDIR=${PWD}/debian/unipi-kernel-modules-dkms/usr/src/unipi-${PROJECT_VERSION}
+	sed '/# insert modules here #/r dkms.conf' debian/unipi-kernel-modules-dkms.dkms.in > debian/unipi-kernel-modules-dkms.dkms
 
 override_dh_auto_build:
 
