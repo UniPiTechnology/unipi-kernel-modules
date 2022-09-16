@@ -25,6 +25,9 @@ dkms:
 	for m in ${MODULES_LIST}; do\
 		cd ${MODULES_DIR_PATH}$$m; $(MAKE) dkms INSTALL_MOD_PATH=${DESTDIR}/$$m || exit 1;\
 		done
+	for m in ${MODULES_LIST}; do\
+		cat ${MODULES_DIR_PATH}$$m/dkms.list;\
+		done
 
 clean:
 	for m in ${MODULES_LIST}; do\

@@ -24,14 +24,21 @@ elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ] || [ "$PRODUCT" 
     # modify repo-patch-table
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-bullseye-neuron64-main    bullseye-neuron-main
-bullseye-neuron64-test    bullseye-neuron-test
-bullseye-unipi1x64-main    bullseye-unipi1-main
-bullseye-unipi1x64-test    bullseye-unipi1-test
+bullseye-neuron64-main    bullseye-neuron-main bullseye-unipi1-main
+bullseye-neuron64-test    bullseye-neuron-test bullseye-unipi1-test
+bullseye-neuron-main      bullseye-neuron-main bullseye-unipi1-main
+bullseye-neuron-test      bullseye-neuron-test bullseye-unipi1-test
 EOF
 
 elif [ "$PRODUCT" == "neuron64u" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
     apt install -y unipi-kernel-headers
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+bullseye-neuron64u-main    bullseye-neuron-main bullseye-unipi1-main
+bullseye-neuron64u-test    bullseye-neuron-test bullseye-unipi1-test
+bullseye-neuronu-main      bullseye-neuron-main bullseye-unipi1-main
+bullseye-neuronu-test      bullseye-neuron-test bullseye-unipi1-test
+EOF
 
 elif [ "$PRODUCT" == "g1" ]; then
     if [ "$DEBIAN_VERSION" = "buster" ]; then
