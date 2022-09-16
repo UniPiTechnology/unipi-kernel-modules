@@ -652,7 +652,7 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		ret = 0;
 	}
 	/* Fixup for Mervis old licensing process */
-	if ((iogroup->address < 1) && (sys_board_name)) {
+	if ((iogroup->address == 1) && (sys_board_name)) {
 		unipi_mfd_link_plc(iogroup);
 	}
 
