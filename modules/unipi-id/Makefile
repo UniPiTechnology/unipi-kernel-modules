@@ -40,6 +40,7 @@ modules_install:
 	$(MAKE) $(CCPAR) -C $(LINUX_DIR_PATH) M=${PWD} modules_install
 
 dkms:
+	@echo $(obj-m:.o=) > dkms.list
 	$(INSTALL) -D $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
 	$(INSTALL) -D $(C_SRC_FILES) $(H_SRC_FILES) -t $(INSTALL_MOD_PATH)/src
 	$(INSTALL) -D $(H_EXTRA_FILES) -t $(INSTALL_MOD_PATH)/src

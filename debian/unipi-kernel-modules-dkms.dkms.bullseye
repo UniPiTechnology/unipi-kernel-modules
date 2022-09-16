@@ -4,21 +4,58 @@ PACKAGE_VERSION="MODULE_VERSION#"
 BUILT_MODULE_NAME[0]="unipi"
 BUILT_MODULE_LOCATION[0]="unipi-mfd"
 DEST_MODULE_LOCATION[0]="/extra"
-BUILT_MODULE_NAME[1]="rtc-unipi"
-BUILT_MODULE_LOCATION[1]="rtc-unipi"
+
+BUILT_MODULE_NAME[1]="unipi_dali"
+BUILT_MODULE_LOCATION[1]="unipi-mfd"
 DEST_MODULE_LOCATION[1]="/extra"
-BUILT_MODULE_NAME[2]="unipi_rfkill"
-BUILT_MODULE_LOCATION[2]="unipi-rfkill"
+
+BUILT_MODULE_NAME[2]="unipi_gpio"
+BUILT_MODULE_LOCATION[2]="unipi-mfd"
 DEST_MODULE_LOCATION[2]="/extra"
-BUILT_MODULE_NAME[3]="unipi_id"
-BUILT_MODULE_LOCATION[3]="unipi-id"
+
+BUILT_MODULE_NAME[3]="unipi_iio"
+BUILT_MODULE_LOCATION[3]="unipi-mfd"
 DEST_MODULE_LOCATION[3]="/extra"
+
+BUILT_MODULE_NAME[4]="unipi_iio_legacy"
+BUILT_MODULE_LOCATION[4]="unipi-mfd"
+DEST_MODULE_LOCATION[4]="/extra"
+
+BUILT_MODULE_NAME[5]="unipi_iogroup_bus"
+BUILT_MODULE_LOCATION[5]="unipi-mfd"
+DEST_MODULE_LOCATION[5]="/extra"
+
+BUILT_MODULE_NAME[6]="unipi_leds"
+BUILT_MODULE_LOCATION[6]="unipi-mfd"
+DEST_MODULE_LOCATION[6]="/extra"
+
+BUILT_MODULE_NAME[7]="unipi_mfd"
+BUILT_MODULE_LOCATION[7]="unipi-mfd"
+DEST_MODULE_LOCATION[7]="/extra"
+
+BUILT_MODULE_NAME[8]="unipi_modbus"
+BUILT_MODULE_LOCATION[8]="unipi-mfd"
+DEST_MODULE_LOCATION[8]="/extra"
+
+BUILT_MODULE_NAME[9]="unipi_uart"
+BUILT_MODULE_LOCATION[9]="unipi-mfd"
+DEST_MODULE_LOCATION[9]="/extra"
+
+BUILT_MODULE_NAME[10]="unipi_rfkill"
+BUILT_MODULE_LOCATION[10]="unipi-rfkill"
+DEST_MODULE_LOCATION[10]="/extra"
+BUILT_MODULE_NAME[11]="unipi_id"
+BUILT_MODULE_LOCATION[11]="unipi-id"
+DEST_MODULE_LOCATION[11]="/extra"
+BUILT_MODULE_NAME[12]="rtc-unipi"
+BUILT_MODULE_LOCATION[12]="rtc-unipi"
+DEST_MODULE_LOCATION[12]="/extra"
 
 AUTOINSTALL=yes
 REMAKE_INITRD=yes
 
-MAKE[0]="make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-mfd modules;\
+MAKE[0]="make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-id modules;\
 	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/rtc-unipi modules;\
 	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-rfkill modules;\
-	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-id modules"
+	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-mfd modules"
 CLEAN="make -C ${dkms_tree}/unipi/${module_version} clean; rm -rf ${dkms_tree}/unipi/${module_version}/build/{Module.*,modules.order,OBJ.*}"
