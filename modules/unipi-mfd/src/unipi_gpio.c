@@ -186,6 +186,22 @@ static ssize_t di_counter_show(struct kobject *kobj, struct kobj_attribute *attr
 	return sprintf(buf, "%d\n", val);
 }
 
+static ssize_t di_counter_store(struct kobject *kobj, struct kobj_attribute *attr,
+			 const char *buf, size_t count)
+{
+	struct unipi_gpio_sysfs_kobj *gpio_kobj = to_unipi_gpio_sysfs_obj(kobj);
+	struct unipi_gpiochip_device *unipi_gpiochip = gpio_kobj->gpio_dev;
+	unsigned int val, reg;
+	int ret;
+
+	reg = unipi_gpiochip->counter_reg + 2*gpio_kobj->index;
+	ret = kstrtoint(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+    regmap_bulk_write(unipi_gpiochip->map, reg, &val, 2);
+	return count;
+}
+
 static ssize_t di_value_show(struct kobject *kobj, struct kobj_attribute *attr,
 			char *buf)
 {
@@ -326,7 +342,7 @@ static ssize_t ds_inv_store(struct kobject *kobj, struct kobj_attribute *attr,
 }
 
 static struct kobj_attribute gpio_attr_di_debounce = __ATTR(debounce, 0664, di_debounce_show, di_debounce_store);
-static struct kobj_attribute gpio_attr_di_counter = __ATTR(counter, 0444, di_counter_show, NULL);
+static struct kobj_attribute gpio_attr_di_counter = __ATTR(counter, 0664, di_counter_show, di_counter_store);
 static struct kobj_attribute gpio_attr_di_value = __ATTR(value, 0444, di_value_show, NULL);
 static struct kobj_attribute gpio_attr_do_value = __ATTR(value, 0664, do_value_show, do_value_store);
 static struct kobj_attribute gpio_attr_ds_enable = __ATTR(ds-enable, 0664, ds_enable_show, ds_enable_store);
