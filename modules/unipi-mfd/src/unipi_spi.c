@@ -472,6 +472,8 @@ int unipi_spi_probe(struct spi_device *spi)
 	unipi_spi_trace(spi, "Max Hz controller=%d device=%d\n", spi->master->max_speed_hz, spi->max_speed_hz);
 	if (spi->dev.of_node) {
 		of_property_read_u32(spi->dev.of_node, "probe-always-succeeds", &(probe_always_succeeds));
+	} else {
+		probe_always_succeeds = 1;
 	}
 
 	n_spi->channel.proto_self = spi;
