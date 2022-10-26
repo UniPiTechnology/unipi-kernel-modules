@@ -147,6 +147,10 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 			dev_warn(dev, "DT property modbus-address value (%d) invalid.\n",modbus_address);
 			modbus_address = 0;
 		}
+	} else {
+		for (modbus_address=254; modbus_address>0; modbus_address--) {
+			if (unipi_modbus_dev_by_address(modbus_address) != NULL) break;
+		}
 	}
 	/* create MODBUS character device channel */
 	if (modbus_address) {
@@ -176,13 +180,12 @@ int unipi_channel_init(struct unipi_channel * channel, struct device *dev)
 			of_node_clear_flag(nc, OF_POPULATED);
 		}
 		of_node_put(nc);
+	} else if (!dev->of_node) {
+		/* fallback to empty iogroup */
+		iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
+		if (IS_ERR(iogroup)) {
+		}
 	}
-	/* fallback to empty iogroup */
-	/*
-	iogroup = register_iogroup_device(channel, modbus_address, "unipi-mfd");
-	if (IS_ERR(iogroup)) {
-	}
-	*/
 	return 0;
 }
 
