@@ -64,6 +64,7 @@ static const struct unipi_id_family_data unipi_id_family_ids[] = {
 	{ UNIEE_PLATFORM_FAMILY_G1XX,   "Gate"   },
 	{ UNIEE_PLATFORM_FAMILY_NEURON, "Neuron" },
 	{ UNIEE_PLATFORM_FAMILY_AXON,   "Axon"   },
+	{ UNIEE_PLATFORM_FAMILY_CM40,   "Cm40" },
 	{ UNIEE_PLATFORM_FAMILY_PATRON, "Patron" },
 	{ UNIEE_PLATFORM_FAMILY_IRIS,   "Iris", {0x50,0x51,0x52,0x53,0x54,0x55,0x56},
 	                                        {0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e},
