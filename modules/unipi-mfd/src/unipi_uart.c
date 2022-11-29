@@ -22,7 +22,7 @@
 #include "unipi_mfd.h"
 #include "unipi_tty.h"
 
-#define UNIPI_UART_DETAILED_DEBUG 2
+#define UNIPI_UART_DETAILED_DEBUG 0
 #if UNIPI_UART_DETAILED_DEBUG > 2
 # define unipi_uart_trace_2(f, args...)	printk(KERN_INFO "UNIPIUART: " f, ##args)
 #else
