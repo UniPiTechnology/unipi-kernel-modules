@@ -307,7 +307,7 @@ static ssize_t platform_id_show(struct device *dev, struct device_attribute *att
 DEVICE_ATTR_RO(platform_id);
 
 
-static ssize_t motherboard_id_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mainboard_id_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_2_t *bank2;
@@ -316,9 +316,9 @@ static ssize_t motherboard_id_show(struct device *dev, struct device_attribute *
 	bank2 = &unipi_id->descriptor.board_info;
 	return scnprintf(buf, 255, "%04x", bank2->board_model);
 }
-DEVICE_ATTR_RO(motherboard_id);
+DEVICE_ATTR_RO(mainboard_id);
 
-static ssize_t motherboard_description_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mainboard_description_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_2_t *bank2;
@@ -346,7 +346,7 @@ static ssize_t motherboard_description_show(struct device *dev, struct device_at
 	nvmem_device_put(nvmem);
 	return ret;
 }
-DEVICE_ATTR_RO(motherboard_description);
+DEVICE_ATTR_RO(mainboard_description);
 
 static ssize_t fingerprint_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -396,8 +396,8 @@ static struct attribute *unipi_id_attrs[] = {
 		&dev_attr_product_serial.attr,
 		&dev_attr_platform_family.attr,
 		&dev_attr_platform_id.attr,
-		&dev_attr_motherboard_description.attr,
-		&dev_attr_motherboard_id.attr,
+		&dev_attr_mainboard_description.attr,
+		&dev_attr_mainboard_id.attr,
 		&dev_attr_fingerprint.attr,
 		&dev_attr_refresh.attr,
 		&dev_attr_api_version.attr,
