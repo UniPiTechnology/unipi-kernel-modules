@@ -180,7 +180,7 @@ Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}), ${depends}
 Suggests: ${suggests}
 Provides: ${provides}
 Replaces: ${breaks}
-Breaks: ${breaks}
+Breaks: unipi-os-configurator(<= 0.36) ${breaks}
 Description: UniPi kernel modules
  Binary kernel modules for UniPi Neuron/Axon/Patron/Iris controller.
  Compiled for ${PKG_KERNEL_IMAGE} version ${PKG_KERNEL_VER}.
