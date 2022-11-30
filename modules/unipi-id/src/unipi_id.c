@@ -69,8 +69,8 @@ static const struct unipi_id_family_data unipi_id_family_ids[] = {
 	{ UNIEE_PLATFORM_FAMILY_IRIS,   "Iris", {0x50,0x51,0x52,0x53,0x54,0x55,0x56},
 	                                        {0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e},
 	                                        iris_iogroups},
-	{ UNIEE_PLATFORM_FAMILY_OEM,   "OEM",   {0x50,0x51},
-	                                        {0x48,0x49},
+	{ UNIEE_PLATFORM_FAMILY_OEM,   "OEM",   {0x50,0x51,0x52,0x53},
+	                                        {0x48,0x49,0x4a,0x4b},
 	                                        oem_iogroups},
 /*	{ UNIEE_PLATFORM_ID_IRISx1,     "Iris", {0x50,0x51},
 	                                        {0x48,0x49},
@@ -264,7 +264,7 @@ static ssize_t product_description_show(struct device *dev, struct device_attrib
 	bank3 = &unipi_id->descriptor.product_info;
 
 	return scnprintf(buf, 2048,
-				"Product string:  %.6s\n"
+				"Product model:   %.6s\n"
 				"Product version: %u.%u\n"
 				"Product serial:  %08u\n"
 				"SKU:             %u\n"
@@ -307,7 +307,7 @@ static ssize_t platform_id_show(struct device *dev, struct device_attribute *att
 DEVICE_ATTR_RO(platform_id);
 
 
-static ssize_t baseboard_id_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mainboard_id_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_2_t *bank2;
@@ -316,9 +316,9 @@ static ssize_t baseboard_id_show(struct device *dev, struct device_attribute *at
 	bank2 = &unipi_id->descriptor.board_info;
 	return scnprintf(buf, 255, "%04x", bank2->board_model);
 }
-DEVICE_ATTR_RO(baseboard_id);
+DEVICE_ATTR_RO(mainboard_id);
 
-static ssize_t baseboard_description_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mainboard_description_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct unipi_id_data *unipi_id = dev_get_platdata(dev);
 	uniee_bank_2_t *bank2;
@@ -334,11 +334,11 @@ static ssize_t baseboard_description_show(struct device *dev, struct device_attr
 	nvname = (IS_ERR(nvmem)) ? "" : nvmem_dev_name(nvmem);
 
 	ret = scnprintf(buf, 2048,
-				"Modul string:  Baseboard\n"
-				"Modul version: %u.%u\n"
-				"Modul serial:  %08u\n"
-				"Modul ID:      0x%04X\n"
-				"Nvmem:         %s\n",
+				"Model:   Mainboard\n"
+				"Version: %u.%u\n"
+				"Serial:  %08u\n"
+				"ID:      0x%04X\n"
+				"Nvmem:   /sys/bus/nvmem/devices/%s/nvmem\n",
 				bank2->board_version.major, bank2->board_version.minor,
 				bank2->board_serial,
 				bank2->board_model,
@@ -346,7 +346,7 @@ static ssize_t baseboard_description_show(struct device *dev, struct device_attr
 	nvmem_device_put(nvmem);
 	return ret;
 }
-DEVICE_ATTR_RO(baseboard_description);
+DEVICE_ATTR_RO(mainboard_description);
 
 static ssize_t fingerprint_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -383,16 +383,24 @@ static ssize_t refresh_store(struct device *dev, struct device_attribute *attr, 
 }
 DEVICE_ATTR_WO(refresh);
 
+static ssize_t api_version_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, 255, "1");
+}
+
+DEVICE_ATTR_RO(api_version);
+
 static struct attribute *unipi_id_attrs[] = {
 		&dev_attr_product_description.attr,
 		&dev_attr_product_model.attr,
 		&dev_attr_product_serial.attr,
 		&dev_attr_platform_family.attr,
 		&dev_attr_platform_id.attr,
-		&dev_attr_baseboard_description.attr,
-		&dev_attr_baseboard_id.attr,
+		&dev_attr_mainboard_description.attr,
+		&dev_attr_mainboard_id.attr,
 		&dev_attr_fingerprint.attr,
 		&dev_attr_refresh.attr,
+		&dev_attr_api_version.attr,
 		NULL,
 };
 
@@ -441,18 +449,16 @@ static ssize_t module_description_show(struct device *dev, struct device_attribu
 	nvname = (IS_ERR(nvmem)) ? "" : nvmem_dev_name(nvmem);
 
 	ret = scnprintf(buf, 2048,
-				"Modul string:  %.6s\n"
-				"Modul version: %u.%u\n"
-				"Modul serial:  %08u\n"
-				"Modul ID:      0x%04X\n"
-				"SKU:           %u\n"
-				"Nvmem:         %s\n"
-				"Slot:          %s\n",
+				"Model:   %.6s\n"
+				"Version: %u.%u\n"
+				"Serial:  %08u\n"
+				"ID:      0x%04X\n"
+				"Nvmem:   /sys/bus/nvmem/devices/%s/nvmem\n"
+				"Slot:    %s\n",
 				descriptor->product_info.model_str,
 				descriptor->board_info.board_version.major, descriptor->board_info.board_version.minor,
 				descriptor->board_info.board_serial,
 				descriptor->board_info.board_model,
-				descriptor->product_info.sku,
 				nvname,
 				unipi_id->family_data->iogroup[unipi_id->active_slot[ea->module_index]]);
 	nvmem_device_put(nvmem);
@@ -461,8 +467,8 @@ static ssize_t module_description_show(struct device *dev, struct device_attribu
 
 
 
-const char module_id_name[] = "module_id.";
-const char module_description_name[] = "module_description.";
+const char module_id_name[] = "card_id.";
+const char module_description_name[] = "card_description.";
 
 int unipi_id_add_modules(struct device *dev, struct unipi_id_data *unipi_id)
 {
