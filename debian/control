@@ -14,6 +14,7 @@ Depends: ${misc:Depends}, dkms, ${unipi:Depends}
 Suggests: ${unipi:Suggests}
 Replaces: neuron-kernel, unipi-kernel-modules
 Conflicts: neuron-kernel, unipi-kernel-modules
+Breaks: unipi-os-configurator (<= 0.36)
 Description: UniPi Neuron/Axon kernel modules - DKMS source
  This package contains source code of kernel module for spi protocol 
  used by internal boards in the UniPi Neuron/Axon controllers.

@@ -54,6 +54,7 @@ struct spi_message * unipi_spi_setup_message(struct spi_device* spi_dev,
 		return NULL;
 	}
 	freq = n_spi->frequency;
+	if (freq > 6000000) freq = 6000000;
 
 	s_trans = (struct spi_transfer *)(message + 1);
 	spi_message_init_with_transfers(message, s_trans, trans_count);

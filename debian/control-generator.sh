@@ -171,6 +171,10 @@ else
     provides="unipi-kernel-modules(=${PROJECT_VERSION})"
 fi
 
+replaces=${breaks}
+breaks="unipi-os-configurator (<= 0.36)"
+[ -n "${replaces}" ] && breaks="${breaks}, ${replaces}"
+
 cat >>debian/control <<EOF
 
 Package: ${BINARY_PKG_NAME}
@@ -179,7 +183,7 @@ Pre-Depends: ${pre_depends}
 Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}), ${depends}
 Suggests: ${suggests}
 Provides: ${provides}
-Replaces: ${breaks}
+Replaces: ${replaces}
 Breaks: ${breaks}
 Description: UniPi kernel modules
  Binary kernel modules for UniPi Neuron/Axon/Patron/Iris controller.
