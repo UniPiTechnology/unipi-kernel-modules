@@ -728,20 +728,24 @@ static const struct uart_ops unipi_uart_ops =
 };
 
 
-int unipi_uart_port_probe(struct device *dev, struct unipi_uart_device *n_uart, int i, int irq)
+int unipi_uart_port_probe(struct device *dev, struct unipi_uart_device *n_uart, int i, int irq, int port_line)
 {
     
 	struct unipi_uart_port* port;
-    int line, ret = 0;
+	int line, ret = 0;
 	u32 fw_version, fw_variant;
     
 	// port is pointer to item ->p[x]
 	port = n_uart->p + i;
 	port->dev_port = i;
-	
-	line = find_first_zero_bit(unipi_uart_lines, UNIPI_UART_MAX_NR);
-	if (line == UNIPI_UART_MAX_NR) {
-		return -ERANGE;
+
+	if (port_line >=0) {
+		line = port_line;
+	} else {
+		line = find_first_zero_bit(unipi_uart_lines, UNIPI_UART_MAX_NR);
+		if (line == UNIPI_UART_MAX_NR) {
+			return -ERANGE;
+		}
 	}
 	port->port.line	= line;
          
@@ -780,7 +784,7 @@ int unipi_uart_port_probe(struct device *dev, struct unipi_uart_device *n_uart, 
 	unipi_uart_trace("Probe cflag:%08x\n", unipi_spi_uart_get_cflag(n_uart->regmap, i));
 
 	set_bit(line, unipi_uart_lines);
-    return ret;
+	return ret;
 }
 
 
@@ -796,6 +800,7 @@ int unipi_uart_probe(struct platform_device *pdev)
 	struct unipi_uart_device *n_uart;
 	int port_count = 1;
 	int ret, i;
+	int port_line = -1;
 
 	//if (!parent) {
 	//	dev_err(dev, "No parent for Unipi AIO\n");
@@ -813,6 +818,7 @@ int unipi_uart_probe(struct platform_device *pdev)
 		dev_err(dev, "Property port-count (%d) must be 1..4\n", port_count);
 		return EINVAL;
 	}
+	of_property_read_u32(np, "port-line", &port_line);
 	/* Alloc port structure - (struct unipi_uart_device) +  (port_count-1)*(struct unipi_uart_port) */
 	n_uart = devm_kzalloc(dev, struct_size(n_uart, p, port_count), GFP_KERNEL);
 	if (!n_uart) {
@@ -824,7 +830,8 @@ int unipi_uart_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, n_uart);
 	
 	for (i = 0; i < port_count; i++) {
-		ret = unipi_uart_port_probe(dev, n_uart, i, iogroup->irq);
+		ret = unipi_uart_port_probe(dev, n_uart, i, iogroup->irq, port_line);
+		port_line = -1;  // port_line can be set for first port only
 		if (ret)
 			goto out;
 		dev_info(dev, "Serial port ttyNS%d on %s port:%d created\n", n_uart->p[i].port.line, dev_name(parent), i);
