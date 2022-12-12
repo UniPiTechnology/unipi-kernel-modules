@@ -291,9 +291,9 @@ void unipi_uart_set_termios(struct uart_port *port, struct ktermios *termios, st
 		unipi_uart_set_iflags(n_port, termios->c_iflag);
 	}
 	if (termios && (!old || ((old->c_line) != (termios->c_line))))
-		// set line discipline only in case of new setting - Mervis behavior
+		// set line discipline if changed
 		unipi_uart_set_ldisc(port, termios);
-	}
+	
 	n_port->baud = uart_get_baud_rate(port, termios, old, 134, 115200);
 	uart_update_timeout(port, termios->c_cflag, n_port->baud);
     unipi_uart_update_timeout(n_port, termios->c_cflag, n_port->baud);
