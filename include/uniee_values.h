@@ -96,8 +96,11 @@
  #define UNIEE_BOARD_MODEL_ID_AIUC8_2	123
  #define UNIEE_BOARD_MODEL_IC_DIS4_1	124
  #define UNIEE_BOARD_MODEL_IC_AI2AO1_1	125
+ #define UNIEE_BOARD_MODEL_ID_EM3F_1	126
  #define UNIEE_BOARD_MODEL_IC_IQRF_1	1000
  #define UNIEE_BOARD_MODEL_ID_ETH100DI1WIFI_1	1001
+ #define UNIEE_BOARD_MODEL_CD_MACHZLM_1	2000
+ #define UNIEE_BOARD_MODEL_CD_PACHGL420_1	2001
 
 
 /* specdata_header_t.field_type */
@@ -105,6 +108,7 @@
  #define UNIEE_FIELD_TYPE_RTC	5
  #define UNIEE_FIELD_TYPE_MAC	6
  #define UNIEE_FIELD_TYPE_AICAL	7
+ #define UNIEE_FIELD_TYPE_MAC1	8
 
 
 /* values of fields stored in uniee_bank_1_t.dummy_data */
