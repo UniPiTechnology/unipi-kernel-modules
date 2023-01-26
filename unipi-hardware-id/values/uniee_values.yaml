@@ -1,0 +1,121 @@
+---
+
+# uniee_bank_3_t.platform_id 
+platform:
+    family:
+        UNIPI1:  0x1
+        G1XX:    0x2
+        NEURON:  0x3
+        AXON:    0x5
+        CM40:    0x6
+        PATRON:  0x7
+        IRIS:    0xF
+        OEM:     0x10
+    id:
+        G100:    0x0002
+        G110:    0x0102
+
+        IRISx1:  0x010F
+        IRISx2:  0x020F
+        IRISx5:  0x030F
+        IRISx7:  0x040F
+        IRISx21: 0x050F
+
+        S103: 0x0103
+        M103: 0x0203
+        M203: 0x0303
+        M303: 0x0403
+        M523: 0x0503
+        L203: 0x0603
+        L403: 0x0703
+        L523: 0x0803
+        L533: 0x0903
+        S103_G: 0x0a03
+        M403: 0x0b03
+        M503: 0x0c03
+        M603: 0x0d03
+        L303: 0x0e03
+        L503: 0x0f03
+        L513: 0x1003
+        S103_E: 0x1103
+        S103_I: 0x1203
+
+        S107: 0x0107
+        S207: 0x0207
+        M207: 0x0307
+        M527: 0x0407
+        L207: 0x0507
+        L527: 0x0607
+        L527: 0x0607
+        S117: 0x0707
+        M267: 0x0807
+        M567: 0x0907
+        S167: 0x0a07
+
+        ACHE1: 0x0110
+
+        AKUSO1: 0x0106
+
+# uniee_bank_2_t.board_model
+board:
+    model:
+        G_1001_1:          1
+        G_1002_1:          2
+        IM_SPR485SD_1:     3
+        B_1000_1:          4
+        B_1000_2:          5
+        B_1000_3:          6
+        N_1000_1:          7
+        N_1001_1:          8
+
+# Internal (originated in Unipi) cards
+
+        IC_DiS4_0:        100
+        IC_LoRaNode_1:    101
+        IC_Light1P80_1:   103
+        IC_AiF2Ao1_1:     104
+        IC_DiS2Do2_1:     105
+        IC_R485R485422_1: 106
+        IC_AoU4_1:        107
+        ID_AiUC8_1:       108
+        ID_AiRTD8_1:      109
+        ID_DiS8_1:        110
+        ID_Do8_1:         111
+        IC_CANFD_1:       112
+        IC_Eth100_1:      113
+        IC_R232_1:        114
+        ID_SATA_1:        115
+        ID_LTE_1:         116
+        IC_GPS_1:         117
+        IC_AccGyro_1:     118
+        IC_Di1Ro2_1:      119
+        ID_DiS16_1:       120
+        ID_Do16_1:        121
+        ID_R232x4_1:      122
+        ID_AiUC8_2:       123
+        IC_DiS4_1:        124
+        IC_Ai2Ao1_1:      125
+
+# OEM (external vendor) cards
+
+        IC_IQRF_1:            1000
+        ID_Eth100Di1WiFi_1:   1001
+
+# specdata_header_t.field_type
+field:
+    type:
+        BUTTON: 4
+        RTC:    5
+        MAC:    6
+        AICAL:  7
+    value:
+        button:
+            PATRON: 0
+            IRIS:   1
+            CM40:   2
+# values of fields stored in uniee_bank_1_t.dummy_data */
+# /* Altboot BUTTON on Zulu based motherboars
+#        0 - button is connected to dedicated gpio
+#        1 - button is connected to rts/de pin of system console
+# */
+
