@@ -215,6 +215,26 @@ int unipi_iio_map_mode_univ(struct iio_dev *indio_dev)
 	return -1;
 }
 
+int unipi_iio_map_mode_uioff(struct iio_dev *indio_dev)
+{
+	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
+	switch(n_iio->mode) {
+		case 1: return IIO_VOLTAGE;
+		case 2: return IIO_CURRENT;
+	}
+	return -1;
+}
+
+int unipi_iio_map_mode_rtd(struct iio_dev *indio_dev)
+{
+	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
+	switch(n_iio->mode) {
+		case 0:
+		case 1: return IIO_TEMPERATURE;
+	}
+	return -1;
+}
+
 int unipi_iio_map_mode_ui(struct iio_dev *indio_dev)
 {
 	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
@@ -526,6 +546,24 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_univ =
   .fname = "AIi%d.%d",
 };
 
+static const struct unipi_iio_descriptor unipi_iio_descriptor_ui12 =
+{ .num_channels = 2,
+  .valsize = 2,
+  .channels = unipi_iio_ai_chan_univ,
+  .info = &unipi_iio_ai_info,
+  .map_mode = unipi_iio_map_mode_uioff,
+  .fname = "AI%d.%d",
+};
+
+static const struct unipi_iio_descriptor unipi_iio_descriptor_rtd =
+{ .num_channels = 2,
+  .valsize = 2,
+  .channels = unipi_iio_ai_chan_univ,
+  .info = &unipi_iio_ai_info,
+  .map_mode = unipi_iio_map_mode_rtd,
+  .fname = "AI%d.%d",
+};
+
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ui18 =
 { .num_channels = 2,
   .valsize = 2,
@@ -565,11 +603,24 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_resistance =
 };
 */
 
+/*
+ - unipi,ai12:  U/I, float+int32 value, ai12 on x51 (used id-aiuc8-1, ic-ai2ao1)
+                mode: 0(off), 1(10V), 2(20mA)
+ - unipi,airtd: Temp/R, float(+/) int16 value, (used id_airtd8)
+                mode: 0(PT100), 1(PT1000)
+ - unipi,air18: only R, int32 value, MAX11410(used ac-heating)
+ - unipi,ai18:  U/I, int32, ADS8698(id-aiuc8-2)
+ - unipi,ao:    ao on x51 or max5715(ic-ai2ao1-1, ac-heating)
+                mode: 0(10V), 1(20mA)
+*/
+
 static const struct of_device_id of_unipi_iio_match[] = {
-	{ .compatible = "unipi,ai", .data = &unipi_iio_descriptor_univ},
+	{ .compatible = "unipi,ai",   .data = &unipi_iio_descriptor_univ},
+	{ .compatible = "unipi,ai12", .data = &unipi_iio_descriptor_ui12},
+	{ .compatible = "unipi,airtd",.data = &unipi_iio_descriptor_rtd},
 	{ .compatible = "unipi,ai18", .data = &unipi_iio_descriptor_ui18},
-	{ .compatible = "unipi,air18", .data = &unipi_iio_descriptor_r18},
-	{ .compatible = "unipi,ao", .data = &unipi_iio_descriptor_ao},
+	{ .compatible = "unipi,air18",.data = &unipi_iio_descriptor_r18},
+	{ .compatible = "unipi,ao",   .data = &unipi_iio_descriptor_ao},
 /*	{ .compatible = "unipi,aio_type_b", .data = &unipi_gpio_data_di }, */
 	{},
 };
