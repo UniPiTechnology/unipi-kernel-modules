@@ -118,6 +118,7 @@ struct unipi_iio_descriptor
 {
 	int num_channels;
 	int valsize;
+	int raw_valsize;
 	const struct iio_chan_spec *channels;
 	const struct iio_info *info;
 	const char* fname;
@@ -138,6 +139,7 @@ struct unipi_iio_device
 	int valreg;
 	int modereg;
 	u32 mode;
+	int raw_valreg;
 //	const struct unipi_iio_descriptor *descriptor;
 };
 
@@ -271,10 +273,21 @@ int unipi_iio_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
 	struct unipi_iio_platform *iio_platform = n_iio->unipi_iio_platform;
 	u32 float_as_u32;
+	u32 raw_value;
 	int mode;
 
 	regmap_read(iio_platform->map, n_iio->modereg, &n_iio->mode);
 	mode = iio_platform->descriptor->map_mode(indio_dev);
+
+	if ((mask == IIO_CHAN_INFO_RAW) && (n_iio->raw_valreg >=0)) {
+		if (mode != ch->type)
+			return -EINVAL;
+		raw_value = 0;
+		regmap_bulk_read(iio_platform->map, n_iio->raw_valreg, &raw_value, iio_platform->descriptor->raw_valsize);
+		*val = raw_value;
+		return IIO_VAL_INT;
+	}
+
 	regmap_bulk_read(iio_platform->map, n_iio->valreg, &float_as_u32, AI_VAL_REG_COUNT);
 
 	switch(mode) {
@@ -455,7 +468,7 @@ static int unipi_iio_probe(struct platform_device *pdev)
 	struct unipi_iio_platform *iio_platform;
 	//struct regmap* map;
 	//int io_count = 0;
-	int io_modereg = -1, io_valreg;
+	int io_modereg = -1, io_valreg, raw_valreg = -1;
 	//char name[30];
 	//const struct unipi_iio_descriptor *descriptor;
 	struct iio_dev *iio_dev;
@@ -486,6 +499,12 @@ static int unipi_iio_probe(struct platform_device *pdev)
 		dev_err(dev, "Invalid io-value-reg property in devicetree\n");
 		return -EINVAL;
 	}
+	if (iio_platform->descriptor->raw_valsize > 0) {
+		ret = of_property_read_u32(np, "raw-value-reg", &raw_valreg);
+		if (ret != 0) {
+			dev_err(dev, "Invalid raw-value-reg property in devicetree\n");
+		}
+	}
 	of_property_read_u32(np, "io-mode-reg", &io_modereg);
 	platform_set_drvdata(pdev, iio_platform);
 
@@ -502,6 +521,11 @@ static int unipi_iio_probe(struct platform_device *pdev)
 		n_iio = (struct unipi_iio_device*) iio_priv(iio_dev);
 		n_iio->unipi_iio_platform = iio_platform;
 		n_iio->valreg = io_valreg + (i * iio_platform->descriptor->valsize);
+		if (raw_valreg < 0) {
+			n_iio->raw_valreg = -1;
+		} else { 
+			n_iio->raw_valreg = raw_valreg + (i * iio_platform->descriptor->raw_valsize);
+		}
 		n_iio->modereg = (io_modereg == -1) ? -1 : io_modereg + i;
 		devm_iio_device_register(dev, iio_dev);
 	}
@@ -543,12 +567,13 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_univ =
   .channels = unipi_iio_ai_chan_univ,
   .info = &unipi_iio_ai_info,
   .map_mode = unipi_iio_map_mode_univ,
-  .fname = "AIi%d.%d",
+  .fname = "AI%d.%d",
 };
 
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ui12 =
 { .num_channels = 2,
   .valsize = 2,
+  .raw_valsize = 2,
   .channels = unipi_iio_ai_chan_univ,
   .info = &unipi_iio_ai_info,
   .map_mode = unipi_iio_map_mode_uioff,
@@ -558,10 +583,11 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_ui12 =
 static const struct unipi_iio_descriptor unipi_iio_descriptor_rtd =
 { .num_channels = 2,
   .valsize = 2,
+  .raw_valsize = 2,
   .channels = unipi_iio_ai_chan_resistance,
   .info = &unipi_iio_ai_info,
   .map_mode = unipi_iio_map_mode_rtd,
-  .fname = "AI%d.%d",
+  .fname = "AIR%d.%d",
 };
 
 static const struct unipi_iio_descriptor unipi_iio_descriptor_ui18 =
