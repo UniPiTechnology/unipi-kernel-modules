@@ -8,8 +8,6 @@ variables:
     build_for_product: "zulu g1 neuron neuron64 neuron64u"
     build_for_distribution: "newstable"
     build_independent_for: "newstable"
-    mirror_to_github: "yes"
-    github_url: "git@github.com:UniPiTechnology/unipi-kernel.git"
-    # iris and patron are symlinked from zulu builed via repo patch table in before script
-    disable_for: "newstable-axon newstable-patron newstable-iris newstable-neuronu newstable-unipi1u newstable-unipi1x64u"
+    publish_to_remote: "yes"
+    publish_dst_url: "git@github.com:UniPiTechnology/unipi-kernel-modules.git"
 
