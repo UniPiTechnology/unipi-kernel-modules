@@ -285,7 +285,10 @@ int unipi_iio_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 		raw_value = 0;
 		regmap_bulk_read(iio_platform->map, n_iio->raw_valreg, &raw_value, iio_platform->descriptor->raw_valsize);
 		*val = raw_value;
-		return IIO_VAL_INT;
+		if (iio_platform->descriptor->raw_valsize == 1)
+			return IIO_VAL_INT;
+		*val2 = 0;
+		return IIO_VAL_INT_64;
 	}
 
 	regmap_bulk_read(iio_platform->map, n_iio->valreg, &float_as_u32, AI_VAL_REG_COUNT);
@@ -583,7 +586,7 @@ static const struct unipi_iio_descriptor unipi_iio_descriptor_ui12 =
 static const struct unipi_iio_descriptor unipi_iio_descriptor_rtd =
 { .num_channels = 2,
   .valsize = 2,
-  .raw_valsize = 2,
+  .raw_valsize = 1,
   .channels = unipi_iio_ai_chan_resistance,
   .info = &unipi_iio_ai_info,
   .map_mode = unipi_iio_map_mode_rtd,
