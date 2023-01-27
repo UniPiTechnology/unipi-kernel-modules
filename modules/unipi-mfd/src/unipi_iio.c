@@ -285,10 +285,14 @@ int unipi_iio_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 		raw_value = 0;
 		regmap_bulk_read(iio_platform->map, n_iio->raw_valreg, &raw_value, iio_platform->descriptor->raw_valsize);
 		*val = raw_value;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,17,0)
 		if (iio_platform->descriptor->raw_valsize == 1)
 			return IIO_VAL_INT;
 		*val2 = 0;
 		return IIO_VAL_INT_64;
+#else
+		return IIO_VAL_INT;
+#endif
 	}
 
 	regmap_bulk_read(iio_platform->map, n_iio->valreg, &float_as_u32, AI_VAL_REG_COUNT);
