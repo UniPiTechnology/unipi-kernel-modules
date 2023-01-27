@@ -366,11 +366,6 @@ static struct dev_mfd_attribute dev_attr_board_id = {
 	UNIPI_MFD_REG_BOARD_ID
 };
 
-static struct dev_mfd_attribute dev_attr_sys_board_serial = {
-	__ATTR(sys_board_serial, 0444, unipi_mfd_show_int, NULL),
-	UNIPI_MFD_REG_BOARD_SERIAL
-};
-
 static struct dev_mfd_attribute dev_attr_board_serial = {
 	__ATTR(board_serial, 0444, unipi_mfd_show_int, NULL),
 	UNIPI_MFD_REG_BOARD_SERIAL
@@ -423,6 +418,12 @@ static struct attribute *unipi_mfd_device_attrs[] = {
 static const struct attribute_group unipi_mfd_group_def = {
 //	.name  = "core",
 	.attrs  = unipi_mfd_device_attrs,
+};
+
+#ifdef CONFIG_OF
+static struct dev_mfd_attribute dev_attr_sys_board_serial = {
+	__ATTR(sys_board_serial, 0444, unipi_mfd_show_int, NULL),
+	UNIPI_MFD_REG_BOARD_SERIAL
 };
 
 static struct attribute *unipi_plc_device_attrs[] = {
@@ -484,7 +485,7 @@ static void unipi_mfd_remove_plc(struct unipi_iogroup_device *iogroup)
 		kfree(name);
 	}
 }
-
+#endif
 
 void unipi_mfd_poll_callback(void* cb_data, int result)
 {
@@ -651,11 +652,12 @@ int unipi_mfd_probe(struct unipi_iogroup_device *iogroup)
 		}
 		ret = 0;
 	}
+#ifdef CONFIG_OF
 	/* Fixup for Mervis old licensing process */
 	if ((iogroup->address == 1) && (sys_board_name)) {
 		unipi_mfd_link_plc(iogroup);
 	}
-
+#endif
 	if (iogroup->irq) {
 		ret = devm_request_irq(dev, iogroup->irq, unipi_mfd_irq, 0, dev_name(dev), iogroup);
 		dev_info(dev, "IRQ %d registration: ret=%d\n", iogroup->irq, ret);
@@ -672,8 +674,9 @@ int unipi_mfd_remove(struct unipi_iogroup_device *iogroup)
 	if (iogroup->poll_timer.function != NULL) {
 		hrtimer_try_to_cancel(&iogroup->poll_timer);
 	}
+#ifdef CONFIG_OF
 	unipi_mfd_remove_plc(iogroup);
-
+#endif
 	/* depopulate platform devices (of_platform_depopulate) */
 	if (iogroup->variant_node && of_node_check_flag(iogroup->variant_node, OF_POPULATED_BUS)) {
 		device_for_each_child_reverse(&iogroup->dev, NULL, of_platform_device_destroy);

@@ -74,7 +74,7 @@ unipi_mfd-objs := src/unipi_mfd.o
 unipi_modbus-objs := src/unipi_modbus.o
 unipi_dali-objs := src/unipi_dali.o
 
-KBUILD_EXTRA_SYMBOLS = $(KBUILD_EXTMOD)/../unipi-id/Module.symvers
+#KBUILD_EXTRA_SYMBOLS = $(KBUILD_EXTMOD)/../unipi-id/Module.symvers
 
 .PHONY: default
 default: all ;
