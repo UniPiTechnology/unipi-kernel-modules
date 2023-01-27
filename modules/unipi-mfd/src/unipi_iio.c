@@ -230,7 +230,7 @@ int unipi_iio_map_mode_rtd(struct iio_dev *indio_dev)
 	struct unipi_iio_device *n_iio = iio_priv(indio_dev);
 	switch(n_iio->mode) {
 		case 0:
-		case 1: return IIO_TEMPERATURE;
+		case 1: return IIO_TEMP;
 	}
 	return -1;
 }
