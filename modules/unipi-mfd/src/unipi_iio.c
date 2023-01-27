@@ -98,7 +98,7 @@ static const struct iio_chan_spec unipi_iio_ai_chan_resistance[] = {
 			.type = IIO_TEMP,
 			.indexed = 0,
 			.channel = 1,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 0
 	}
 };
@@ -280,7 +280,7 @@ int unipi_iio_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 	mode = iio_platform->descriptor->map_mode(indio_dev);
 
 	if ((mask == IIO_CHAN_INFO_RAW) && (n_iio->raw_valreg >=0)) {
-		if (mode != ch->type)
+		if ((mode != ch->type) && !((mode==IIO_TEMP)&&(ch->type==IIO_RESISTANCE)))
 			return -EINVAL;
 		raw_value = 0;
 		regmap_bulk_read(iio_platform->map, n_iio->raw_valreg, &raw_value, iio_platform->descriptor->raw_valsize);
@@ -314,6 +314,13 @@ int unipi_iio_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 	}
 	case IIO_RESISTANCE: {
 		if (ch->type == IIO_RESISTANCE) {
+			float2int_with_divider(lo16(float_as_u32), hi16(float_as_u32), 1, val, val2);
+			return IIO_VAL_FRACTIONAL;
+		}
+		break;
+	}
+	case IIO_TEMP: {
+		if (ch->type == IIO_TEMP) {
 			float2int_with_divider(lo16(float_as_u32), hi16(float_as_u32), 1, val, val2);
 			return IIO_VAL_FRACTIONAL;
 		}
