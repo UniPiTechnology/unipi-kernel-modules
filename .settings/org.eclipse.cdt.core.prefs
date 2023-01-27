@@ -1,6 +1,0 @@
-eclipse.preferences.version=1
-environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192/PATH/delimiter=;
-environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192/PATH/operation=replace
-environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192/PATH/value=C\:\\cygwin64\\bin;C\:\\MinGW\\mingw32\\bin;C\:/Program Files/Java/jre1.8.0_131/bin/server;C\:/Program Files/Java/jre1.8.0_131/bin;C\:/Program Files/Java/jre1.8.0_131/lib/amd64;C\:\\ProgramData\\Oracle\\Java\\javapath;C\:\\Windows\\system32;C\:\\Windows;C\:\\Windows\\System32\\Wbem;C\:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C\:\\Program Files\\PuTTY\\;C\:\\Program Files (x86)\\Skype\\Phone\\;C\:\\Program Files (x86)\\Git\\cmd;C\:\\Program Files (x86)\\GitExtensions\\;C\:\\etc\\arm_gcc\\bin;C\:\\Python27;;C\:\\etc\\yagarto-20121222\\bin;C\:\\Users\\Tom\\AppData\\Local\\Microsoft\\WindowsApps;C\:\\Program Files (x86)\\Nmap;C\:\\eclipse
-environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192/append=true
-environment/project/cdt.managedbuild.toolchain.gnu.cygwin.base.1212799192/appendContributed=true

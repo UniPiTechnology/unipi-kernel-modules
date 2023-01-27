@@ -1,3 +1,12 @@
+**************************************************************
+!!! DEPRECIATED !!! 
+
+Valid for unipoi-kernel-modules-v1
+Description of new sysfs interface will be available soon
+
+**************************************************************
+
+
 What:		/sys/devices/platform/unipi_plc/model_name
 Date:		January 2018
 Contact:	Tomas Knot <tomasknot@gmail.com>
