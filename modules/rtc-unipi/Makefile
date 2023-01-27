@@ -35,6 +35,6 @@ dkms:
 	$(INSTALL) -D $(C_SRC_FILES) $(MODULE_MAKE_FILE) -t $(INSTALL_MOD_PATH)
 
 clean: 
-	rm -f ${rtc-unipi-objs} .*.o.cmd
-	rm -f ${KERNEL_MODULE_NAME}.ko ${KERNEL_MODULE_NAME}.mod.c .*.o.cmd .*.ko.cmd *.o modules.order Module.symvers
+	rm -f ${unipi-objs} src/.*.o.cmd src/*.o src/.*.o.d
+	rm -f ${UNIPI_KERNEL_MODULES} $(obj-m:.o=.mod.c) $(obj-m:.o=.mod) .*.cmd *.o modules.order Module.symvers
 	rm -rf .tmp_versions

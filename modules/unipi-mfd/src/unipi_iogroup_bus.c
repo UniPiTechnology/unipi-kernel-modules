@@ -291,9 +291,13 @@ of_register_iogroup_device(struct unipi_channel *channel, struct device_node *nc
 		goto err_out;
 	}
 
+#ifdef CONFIG_OF
 	/* Select device driver */
 	rc = of_modalias_node(nc, iogroup->modalias,
 				sizeof(iogroup->modalias));
+#else
+	rc = -ENOENT;
+#endif
 	if (rc < 0) {
 		dev_err(channel->dev, "cannot find modalias for %pOF\n", nc);
 		goto err_out;
