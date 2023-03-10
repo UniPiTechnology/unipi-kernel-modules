@@ -28,7 +28,7 @@ struct unipi_led {
 	char   name[32];
 };
 
-static void unipi_led_set(struct led_classdev *led_cdev,
+static int unipi_led_set(struct led_classdev *led_cdev,
                           enum led_brightness value)
 {
 	struct unipi_led *uled =
@@ -41,9 +41,10 @@ static void unipi_led_set(struct led_classdev *led_cdev,
 	ret = regmap_write_async(uled->map, uled->reg, val);
 	if (ret < 0)
 		dev_err(uled->cdev.dev, "error updating LED status\n");
+	return ret;
 }
 
-static int unipi_prepare_led(struct unipi_led *uled, struct device_node *parent_node, u32 reg)
+static void unipi_prepare_led(struct unipi_led *uled, struct device_node *parent_node, u32 reg)
 {
 	struct device_node *np = NULL;
 	int ret;
@@ -79,7 +80,7 @@ static int unipi_prepare_led(struct unipi_led *uled, struct device_node *parent_
 		}
 		of_node_put(np);
 	}
-	return 0;
+	/*return 0;*/
 }
 
 static int unipi_led_probe(struct platform_device *pdev)
@@ -122,7 +123,7 @@ static int unipi_led_probe(struct platform_device *pdev)
 		//dev_info(dev, "led %s\n", uled->name);
 		uled->cdev.name = uled->name;
 		unipi_prepare_led(uled, np, i);
-		uled->cdev.brightness_set = unipi_led_set;
+		uled->cdev.brightness_set_blocking = unipi_led_set;
 		if (devm_led_classdev_register(dev, &uled->cdev) == 0)
 			nleds++;
 	}
