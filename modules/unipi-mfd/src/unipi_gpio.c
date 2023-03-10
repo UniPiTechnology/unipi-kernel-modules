@@ -437,6 +437,7 @@ static int unipi_gpio_probe(struct platform_device *pdev)
 	unipi_gpiochip->chip.ngpio = unipi_gpiochip->ngpio;
 	unipi_gpiochip->chip.get = unipi_gpio_get;
 	unipi_gpiochip->chip.get_direction = unipi_gpio_get_direction;
+	unipi_gpiochip->chip.can_sleep = true;
 	/* ToDo
 	unipi_gpiochip->chip.get_multiple = unipi_gpio_get_multiple;
 	unipi_gpiochip->chip.set_multiple = unipi_gpio_set_multiple;
