@@ -116,7 +116,11 @@ static int unipi_tty_ioctl(struct tty_struct *tty,
 					return retval;
 			}
 	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 	return  alias_n_tty_ioctl(tty, file, cmd, arg);
+#else
+	return  alias_n_tty_ioctl(tty, cmd, arg);
+#endif
 }
 
 static int unipi_is_port_unipi(struct tty_struct *tty)
