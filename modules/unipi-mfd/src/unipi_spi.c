@@ -542,7 +542,11 @@ int unipi_spi_probe(struct spi_device *spi)
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 int unipi_spi_remove(struct spi_device *spi)
+#else
+void unipi_spi_remove(struct spi_device *spi)
+#endif
 {
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi);
 
