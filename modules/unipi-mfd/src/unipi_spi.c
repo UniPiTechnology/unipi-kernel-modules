@@ -550,12 +550,15 @@ void unipi_spi_remove(struct spi_device *spi)
 {
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi);
 
-	if (! n_spi) return 0;
+	if (! n_spi) goto end;
 
 	unipi_channel_exit(&n_spi->channel);
 	kfree(n_spi);
 	dev_info(&spi->dev, "spi channel removed\n");
+end:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 	return 0;
+#endif
 }
 
 
