@@ -642,7 +642,11 @@ read_rtc:
 		dev_info(rtc_unipi->dev,
 			 "'wakeup-source' is set, request for an IRQ is disabled!\n");
 		/* We cannot support UIE mode if we do not have an IRQ line */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 		rtc_unipi->rtc->uie_unsupported = 1;
+#else
+		clear_bit(RTC_FEATURE_UPDATE_INTERRUPT, ds1307->rtc->features);
+#endif
 	}
 
 	if (want_irq) {
