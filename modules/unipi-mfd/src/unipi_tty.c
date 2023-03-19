@@ -51,8 +51,13 @@ static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned ch
 			      char *fp, int count);
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 static int (*alias_n_tty_ioctl)(struct tty_struct *tty, struct file *file,
                unsigned int cmd, unsigned long arg);
+#else
+static int (*alias_n_tty_ioctl)(struct tty_struct *tty,
+               unsigned int cmd, unsigned long arg);
+#endif
 static int (*alias_n_tty_open)(struct tty_struct *tty);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
@@ -91,8 +96,13 @@ static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *c
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 static int unipi_tty_ioctl(struct tty_struct *tty, struct file *file,
                            unsigned int cmd, unsigned long arg)
+#else
+static int unipi_tty_ioctl(struct tty_struct *tty,
+                           unsigned int cmd, unsigned long arg)
+#endif
 {
 	int retval;
 
