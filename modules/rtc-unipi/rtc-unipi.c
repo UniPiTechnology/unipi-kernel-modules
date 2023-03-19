@@ -645,7 +645,7 @@ read_rtc:
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 		rtc_unipi->rtc->uie_unsupported = 1;
 #else
-		clear_bit(RTC_FEATURE_UPDATE_INTERRUPT, ds1307->rtc->features);
+		clear_bit(RTC_FEATURE_UPDATE_INTERRUPT, rtc_unipi->rtc->features);
 #endif
 	}
 
