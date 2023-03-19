@@ -420,7 +420,9 @@ int unipi_iio_stm_ai_register(struct device* dev, struct regmap *map, int group_
 
 	iio_dev = devm_iio_device_alloc(dev, sizeof(struct unipi_iio_stm_device));
 	iio_dev->modes = INDIO_DIRECT_MODE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0)
 	iio_dev->currentmode = INDIO_DIRECT_MODE;
+#endif
 	iio_dev->name = "ai_type_legacy";
 	iio_dev->dev.parent = dev;
 	dev_set_name(&iio_dev->dev, "AI%d.1", group_index);
@@ -443,7 +445,9 @@ int unipi_iio_stm_ao_register(struct device* dev, struct regmap *map, int group_
 
 	iio_dev = devm_iio_device_alloc(dev, sizeof(struct unipi_iio_stm_device));
 	iio_dev->modes = INDIO_DIRECT_MODE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0)
 	iio_dev->currentmode = INDIO_DIRECT_MODE;
+#endif
 	iio_dev->name = "ao_type_legacy";
 	iio_dev->dev.parent = dev;
 	dev_set_name(&iio_dev->dev, "AO%d.1", group_index);
