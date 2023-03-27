@@ -7,6 +7,7 @@ ARCH="$(dpkg-architecture -q DEB_BUILD_ARCH)"
 /ci-scripts/fix-product-repository.sh "${DEBIAN_VERSION}" "${PRODUCT}" "${ARCH}"
 
 apt update
+rm -f /etc/pip.conf
 apt upgrade -y
 
 if [ "$PRODUCT" == "axon" ]; then

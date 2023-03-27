@@ -162,7 +162,11 @@ void unipi_dali_config_port(struct uart_port *port, int flags)
  * Non-static Functions *
  ************************/
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
 void unipi_dali_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old)
+#else
+void unipi_dali_set_termios(struct uart_port *port, struct ktermios *termios, const struct ktermios *old)
+#endif
 {
 //	struct unipi_uart_port *n_port = to_unipi_dali_port(port, port);
 /*
