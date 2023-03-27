@@ -525,7 +525,9 @@ static int unipi_iio_probe(struct platform_device *pdev)
 	for (i = 0; i < iio_platform->io_count; i++) {
 		iio_dev = devm_iio_device_alloc(dev, sizeof(struct unipi_iio_device));
 		iio_dev->modes = INDIO_DIRECT_MODE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0)
 		iio_dev->currentmode = INDIO_DIRECT_MODE;
+#endif
 		iio_dev->name = "aio_type_unipi";
 		iio_dev->dev.parent = dev;
 		dev_set_name(&iio_dev->dev, iio_platform->descriptor->fname, iogroup->address,  i + 1);

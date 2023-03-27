@@ -265,7 +265,11 @@ int unipi_uart_ioctl(struct uart_port *port, unsigned int ioctl_code, unsigned l
 }
 
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
 void unipi_uart_set_termios(struct uart_port *port, struct ktermios *termios, struct ktermios *old)
+#else
+void unipi_uart_set_termios(struct uart_port *port, struct ktermios *termios, const struct ktermios *old)
+#endif
 {
 	struct unipi_uart_port *n_port = to_unipi_uart_port(port, port);
 
@@ -299,7 +303,11 @@ void unipi_uart_set_termios(struct uart_port *port, struct ktermios *termios, st
     unipi_uart_update_timeout(n_port, termios->c_cflag, n_port->baud);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,0,0)
 int unipi_uart_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
+#else
+int unipi_uart_config_rs485(struct uart_port *port, struct ktermios *termios, struct serial_rs485 *rs485)
+#endif
 {
 	port->rs485 = *rs485;
 	return 0;

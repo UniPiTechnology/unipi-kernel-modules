@@ -542,16 +542,22 @@ int unipi_spi_probe(struct spi_device *spi)
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 int unipi_spi_remove(struct spi_device *spi)
+#else
+void unipi_spi_remove(struct spi_device *spi)
+#endif
 {
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi);
 
-	if (! n_spi) return 0;
-
-	unipi_channel_exit(&n_spi->channel);
-	kfree(n_spi);
-	dev_info(&spi->dev, "spi channel removed\n");
+	if (n_spi) {
+		unipi_channel_exit(&n_spi->channel);
+		kfree(n_spi);
+		dev_info(&spi->dev, "spi channel removed\n");
+	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 	return 0;
+#endif
 }
 
 
