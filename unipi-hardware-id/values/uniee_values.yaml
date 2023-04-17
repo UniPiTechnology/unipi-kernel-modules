@@ -51,6 +51,7 @@ platform:
         M267: 0x0807
         M567: 0x0907
         S167: 0x0a07
+        S227: 0x0b07
 
 
 
@@ -98,6 +99,7 @@ board:
         IC_DiS4_1:        124
         IC_Ai2Ao1_1:      125
         ID_Em3f_1:        126
+        IC_LoRaNode_2:    127
 
 # OEM (external vendor) Iris cards
 
