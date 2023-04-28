@@ -56,7 +56,7 @@ static const char* iris_iogroups[] = {
 };
 
 static const char* irisx7_iogroups[] = {
- "21",  "22",  "23",  "24",  "25",  "26",  "27"
+ "12",  "62",  "72",  "22",  "32", "42", "52"
 };
 
 static const char* oem_iogroups[] = {
