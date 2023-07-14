@@ -62,6 +62,8 @@ elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "
 bullseye-zulu-main    bullseye-zulu-main  bullseye-patron-main  bullseye-iris-main
 bullseye-zulu-test    bullseye-zulu-test  bullseye-patron-test  bullseye-iris-test
 EOF
+else
+    apt-get install -y dkms
 fi
 
 if [ -n "$PLATFORM" ]; then
@@ -69,3 +71,12 @@ if [ -n "$PLATFORM" ]; then
     unset VERSION_SUFFIX
 fi
 
+### create fake package for RPi 32bit system on 64bit kernel
+if [ "$PRODUCT" = "neuron64" ] && [ "$DEBIAN_VERSION" != "buster" ]; then
+    mv /ci-scripts/build-package.sh /ci-scripts/build-package.ish
+    cat >/ci-scripts/build-package.sh <<EOF
+#!/bin/bash
+exec /ci-scripts/build-package.ish --build=any,all unipi-kernel-modules
+EOF
+    chmod +x /ci-scripts/build-package.sh
+fi

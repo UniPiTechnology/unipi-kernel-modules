@@ -15,7 +15,7 @@
 export DEB_LDFLAGS_SET = -zrelro
 
 clean:
-	dh clean --with dkms
+	dh clean #--with dkms
 	[ -x debian/control-generator.sh ] && debian/control-generator.sh
 
 
