@@ -194,11 +194,13 @@ static inline void uniee_fix_legacy_content(uint8_t* buff, int size, uniee_descr
 			descriptor->product_info.platform_id.parsed.platform_family = UNIEE_PLATFORM_FAMILY_G1XX;
 		}
 	} else if (descriptor->product_info.platform_id.raw_id == 0x0000) {
-		/* probably Unipi 1 */
+		/* probably Unipi 1 family */
+
+
 		if ((descriptor->product_info.product_version.major==1)
-			&& ((descriptor->product_info.product_version.minor==1)
-			  ||(descriptor->product_info.product_version.minor==0x11))) {
-			descriptor->product_info.platform_id.parsed.platform_family = UNIEE_PLATFORM_FAMILY_UNIPI1;
+			&& (descriptor->product_info.product_version.minor==1)){
+
+			descriptor->product_info.platform_id.raw_id = UNIEE_PLATFORM_ID_UNIPI11;
 			/* Fix AI1 AI2 calibration for unipi 1 */
 			memcpy(buff, &descriptor->product_info.sku, 2*sizeof(float));
 			descriptor->product_info.sku = 0xffffffff;
@@ -207,6 +209,15 @@ static inline void uniee_fix_legacy_content(uint8_t* buff, int size, uniee_descr
 			descriptor->board_info.specdata_headers_table[1].field_type = UNIEE_FIELD_TYPE_AICAL;
 			descriptor->board_info.specdata_headers_table[1].field_len = sizeof(float);
 		}
+		else if ((descriptor->product_info.product_version.major==0x11)
+			&& (descriptor->product_info.product_version.minor==1)){
+
+			descriptor->product_info.platform_id.raw_id = UNIEE_PLATFORM_ID_UNIPI1L;
+		}
+		else{
+			descriptor->product_info.platform_id.raw_id = UNIEE_PLATFORM_ID_UNIPI10;
+		}
+
 	}
 	/* Fix rtc_calibration on old G1xx and Iris proto-motherboards */
 	if ((descriptor->board_info.specdata_headers_table[0].field_type < 4) &&
