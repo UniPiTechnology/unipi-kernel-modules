@@ -5,7 +5,7 @@ include:
 variables:
     package_name: "unipi-kernel-modules"
     #build_for_product: "all+"
-    build_for_product: "zulu g1 neuron neuron64 neuron64u unipi1 unipi1x64"
+    build_for_product: "unipi1 unipi1x64"
     build_for_distribution: "newstable"
     build_independent_for: "newstable"
     publish_to_remote: "yes"
