@@ -8,59 +8,56 @@ ARCH="$(dpkg-architecture -q DEB_BUILD_ARCH)"
 
 apt update
 rm -f /etc/pip.conf
-apt upgrade -y
+
+#apt upgrade -y
+apt-get install dh-dkms || true # only on bookworm required
 
 if [ "$PRODUCT" == "axon" ]; then
     apt install -y axon-kernel-headers
-#    if [ "${DEBIAN_VERSION}" = "buster" ]; then
-#        cat >/ci-scripts/repo_patch_table.txt <<EOF
-#
-#buster-axon-main    buster-main  bullseye-axon-main
-#buster-axon-test    buster-test  bullseye-axon-test
-#EOF
-#    fi
 
-elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ] || [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ]; then
+elif [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ] [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
+    echo "Package for product $PRODUCT cannot be built directly!" >&2
+    exit 1
+
+elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ]; then
     apt-get install -y raspberrypi-kernel-headers
     # modify repo-patch-table
+    sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-bullseye-neuron64-main    bullseye-neuron-main bullseye-unipi1-main
-bullseye-neuron64-test    bullseye-neuron-test bullseye-unipi1-test
-bullseye-neuron-main      bullseye-neuron-main bullseye-unipi1-main
-bullseye-neuron-test      bullseye-neuron-test bullseye-unipi1-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
 EOF
 
-elif [ "$PRODUCT" == "neuron64u" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
+elif [ "$PRODUCT" == "neuron64u" ]; then
     apt install -y unipi-kernel-headers
-    if  [ "$DEBIAN_VERSION" = "bullseye" ]; then
-        cat >/ci-scripts/repo_patch_table.txt <<EOF
+    sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-bullseye-neuron64u-main    bullseye-neuron-main bullseye-unipi1-main
-bullseye-neuron64u-test    bullseye-neuron-test bullseye-unipi1-test
-bullseye-neuronu-main      bullseye-neuron-main bullseye-unipi1-main
-bullseye-neuronu-test      bullseye-neuron-test bullseye-unipi1-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
 EOF
-    fi
 
 elif [ "$PRODUCT" == "g1" ]; then
     if [ "$DEBIAN_VERSION" = "buster" ]; then
         apt install -y g1-kernel-headers
     else
         apt install -y unipi-kernel-headers
+        cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-g1-main bookworm-g1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-g1-test bookworm-g1-test
+EOF
     fi
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then
-    if [ "$DEBIAN_VERSION" = "buster" ]; then
-        apt install -y zulu-kernel-headers
-    else
-        apt install -y unipi-kernel-headers
-    fi
+    apt install -y unipi-kernel-headers
     # modify repo-patch-table
+    sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-bullseye-zulu-main    bullseye-zulu-main  bullseye-patron-main  bullseye-iris-main
-bullseye-zulu-test    bullseye-zulu-test  bullseye-patron-test  bullseye-iris-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-zulu-main  $DEBIAN_VERSION-patron-main  $DEBIAN_VERSION-iris-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-zulu-test  $DEBIAN_VERSION-patron-test  $DEBIAN_VERSION-iris-test
 EOF
 else
     apt-get install -y dkms
