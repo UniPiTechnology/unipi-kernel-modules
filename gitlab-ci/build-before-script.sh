@@ -15,7 +15,7 @@ apt-get install dh-dkms || true # only on bookworm required
 if [ "$PRODUCT" == "axon" ]; then
     apt install -y axon-kernel-headers
 
-elif [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ] [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
+elif [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ] || [ "$PRODUCT" == "neuronu" ] || [ "$PRODUCT" == "unipi1u" ] || [ "$PRODUCT" == "unipi1x64u" ]; then
     echo "Package for product $PRODUCT cannot be built directly!" >&2
     exit 1
 
@@ -34,8 +34,8 @@ elif [ "$PRODUCT" == "neuron64u" ]; then
     sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
-$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test
 EOF
 
 elif [ "$PRODUCT" == "g1" ]; then

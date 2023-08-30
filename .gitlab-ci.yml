@@ -7,7 +7,7 @@ variables:
     build_for_product: "zulu g1 neuron neuron64 neuron64u"
     build_for_distribution: "stable newstable"
     build_independent_for: "stable newstable"
-    disable_for: "newstable-neuron newstable-unipi1 newstable-neuron64 newstable-g1 newstable-neuron64u"
+    disable_for: "newstable-neuron newstable-unipi1 newstable-neuron64 newstable-g1"
     publish_to_remote: "yes"
     publish_dst_url: "git@github.com:UniPiTechnology/unipi-kernel-modules.git"
 
