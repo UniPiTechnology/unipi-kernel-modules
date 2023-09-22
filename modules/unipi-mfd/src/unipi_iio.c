@@ -401,8 +401,7 @@ int unipi_iio_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const
  ************************************/ 
 static ssize_t mode_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct iio_dev *iio_dev = dev_get_drvdata(dev);
-	struct unipi_iio_device *n_iio = iio_priv(iio_dev);
+	struct unipi_iio_device *n_iio = iio_priv(dev_to_iio_dev(dev));
 	struct unipi_iio_platform *iio_platform = n_iio->unipi_iio_platform;
 	unsigned int val = 0;
 	regmap_read(iio_platform->map, n_iio->modereg, &val);
@@ -411,8 +410,7 @@ static ssize_t mode_show(struct device *dev, struct device_attribute *attr, char
 
 static ssize_t mode_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct iio_dev *iio_dev = dev_get_drvdata(dev);
-	struct unipi_iio_device *n_iio = iio_priv(iio_dev);
+	struct unipi_iio_device *n_iio = iio_priv(dev_to_iio_dev(dev));
 	struct unipi_iio_platform *iio_platform = n_iio->unipi_iio_platform;
 	unsigned int val = 0;
 	if (kstrtouint(buf, 0, &val) >= 0) {

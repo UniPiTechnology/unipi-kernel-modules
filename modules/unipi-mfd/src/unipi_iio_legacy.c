@@ -362,8 +362,7 @@ int unipi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec c
  ************************************/ 
 static ssize_t mode_voltage_current_resistance_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct iio_dev *iio_dev = dev_get_drvdata(dev);
-	struct unipi_iio_stm_device *n_iio = iio_priv(iio_dev);
+	struct unipi_iio_stm_device *n_iio = iio_priv(dev_to_iio_dev(dev));
 	unsigned int val = 0;
 	regmap_read(n_iio->map, n_iio->modereg, &val);
 	return sysfs_emit(buf, "%d\n", val);
@@ -371,8 +370,7 @@ static ssize_t mode_voltage_current_resistance_show(struct device *dev, struct d
 
 static ssize_t mode_voltage_current_resistance_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct iio_dev *iio_dev = dev_get_drvdata(dev);
-	struct unipi_iio_stm_device *n_iio = iio_priv(iio_dev);
+	struct unipi_iio_stm_device *n_iio = iio_priv(dev_to_iio_dev(dev));
 	unsigned int val = 0;
 	if (kstrtouint(buf, 0, &val) >= 0) {
 		regmap_write(n_iio->map, n_iio->modereg, val);
