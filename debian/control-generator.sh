@@ -227,7 +227,7 @@ echo "debian/rules"
 echo "==============================================================================================================="
 cat debian/rules.in
 
-if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
+if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" == "bullseye" ]; then
     sed 's/Architecture: all/Architecture: amd64/' -i debian/control
     cat >>debian/control <<EOF
 
