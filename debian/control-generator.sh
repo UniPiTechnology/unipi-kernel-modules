@@ -59,7 +59,6 @@ case "${PRODUCT}" in
             PKG_KERNEL_IMAGE=linux-image-rpi-v7
         fi
         ;;
-        ;;
     neuron64 | unipi1x64)
         BINARY_PKG_NAME=unipi-kernel-modules
         if [ "${DEBIAN_VERSION}" == "bullseye" ]; then
