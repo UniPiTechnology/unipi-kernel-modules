@@ -49,24 +49,26 @@ EOF
 fi
 
 case "${PRODUCT}" in
-    unipi1 )
+    unipi1 | neuron)
         BINARY_PKG_NAME=unipi-kernel-modules
-        PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
-        PKG_KERNEL_IMAGE=raspberrypi-kernel
-        ;;
-    neuron )
-        if [ "${DEBIAN_VERSION}" == "stretch" ]; then
-            BINARY_PKG_NAME=neuron-kernel
+        if [ "${DEBIAN_VERSION}" == "bullseye" ]; then
+            PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+            PKG_KERNEL_IMAGE=raspberrypi-kernel
         else
-            BINARY_PKG_NAME=unipi-kernel-modules
+            PKG_KERNEL_HEADERS=linux-headers-rpi-v7
+            PKG_KERNEL_IMAGE=linux-image-rpi-v7
         fi
-        PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
-        PKG_KERNEL_IMAGE=raspberrypi-kernel
+        ;;
         ;;
     neuron64 | unipi1x64)
         BINARY_PKG_NAME=unipi-kernel-modules
-        PKG_KERNEL_IMAGE=raspberrypi-kernel
-        PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+        if [ "${DEBIAN_VERSION}" == "bullseye" ]; then
+            PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
+            PKG_KERNEL_IMAGE=raspberrypi-kernel
+        else
+            PKG_KERNEL_HEADERS=linux-headers-rpi-v8
+            PKG_KERNEL_IMAGE=linux-image-rpi-v8
+        fi
         ;;
     neuron64u | neuronu | unipi1u | unipi1x64u)
         BINARY_PKG_NAME=unipi-kernel-modules
@@ -123,7 +125,12 @@ echo "PKG_KERNEL_VER = ${PKG_KERNEL_VER}"
 PKG_KERNEL_VER_STRIPPED="$(echo ${PKG_KERNEL_VER} | cut -d":" -f 2-)"
 echo "PKG_KERNEL_VER_STRIPPED = ${PKG_KERNEL_VER_STRIPPED}"
 
+
+
 if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
+    if [ "$DEBIAN_VERSION" = "bookworm" ]; then
+        PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
+    endif
     # in raspberrypi-kernel-headers can be more than one kernels for different SoC
     LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*-v7.*\/build$/p'))
     LINUX_DIR_PATH="${LINUX_DIR_ARR[*]}"
