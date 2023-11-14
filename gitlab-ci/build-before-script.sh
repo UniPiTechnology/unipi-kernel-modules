@@ -19,8 +19,25 @@ elif [ "$PRODUCT" == "unipi1" ] || [ "$PRODUCT" == "unipi1x64" ] || [ "$PRODUCT"
     echo "Package for product $PRODUCT cannot be built directly!" >&2
     exit 1
 
-elif [ "$PRODUCT" == "neuron64" ] || [ "$PRODUCT" == "neuron" ]; then
-    apt-get install -y raspberrypi-kernel-headers
+elif [ "$PRODUCT" == "neuron64" ]; then
+    if [ "$DEBIAN_VERSION" = "bullseye" ]; then
+        apt-get install -y raspberrypi-kernel-headers
+    else
+        apt-get install -y linux-headers-rpi-v8
+    fi
+    # modify repo-patch-table
+    sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
+    cat >>/ci-scripts/repo_patch_table.txt <<EOF
+
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
+EOF
+elif [ "$PRODUCT" == "neuron" ]; then
+    if [ "$DEBIAN_VERSION" = "bullseye" ]; then
+        apt-get install -y raspberrypi-kernel-headers
+    else
+        apt-get install -y linux-headers-rpi-v7
+    fi
     # modify repo-patch-table
     sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
