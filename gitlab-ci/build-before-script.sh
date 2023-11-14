@@ -29,8 +29,8 @@ elif [ "$PRODUCT" == "neuron64" ]; then
     sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
-$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test
 EOF
 elif [ "$PRODUCT" == "neuron" ]; then
     if [ "$DEBIAN_VERSION" = "bullseye" ]; then
@@ -42,8 +42,8 @@ elif [ "$PRODUCT" == "neuron" ]; then
     sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt
     cat >>/ci-scripts/repo_patch_table.txt <<EOF
 
-$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main bookworm-neuron-main bookworm-unipi1-main
-$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test bookworm-neuron-test bookworm-unipi1-test
+$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-neuron-main $DEBIAN_VERSION-unipi1-main
+$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-neuron-test $DEBIAN_VERSION-unipi1-test
 EOF
 
 elif [ "$PRODUCT" == "neuron64u" ]; then
@@ -86,7 +86,7 @@ if [ -n "$PLATFORM" ]; then
 fi
 
 ### create fake package for RPi 32bit system on 64bit kernel
-if [ "$PRODUCT" = "neuron64" ] && [ "$DEBIAN_VERSION" != "buster" ]; then
+if [ "$PRODUCT" = "neuron64" ] && [ "$DEBIAN_VERSION" = "bullseye" ]; then
     mv /ci-scripts/build-package.sh /ci-scripts/build-package.ish
     cat >/ci-scripts/build-package.sh <<EOF
 #!/bin/bash
