@@ -164,7 +164,7 @@ else
     depends="unipi-os-configurator-data(>=0.7.test.20220815)"
     #suggests="unipi-firmware"
     unset suggests
-    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
+    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" == "bulseye" ]; then
         depends="$depends, unipi-kernel-modules-64on32"
     fi
 fi
