@@ -129,7 +129,7 @@ echo "PKG_KERNEL_VER_STRIPPED = ${PKG_KERNEL_VER_STRIPPED}"
 if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
     if [ "$DEBIAN_VERSION" = "bookworm" ]; then
         PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
-    endif
+    fi
     # in raspberrypi-kernel-headers can be more than one kernels for different SoC
     LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*-v7.*\/build$/p'))
     LINUX_DIR_PATH="${LINUX_DIR_ARR[*]}"
