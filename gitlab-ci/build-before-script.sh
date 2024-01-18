@@ -36,7 +36,7 @@ elif [ "$PRODUCT" == "neuron" ]; then
     if [ "$DEBIAN_VERSION" = "bullseye" ]; then
         apt-get install -y raspberrypi-kernel-headers
     else
-        apt-get install -y linux-headers-rpi-v7
+        apt-get install -y linux-headers-rpi-v7 linux-headers-rpi-v7l
     fi
     # modify repo-patch-table
     sed "/^$DEBIAN_VERSION-$PRODUCT-/d" -i /ci-scripts/repo_patch_table.txt

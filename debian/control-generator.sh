@@ -55,8 +55,9 @@ case "${PRODUCT}" in
             PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
             PKG_KERNEL_IMAGE=raspberrypi-kernel
         else
-            PKG_KERNEL_HEADERS=linux-headers-rpi-v7
+            PKG_KERNEL_HEADERS="linux-headers-rpi-v7 linux-headers-rpi-v7l"
             PKG_KERNEL_IMAGE=linux-image-rpi-v7
+            ALTERNATIVE_KERNEL_IMAGE=linux-image-rpi-v7l
         fi
         ;;
     neuron64 | unipi1x64)
@@ -115,7 +116,7 @@ case "${PRODUCT}" in
         ;;
 esac
 
-PKG_KERNEL_VER="$(dpkg-query -f='${Version}' -W ${PKG_KERNEL_HEADERS})"
+PKG_KERNEL_VER="$(dpkg-query -f='${Version}\n' -W ${PKG_KERNEL_HEADERS} | sed -n '1p')"
 echo "PKG_KERNEL_VER = ${PKG_KERNEL_VER}"
 # after rpi kernel 1.20210303-1 the version is prefixed with "1:", e.g. 1:1.20210430-2
 # this breaks the combined version since it is no longer a number (1.66.1:1.20210430-2)
@@ -124,11 +125,14 @@ echo "PKG_KERNEL_VER = ${PKG_KERNEL_VER}"
 PKG_KERNEL_VER_STRIPPED="$(echo ${PKG_KERNEL_VER} | cut -d":" -f 2-)"
 echo "PKG_KERNEL_VER_STRIPPED = ${PKG_KERNEL_VER_STRIPPED}"
 
+if [ -n "$ALTERNATIVE_KERNEL_IMAGE" ]; then
+    ALTERNATIVE_KERNEL_IMAGE="| ${ALTERNATIVE_KERNEL_IMAGE}(=$PKG_KERNEL_VER)"
+fi
 
 
 if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
     if [ "$DEBIAN_VERSION" = "bookworm" ]; then
-        PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
+        PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}\n' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
     fi
     # in raspberrypi-kernel-headers can be more than one kernels for different SoC
     LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*-v7.*\/build$/p'))
@@ -194,7 +198,7 @@ cat >>debian/control <<EOF
 Package: ${BINARY_PKG_NAME}
 Architecture: ${arch}
 Pre-Depends: ${pre_depends}
-Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}), ${depends}
+Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}) ${ALTERNATIVE_KERNEL_IMAGE}, ${depends}
 Suggests: ${suggests}
 Provides: ${provides}
 Replaces: ${replaces}
