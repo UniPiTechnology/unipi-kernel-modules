@@ -138,12 +138,15 @@ if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
     # in raspberrypi-kernel-headers can be more than one kernels for different SoC
     LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*-v7.*\/build$/p'))
     LINUX_DIR_PATH="${LINUX_DIR_ARR[*]}"
-else
-    if [ "${PRODUCT}" = "neuron64" ] || [ "${PRODUCT}" = "unipi1x64" ] ; then
-        if [ "$DEBIAN_VERSION" = "bookworm" ]; then
-            PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}\n' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
-        fi
+
+elif [ "${PRODUCT}" = "neuron64" ] || [ "${PRODUCT}" = "unipi1x64" ] ; then
+    if [ "$DEBIAN_VERSION" = "bookworm" ]; then
+        PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}\n' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
     fi
+    LINUX_DIR_ARR=($(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*\/build$/p'))
+    LINUX_DIR_PATH="${LINUX_DIR_ARR[*]}"
+
+else
     LINUX_DIR_PATH=$(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*\/build$/p')
 fi
 
