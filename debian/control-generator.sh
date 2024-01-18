@@ -66,8 +66,9 @@ case "${PRODUCT}" in
             PKG_KERNEL_HEADERS=raspberrypi-kernel-headers
             PKG_KERNEL_IMAGE=raspberrypi-kernel
         else
-            PKG_KERNEL_HEADERS=linux-headers-rpi-v8
+            PKG_KERNEL_HEADERS="linux-headers-rpi-v8 linux-headers-rpi-2712"
             PKG_KERNEL_IMAGE=linux-image-rpi-v8
+            ALTERNATIVE_KERNEL_IMAGE=linux-image-rpi-2712
         fi
         ;;
     neuron64u | neuronu | unipi1u | unipi1x64u)
@@ -140,7 +141,7 @@ if [ "${PRODUCT}" = "neuron" ] || [ "${PRODUCT}" = "unipi1" ] ; then
 else
     if [ "${PRODUCT}" = "neuron64" ] || [ "${PRODUCT}" = "unipi1x64" ] ; then
         if [ "$DEBIAN_VERSION" = "bookworm" ]; then
-            PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
+            PKG_KERNEL_HEADERS="$(dpkg-query -f='${Depends}\n' -W ${PKG_KERNEL_HEADERS} | cut -d\  -f1)"
         fi
     fi
     LINUX_DIR_PATH=$(dpkg -L ${PKG_KERNEL_HEADERS} | sed -n '/^\/lib\/modules\/.*\/build$/p')
