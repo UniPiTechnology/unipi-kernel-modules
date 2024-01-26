@@ -86,7 +86,7 @@ if [ -n "$PLATFORM" ]; then
 fi
 
 ### create fake package for RPi 32bit system on 64bit kernel
-if [ "$PRODUCT" = "neuron64" ] && [ "$DEBIAN_VERSION" = "bullseye" ]; then
+if [ "$PRODUCT" = "neuron64" ] && [ "$DEBIAN_VERSION" != "buster" ]; then
     mv /ci-scripts/build-package.sh /ci-scripts/build-package.ish
     cat >/ci-scripts/build-package.sh <<EOF
 #!/bin/bash
