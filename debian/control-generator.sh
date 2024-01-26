@@ -177,8 +177,11 @@ else
     depends="unipi-os-configurator-data(>=0.7.test.20220815)"
     #suggests="unipi-firmware"
     unset suggests
-    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
+    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" = "bullseye" ]; then
         depends="$depends, unipi-kernel-modules-64on32"
+    fi
+    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" = "bookworm" ]; then
+        depends="$depends, unipi-kernel-modules-64on32:arm64"
     fi
 fi
 
@@ -240,7 +243,7 @@ echo "debian/rules"
 echo "==============================================================================================================="
 cat debian/rules.in
 
-if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
+if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" = "bullseye" ]; then
     sed 's/Architecture: all/Architecture: amd64/' -i debian/control
     cat >>debian/control <<EOF
 
@@ -263,6 +266,31 @@ unipi-kernel-modules (${MODULES_VERSION32}) unstable; urgency=medium
 EOF
     cat debian/changelog >>debian/${BINARY_PKG_NAME}.changelog
 fi
+
+if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" = "bookworm" ]; then
+    sed 's/Architecture: all/Architecture: amd64/' -i debian/control
+    cat >>debian/control <<EOF
+
+Package: unipi-kernel-modules-64on32
+Architecture: arm64
+Depends: ${PKG_KERNEL_IMAGE}:arm64(=${PKG_KERNEL_VER})
+Description: UniPi Neuron kernel modules for 32bit Raspbian with 64bit kernel
+ Use only on system with raspberrypi 32bit OS with running 64bit kernel.
+ Requires unipi-kernel-modules (armhf) installed.
+
+EOF
+
+    MODULES_VERSION32="$(echo $MODULES_VERSION | sed 's/neuron64/neuron/')"
+
+    cat  >debian/unipi-kernel-modules-64on32.changelog <<EOF
+unipi-kernel-modules (${MODULES_VERSION32}) unstable; urgency=medium
+  * Compiled for ${PKG_KERNEL_IMAGE}
+ -- auto-generator <info@unipi.technology>  $(date -R)
+
+EOF
+    cat debian/changelog >>debian/${BINARY_PKG_NAME}.changelog
+fi
+
 
 echo "==============================================================================================================="
 echo "debian/control"
