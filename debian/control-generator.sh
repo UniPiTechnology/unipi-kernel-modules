@@ -177,7 +177,7 @@ else
     depends="unipi-os-configurator-data(>=0.7.test.20220815)"
     #suggests="unipi-firmware"
     unset suggests
-    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" == "bulseye" ]; then
+    if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
         depends="$depends, unipi-kernel-modules-64on32"
     fi
 fi
@@ -240,7 +240,7 @@ echo "debian/rules"
 echo "==============================================================================================================="
 cat debian/rules.in
 
-if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" == "bullseye" ]; then
+if [ "$PRODUCT" = "neuron64" ] && [ "${DEBIAN_VERSION}" != "buster" ]; then
     sed 's/Architecture: all/Architecture: amd64/' -i debian/control
     cat >>debian/control <<EOF
 
