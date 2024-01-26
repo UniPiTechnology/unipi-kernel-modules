@@ -4,10 +4,10 @@ include:
 
 variables:
     package_name: "unipi-kernel-modules"
-    build_for_product: "zulu g1 neuron neuron64 neuron64u"
-    build_for_distribution: "stable newstable"
-    #build_for_product: "neuron neuron64"
-    #build_for_distribution: "newstable"
+    #build_for_product: "zulu g1 neuron neuron64 neuron64u"
+    #build_for_distribution: "stable newstable"
+    build_for_product: "neuron neuron64"
+    build_for_distribution: "newstable"
     build_independent_for: "stable newstable"
     disable_for: "newstable-g1"
     publish_to_remote: "yes"
