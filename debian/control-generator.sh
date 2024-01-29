@@ -227,6 +227,7 @@ cat  >debian/rules.in <<EOF
 override_dh_auto_install:
 	mkdir -p debian/unipi-kernel-modules-64on32
 	cp -Rf debian/tempdest/* debian/unipi-kernel-modules-64on32 || exit 1;
+	rm -rf debian/unipi-kernel-modules-64on32/lib/modules/*-2712 || exit 1;
 	mkdir -p debian/${BINARY_PKG_NAME}
 	mv debian/tempdest/* debian/${BINARY_PKG_NAME} || exit 1;
 
