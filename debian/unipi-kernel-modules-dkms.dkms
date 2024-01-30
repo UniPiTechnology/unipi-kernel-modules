@@ -4,7 +4,7 @@ PACKAGE_VERSION="MODULE_VERSION#"
 ##### insert modules here ######
 
 AUTOINSTALL=yes
-REMAKE_INITRD=yes
+# Deprecated feature REMAKE_INITRD=yes
 
 MAKE[0]="make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/unipi-id modules;\
 	make -C $kernel_source_dir M=${dkms_tree}/unipi/${module_version}/build/rtc-unipi modules;\
