@@ -17,6 +17,10 @@
 #include <linux/poll.h>
 #include <linux/wait.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+#include <linux/filelock.h>
+#endif
+
 #include "unipi_common.h"
 #include "unipi_modbus.h"
 //#include "unipi_spi.h"
@@ -364,7 +368,11 @@ int __init unipi_modbus_init(void)
 	}
 
 	// Character class registration
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,3,0)
 	unipi_modbus_class = class_create(THIS_MODULE, UNIPI_MODBUS_DEVICE_CLASS);
+#else
+	unipi_modbus_class = class_create(UNIPI_MODBUS_DEVICE_CLASS);
+#endif
 	if (IS_ERR(unipi_modbus_class)) {
 		printk(KERN_ALERT "unipi-modbus: Failed to register device class\n");
 		rc = PTR_ERR(unipi_modbus_class);

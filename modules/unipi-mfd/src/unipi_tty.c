@@ -39,7 +39,12 @@
 # define unipi_tty_trace(f, args...)
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
+			      const unsigned char *fp, size_t count);
+static size_t (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
+			      const unsigned char *fp, size_t count);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static void (*alias_n_tty_receive_buf)(struct tty_struct *tty, const unsigned char *cp,
 			      const char *fp, int count);
 static int (*alias_n_tty_receive_buf2)(struct tty_struct *tty, const unsigned char *cp,
@@ -60,9 +65,12 @@ static int (*alias_n_tty_ioctl)(struct tty_struct *tty,
 #endif
 static int (*alias_n_tty_open)(struct tty_struct *tty);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
-                                  const char *fp, int count)
+                                  const unsigned char *fp, size_t count)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+			      const char *fp, int count)
 #else
 static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
 			      char *fp, int count)
@@ -77,7 +85,10 @@ static void unipi_tty_receive_buf(struct tty_struct *tty, const unsigned char *c
 		tty->termios.c_iflag = tty->termios.c_iflag | (PARMRK);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+static size_t unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
+                                  const unsigned char *fp, size_t count)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5,13,0)
 static int unipi_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
                                   const char *fp, int count)
 #else
