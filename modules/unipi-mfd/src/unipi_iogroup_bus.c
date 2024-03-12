@@ -37,10 +37,16 @@ static int iogroup_match_device(struct device *dev, struct device_driver *drv)
 	MODALIAS is created according to compatible string, or iogroup:<modalias>, 
 	         which is compatible without unipi,
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,3,0)
 static int iogroup_uevent(struct device *dev, struct kobj_uevent_env *env)
+#else
+static int iogroup_uevent(const struct device *dev, struct kobj_uevent_env *env)
+#endif
 {
-	const struct unipi_iogroup_device  *iogroup = to_unipi_iogroup_device(dev);
-	if (of_device_uevent_modalias(dev, env) == 0) 
+	const struct unipi_iogroup_device *iogroup = \
+                   dev ? container_of(dev, struct unipi_iogroup_device, dev) : NULL;
+	//const struct unipi_iogroup_device  *iogroup = to_unipi_iogroup_device(dev);
+	if (of_device_uevent_modalias(dev, env) == 0)
 		return 0;
 	return add_uevent_var(env, "MODALIAS=%s%s", "iogroup:", iogroup->modalias);
 }
@@ -293,8 +299,13 @@ of_register_iogroup_device(struct unipi_channel *channel, struct device_node *nc
 
 #ifdef CONFIG_OF
 	/* Select device driver */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0)
 	rc = of_modalias_node(nc, iogroup->modalias,
 				sizeof(iogroup->modalias));
+#else
+	rc = of_alias_from_compatible(nc, iogroup->modalias,
+				sizeof(iogroup->modalias));
+#endif
 #else
 	rc = -ENOENT;
 #endif

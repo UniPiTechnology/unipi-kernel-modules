@@ -483,8 +483,11 @@ static const struct regmap_config regmap_config = {
 	.val_bits = 8,
 };
 
-static int rtc_unipi_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
+static int rtc_unipi_probe(struct i2c_client *client
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,3,0)
+			,const struct i2c_device_id *id
+#endif
+)
 {
 	struct rtc_unipi		*rtc_unipi;
 	int			err = -ENODEV;
