@@ -115,6 +115,7 @@ struct unipi_spi_device
 	struct spi_device *spi_dev; // required by timer
 	int hmode;
 	int enable_v2;
+	int allow_v2;
 	int probe_mode;
 };
 

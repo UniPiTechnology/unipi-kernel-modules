@@ -419,6 +419,7 @@ int unipi_spi_probe(struct spi_device *spi)
 	int alive = 0;
 	int ret, i;   //, degraded=0; //, no_irq = 0;
 	u32 probe_always_succeeds = 0;
+	u32 allow_v2 = 0;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,13,0)
 	struct spi_delay  inactive_delay =  { .value = 1, .unit = 1} ;
 	struct spi_delay  setup_delay =  { .value = 1, .unit = 10} ;
@@ -472,6 +473,7 @@ int unipi_spi_probe(struct spi_device *spi)
 	unipi_spi_trace(spi, "Max Hz controller=%d device=%d\n", spi->master->max_speed_hz, spi->max_speed_hz);
 	if (spi->dev.of_node) {
 		of_property_read_u32(spi->dev.of_node, "probe-always-succeeds", &(probe_always_succeeds));
+		of_property_read_u32(spi->dev.of_node, "allow-protocol-v2", &(allow_v2));
 	} else {
 		probe_always_succeeds = 1;
 	}
@@ -533,7 +535,8 @@ int unipi_spi_probe(struct spi_device *spi)
 		n_spi->frequency = spi->max_speed_hz;
 
 	n_spi->probe_mode = 0;
-	n_spi->enable_v2 = 1;
+	n_spi->allow_v2 = allow_v2;
+	n_spi->enable_v2 = n_spi->allow_v2;
 	unipi_ping_sync(&n_spi->channel);
 
 	n_spi->channel.op->populated = unipi_spi_populated;
