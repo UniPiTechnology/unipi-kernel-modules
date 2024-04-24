@@ -141,7 +141,7 @@ void unipi_spi_unlock(void *proto_self)
 	struct unipi_spi_device *n_spi = spi_get_drvdata(spi_dev);
 
 	spin_lock_irqsave(&n_spi->firmware_lock, flags);
-	if (n_spi->firmware_in_progress) n_spi->enable_v2 = 1;
+	if (n_spi->firmware_in_progress) n_spi->enable_v2 = n_spi->allow_v2;
 	n_spi->firmware_in_progress = 0;
 	spin_unlock_irqrestore(&n_spi->firmware_lock, flags);
 }
