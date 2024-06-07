@@ -108,7 +108,8 @@ static const struct iio_chan_spec unipi_iio_ao_chan_spec[] = {
 			.type = IIO_VOLTAGE,
 			.indexed = 0,
 			.channel = 0,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)
+			                    | BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 1
 	}
 };
@@ -373,9 +374,13 @@ int unipi_iio_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec const 
 
 	if (ch->type == IIO_VOLTAGE) {
 		regmap_read(iio_platform->map, n_iio->valreg, &sec_true_val);
+		if (mask == IIO_CHAN_INFO_RAW) {
+			*val = sec_true_val;
+			return IIO_VAL_INT;
+		}
 		*val = (sec_true_val * 5) / 2;
 		if (*val > 10000) *val = 10000;
-		return 0;
+		return IIO_VAL_INT;
 	}
 	return -EINVAL;
 }
@@ -387,8 +392,12 @@ int unipi_iio_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec const
 	u32 sec_true_val;
 
 	if (ch->type == IIO_VOLTAGE) {
-		if (val > 10000) val = 10000;
-		sec_true_val = (val * 2) / 5;
+		if (mask == IIO_CHAN_INFO_RAW) {
+			sec_true_val =  (val > 4000) ? 4000 : val;
+		} else {
+			if (val > 10000) val = 10000;
+			sec_true_val = (val * 2) / 5;
+		}
 		regmap_write(iio_platform->map, n_iio->valreg, sec_true_val);
 		return 0;
 	}
