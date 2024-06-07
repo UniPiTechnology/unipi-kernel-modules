@@ -48,6 +48,7 @@
 /* speciality pro Braina a jeho analogy */
 #define UNIPI_MFD_REG_BRAIN_AO_VAL     2
 #define UNIPI_MFD_REG_BRAIN_AI_VAL     3
+#define UNIPI_MFD_REG_BRAIN_R_VAL      4
 #define UNIPI_MFD_REG_BRAIN_VREFINP    5
 #define UNIPI_MFD_REG_BRAIN_AO_MODE    1019
 #define UNIPI_MFD_REG_BRAIN_AOV_DEV    1020

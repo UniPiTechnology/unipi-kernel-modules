@@ -23,13 +23,15 @@ static const struct iio_chan_spec unipi_iio_stm_ai_chan_spec[] = {
 	{
 			.type = IIO_VOLTAGE,
 			.channel = 0,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)
+			                    | BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 0
 	},
 	{
 			.type = IIO_CURRENT,
 			.channel = 1,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)
+			                    | BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 0
 	}
 };
@@ -38,19 +40,21 @@ static const struct iio_chan_spec unipi_iio_stm_ao_chan_spec[] = {
 	{
 			.type = IIO_VOLTAGE,
 			.channel = 0,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)
+			                    | BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 1
 	},
 	{
 			.type = IIO_CURRENT,
 			.channel = 1,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)
+			                    | BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 1
 	},
 	{
 			.type = IIO_RESISTANCE,
 			.channel = 2,
-			.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+			.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
 			.output = 0
 	}
 };
@@ -59,6 +63,7 @@ struct unipi_iio_stm_device
 {
 	struct regmap* map;
 	int valreg;
+	int r_valreg;
 	int modereg;
 	u32 mode;
 	u32 kvolt;
@@ -79,14 +84,16 @@ struct unipi_iio_stm_device
 
 /* load constants to transform raw analog values to miliVolt
  * 		result is mul16 
- * 		transforation from raw is   V = ( raw * k14 + f14)  >>14
- * 		                       or   A = ( raw * k13 + f13 ) >> 13
+ * 		transformation from raw is   V = ( raw * k14 + f14)  >> 14
+ * 		                        or   A = ( raw * k13 + f13 ) >> 13
  */
 void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 {
 	u32 vref_int = 0;
 	u32 vref_inp = 0;
-    u64 d1, d2;
+#ifndef CONFIG_ARM64
+	u64 d1, d2;
+#endif
 	int err1=0, err2=0, offs1=0, offs2=0;
 
 	regmap_read(n_iio->map, UNIPI_MFD_REG_VREFINT, &vref_int);
@@ -97,7 +104,7 @@ void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 	regmap_read(n_iio->map, UNIPI_MFD_REG_BRAIN_AIA_OFS, &offs2);
 	// safety check or set defaults
 	vref_inp = vref_inp ? : 11328;
-	vref_int = vref_inp ? : 12208;
+	vref_int = vref_int ? : 12208;
 
 	/* ToDo: use do_div */
 #ifdef CONFIG_ARM64
@@ -107,7 +114,7 @@ void unipi_iio_stm_read_vref(struct unipi_iio_stm_device *n_iio)
 	n_iio->famp = ((u64)offs2 << 13) / 10;
 #else
 	d1 = (((u64)9900 << 2)*vref_int*(10000+err1));
-    d2 = 10000*vref_inp;
+	d2 = 10000*vref_inp;
 	n_iio->kvolt = do_div(d1,d2);
 
 	d1 = ((u64)offs1 << 14);
@@ -126,7 +133,9 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 {
 	u32 vref_int = 0;
 	u32 vref_inp = 0;
-    u64 d1, d2;
+#ifndef CONFIG_ARM64
+	u64 d1, d2;
+#endif
 	int err1=0, err2=0, offs1=0, offs2=0;
 
 	regmap_read(n_iio->map, UNIPI_MFD_REG_VREFINT, &vref_int);
@@ -137,15 +146,15 @@ void unipi_iio_stm_read_vref_rev(struct unipi_iio_stm_device *n_iio)
 	regmap_read(n_iio->map, UNIPI_MFD_REG_BRAIN_AOA_OFS, &offs2);
 	// safety check or set defaults
 	vref_inp = vref_inp ? : 11328;
-	vref_int = vref_inp ? : 12208;
+	vref_int = vref_int ? : 12208;
 
 	/* ToDo: use do_div */
 //#if ARM64
 #ifdef CONFIG_ARM64
 	n_iio->kvolt = (((u64)vref_inp << 16) * 4095*10000) / vref_int / (9900 * (10000+err1));
 	n_iio->fvolt = (((u64)vref_inp << 16) * 4095 * offs1) / vref_int / 99000;
-	n_iio->kamp = (((u64)vref_inp << 16) * 4095*10000) / vref_int / (33000 * (10000+err1));
-	n_iio->famp = (((u64)vref_inp << 16) * 4095 * offs1) / vref_int / 33000;
+	n_iio->kamp = (((u64)vref_inp << 17) * 4095*10000) / vref_int / (33000 * (10000+err1));
+	n_iio->famp = (((u64)vref_inp << 17) * 4095 * offs1) / vref_int / 33000;
 #else
 	d1 = (((u64)vref_inp << 16) * 4095*10000);
 	d2 = vref_int * (9900 * (10000+err1));
@@ -289,14 +298,22 @@ int unipi_iio_stm_ai_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec co
 	switch(n_iio->mode) {
 	case 0: {
 		if (ch->type == IIO_VOLTAGE) {
-			*val = (stm_val * n_iio->kvolt + n_iio->fvolt) >> 14;
+			if (mask == IIO_CHAN_INFO_RAW) {
+				*val = (int16_t) (stm_val & 0xffff);
+				return IIO_VAL_INT;
+			}
+			*val = (stm_val < 0x7fff) ? ((stm_val * n_iio->kvolt + n_iio->fvolt) >> 14) : 0;
 			return IIO_VAL_INT;
 		}
 		break;
 	}
 	case 1: {
 		if (ch->type == IIO_CURRENT) {
-			*val = (stm_val * n_iio->kamp + n_iio->famp) >> 13;
+			if (mask == IIO_CHAN_INFO_RAW) {
+				*val = (int16_t) (stm_val & 0xffff);
+				return IIO_VAL_INT;
+			}
+			*val = (stm_val < 0x7fff) ? ((stm_val * n_iio->kamp + n_iio->famp) >> 13) : 0;
 			*val2 = 1000;
 			return IIO_VAL_FRACTIONAL;
 		}
@@ -314,9 +331,34 @@ int unipi_iio_stm_ao_read_raw(struct iio_dev *indio_dev, struct iio_chan_spec co
 	
 	regmap_read(n_iio->map, n_iio->modereg, &n_iio->mode);
 	switch(n_iio->mode) {
+	case 0: {
+		if (ch->type == IIO_VOLTAGE) {
+			regmap_read(n_iio->map, n_iio->valreg, &stm_val);
+			if (mask == IIO_CHAN_INFO_RAW) {
+				*val = (int16_t) (stm_val & 0xffff);
+				return IIO_VAL_INT;
+			}
+			*val = ((stm_val << 16) - n_iio->fvolt) / n_iio->kvolt;
+			return IIO_VAL_INT;
+		}
+		break;
+	}
+	case 1: {
+		if (ch->type == IIO_CURRENT) {
+			regmap_read(n_iio->map, n_iio->valreg, &stm_val);
+			if (mask == IIO_CHAN_INFO_RAW) {
+				*val = (int16_t) (stm_val & 0xffff);
+				return IIO_VAL_INT;
+			}
+			*val = ((stm_val << 17) - n_iio->famp) / n_iio->kamp;
+			*val2 = 1000;
+			return IIO_VAL_FRACTIONAL;
+		}
+		break;
+	}
 	case 3: {
 		if (ch->type == IIO_RESISTANCE) {
-			regmap_read(n_iio->map, n_iio->valreg, &stm_val);
+			regmap_read(n_iio->map, n_iio->r_valreg, &stm_val);
 			*val = stm_val;
 			*val2 = 10;
 			return IIO_VAL_FRACTIONAL;
@@ -336,7 +378,11 @@ int unipi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec c
 	switch(n_iio->mode) {
 	case 0: {
 		if (ch->type == IIO_VOLTAGE) {
-			stm_val = (val * n_iio->kvolt + n_iio->fvolt) >> 16;
+			if (mask == IIO_CHAN_INFO_RAW) {
+				if (val >=0) stm_val = val;
+			} else {
+				stm_val = ((u64)val * n_iio->kvolt + n_iio->fvolt) >> 16;
+			}
 			if (stm_val > 4095) stm_val=4095;
 			regmap_write(n_iio->map, n_iio->valreg, stm_val);
 			return 0;
@@ -345,7 +391,11 @@ int unipi_iio_stm_ao_write_raw(struct iio_dev *indio_dev, struct iio_chan_spec c
 	}
 	case 1: {
 		if (ch->type == IIO_CURRENT) {
-			stm_val = (val * n_iio->kamp + n_iio->famp) >> 17;
+			if (mask == IIO_CHAN_INFO_RAW) {
+				if (val >=0) stm_val = val;
+			} else {
+				stm_val = ((val *1000 + val2/1000) * n_iio->kamp + n_iio->famp) >> 17;
+			}
 			if (stm_val > 4095) stm_val=4095;
 			regmap_write(n_iio->map, n_iio->valreg, stm_val);
 			return 0;
@@ -436,7 +486,7 @@ int unipi_iio_stm_ai_register(struct device* dev, struct regmap *map, int group_
 	return 0;
 }
 
-int unipi_iio_stm_ao_register(struct device* dev, struct regmap *map, int group_index, int valreg, int modereg)
+int unipi_iio_stm_ao_register(struct device* dev, struct regmap *map, int group_index, int valreg, int modereg, int r_valreg)
 {
 	struct iio_dev *iio_dev;
 	struct unipi_iio_stm_device *n_iio;
@@ -455,6 +505,7 @@ int unipi_iio_stm_ao_register(struct device* dev, struct regmap *map, int group_
 	n_iio = (struct unipi_iio_stm_device*) iio_priv(iio_dev);
 	n_iio->map = map;
 	n_iio->valreg = valreg;
+	n_iio->r_valreg = r_valreg;
 	n_iio->modereg = modereg;
 	unipi_iio_stm_read_vref_rev(n_iio);
 	devm_iio_device_register(dev, iio_dev);
@@ -470,6 +521,7 @@ static int unipi_iio_stm_probe(struct platform_device *pdev)
 	int ai_valreg = UNIPI_MFD_REG_BRAIN_AI_VAL;
 	int ao_modereg = UNIPI_MFD_REG_BRAIN_AO_MODE;
 	int ai_modereg = UNIPI_MFD_REG_BRAIN_AI_MODE;
+	int r_valreg = UNIPI_MFD_REG_BRAIN_R_VAL;
 	int ret;
 
 	//map  = dev_get_regmap(parent, "registers");
@@ -484,9 +536,10 @@ static int unipi_iio_stm_probe(struct platform_device *pdev)
 	ret = of_property_read_u32(np, "ai-mode-reg", &ai_modereg);
 	ret = of_property_read_u32(np, "ao-value-reg", &ao_valreg);
 	ret = of_property_read_u32(np, "ao-mode-reg", &ao_modereg);
+	ret = of_property_read_u32(np, "r-value-reg", &r_valreg);
 
 	unipi_iio_stm_ai_register(dev, map, 1, ai_valreg, ai_modereg);
-	unipi_iio_stm_ao_register(dev, map, 1, ao_valreg, ao_modereg);
+	unipi_iio_stm_ao_register(dev, map, 1, ao_valreg, ao_modereg, r_valreg);
 	return 0;
 }
 
