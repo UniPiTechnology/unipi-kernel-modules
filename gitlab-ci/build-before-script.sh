@@ -60,11 +60,11 @@ elif [ "$PRODUCT" == "g1" ]; then
         apt install -y g1-kernel-headers
     else
         apt install -y unipi-kernel-headers
-        cat >>/ci-scripts/repo_patch_table.txt <<EOF
-
-$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-g1-main bookworm-g1-main
-$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-g1-test bookworm-g1-test
-EOF
+#        cat >>/ci-scripts/repo_patch_table.txt <<EOF
+#
+#$DEBIAN_VERSION-$PRODUCT-main    $DEBIAN_VERSION-g1-main bookworm-g1-main
+#$DEBIAN_VERSION-$PRODUCT-test    $DEBIAN_VERSION-g1-test bookworm-g1-test
+#EOF
     fi
 
 elif [ "$PRODUCT" == "zulu" ] || [ "$PRODUCT" == "patron" ] || [ "$PRODUCT" == "iris" ]; then

@@ -9,7 +9,7 @@ variables:
     #build_for_product: "neuron neuron64"
     #build_for_distribution: "newstable"
     build_independent_for: "stable newstable"
-    disable_for: "newstable-g1"
+    #disable_for: "newstable-g1"
     publish_to_remote: "yes"
     publish_dst_url: "git@github.com:UniPiTechnology/unipi-kernel-modules.git"
 
