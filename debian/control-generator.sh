@@ -181,7 +181,7 @@ else
         depends="$depends, unipi-kernel-modules-64on32"
     fi
     if [ "$PRODUCT" = "neuron" ] && [ "${DEBIAN_VERSION}" = "bookworm" ]; then
-        depends="$depends, unipi-kernel-modules-64on32:arm64"
+        recommends="unipi-kernel-modules-64on32:arm64"
     fi
 fi
 
@@ -206,6 +206,7 @@ Package: ${BINARY_PKG_NAME}
 Architecture: ${arch}
 Pre-Depends: ${pre_depends}
 Depends: ${misc:Depends}, ${PKG_KERNEL_IMAGE}(=${PKG_KERNEL_VER}) ${ALTERNATIVE_KERNEL_IMAGE}, ${depends}
+Recommends: ${recommends}
 Suggests: ${suggests}
 Provides: ${provides}
 Replaces: ${replaces}
