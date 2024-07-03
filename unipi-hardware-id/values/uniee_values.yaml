@@ -24,6 +24,7 @@ platform:
         IRISx5:  0x030F
         IRISx7:  0x040F
         IRISx21: 0x050F
+        IRISx71: 0x060F
 
         S103: 0x0103
         M103: 0x0203
