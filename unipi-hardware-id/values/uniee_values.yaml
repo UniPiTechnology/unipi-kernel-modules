@@ -12,20 +12,27 @@ platform:
         IRIS:    0xF
         OEM:     0x10
     id:
+        # Unipi classic
         UNIPI10: 0x0001
         UNIPI11: 0x0101
         UNIPI1L: 0x1101
 
+        # G1xx Gate 
         G100:    0x0002
         G110:    0x0102
 
+        # IRIS Platforms
         IRISx1:  0x010F
         IRISx2:  0x020F
         IRISx5:  0x030F
         IRISx7:  0x040F
         IRISx21: 0x050F
         IRISx71: 0x060F
+ 
+        # IRIS card sold separately as product
+        IRIS_CARD: 0xCA0F
 
+        # Neuron
         S103: 0x0103
         M103: 0x0203
         M203: 0x0303
@@ -45,23 +52,24 @@ platform:
         S103_E: 0x1103
         S103_I: 0x1203
 
+        # Patron
         S107: 0x0107
         S207: 0x0207
         M207: 0x0307
         M527: 0x0407
         L207: 0x0507
         L527: 0x0607
-        L527: 0x0607
         S117: 0x0707
         M267: 0x0807
         M567: 0x0907
         S167: 0x0a07
         S227: 0x0b07
+
+        # OEM Specials
         AKUZU1: 0x0c07
-
-
-
+        
         ACHE1: 0x0110
+        ACHE2: 0x0210
 
         AKUSO1: 0x0106
 
@@ -77,6 +85,8 @@ board:
         N_1000_1:          7
         N_1001_1:          8
         N_1002_1:          9
+
+        EMO_R8:            24
 
 # Internal (originated in Unipi) cards
 
@@ -117,9 +127,11 @@ board:
 # Other OEM hardware made by Unipi
 
         CD_MACHZLM_1:         2000
-        CD_PACHGL420_1:       2001
+        CD_AcDisp_1:          2001
         CD_ASUpCM4_1:         2002
         CD_ASUpZulu_1:        2003
+        CD_AcPlc_4:           2004
+        CD_AcDisp_2:          2005
 
 # specdata_header_t.field_type
 field:
