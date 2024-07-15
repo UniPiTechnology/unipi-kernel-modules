@@ -60,7 +60,7 @@ static const char* irisx7_iogroups[] = {
 };
 
 static const char* irisx71_iogroups[] = {
- "12",  "42",  "52",  "22",  "32", "62", "72"
+ "12",  "22",  "32",  "42",  "52", "62", "72"
 };
 
 static const char* oem_iogroups[] = {
@@ -83,7 +83,7 @@ static const struct unipi_id_family_data unipi_id_family_ids[] = {
 	{ UNIEE_PLATFORM_ID_IRISX7,     "Iris", {0x50,0x51,0x52,0x53,0x54,0x55,0x56},
 	                                        {0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e},
 	                                        irisx7_iogroups},
-	{ UNIEE_PLATFORM_ID_IRISX71,     "Iris71", {0x50,0x51,0x52,0x53,0x54,0x55,0x56},
+	{ UNIEE_PLATFORM_ID_IRISX71,     "Iris", {0x50,0x51,0x52,0x53,0x54,0x55,0x56},
 	                                        {0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e},
 	                                        irisx71_iogroups},
 
